@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.12)
 project(key-value-storage)
 enable_language(CXX)
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  set(Boost_USE_STATIC_LIBS ON)
+endif()
+
 find_package(Boost REQUIRED)
 find_package(Boost COMPONENTS iostreams REQUIRED)
 if(NOT Boost_FOUND)
@@ -26,8 +30,14 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         -Wextra
         -Wno-unused-parameter
     )
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  target_compile_options(key-value-storage PRIVATE
+       /std:c++17
+       /W3
+    )
 endif()
 
+message(${Boost_IOSTREAMS_LIBRARY})
 target_link_libraries(key-value-storage PRIVATE
     ${Boost_IOSTREAMS_LIBRARY}
 )
