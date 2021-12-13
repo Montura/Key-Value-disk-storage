@@ -1,33 +1,8 @@
 #include <filesystem>
-using namespace std;
 namespace fs = std::filesystem;
 
-#include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/fusion/adapted/std_pair.hpp>
-#include <boost/container/flat_map.hpp>
-#include <boost/interprocess/managed_mapped_file.hpp>
-#include <boost/spirit/include/qi.hpp>
-
-namespace m_boost {
-    namespace bio = boost::iostreams;
-    namespace bip = boost::interprocess;
-    namespace bc = boost::container;
-    namespace bqi = boost::spirit::qi;
-
-    template <typename T>
-    using allocator = bip::allocator<T, bip::managed_mapped_file::segment_manager>;
-
-    template <typename K, typename V>
-    using map = bc::flat_map<
-        K, V, std::less<K>,
-        allocator<typename bc::flat_map<K, V>::value_type> >;
-
-    template <typename K, typename V>
-    using Map = map<K, V>;
-}
-
-using namespace m_boost;
+#include "boost_include.h"
+#include "mmap_regions.h"
 
 // todo: investigate
 //  https://stackoverflow.com/questions/28217301/using-boostiostreamsmapped-file-source-with-stdmultimap
@@ -49,36 +24,37 @@ void test_flat_map(const char* fname) {
     }
 }
 
+/**
+  mapped_file_source is read only
+  mapped_file_sink is write only
+  mapped_file is both read and write
+     bio::mapped_file_params in_params;
+     in_params.path = in.data();
+     in_params.flags = bio::mapped_file::mapmode::readonly;
+**/
+
+// todo: move to tests
+void check_file_size(const char* path, std::size_t const expected_size) {
+    static_assert(sizeof(boost::uintmax_t) == sizeof(unsigned long));
+    auto output_file_size = static_cast<unsigned long>(fs::file_size(fs::path(path)));
+    assert(output_file_size == expected_size);
+}
+
 int main() {
-    constexpr char END_OF_LINE = '\n';
     constexpr std::size_t kB = 1024;
     constexpr std::size_t page_size = 4 * kB;
     constexpr std::size_t MB = 1024 * kB;
 //    constexpr std::size_t GB = 1024 * MB;
 
-    static_assert(sizeof(boost::uintmax_t) == sizeof(long long));
     assert(page_size == bip::mapped_region::get_page_size());
 
     std::string_view in = "../mmap_in.data";   // 1 MB
     std::string_view out = "../mmap_out.data"; // 1 MB
 
-    // mapped_file_source is read only
-    // mapped_file_sink is write only
-    // mapped_file is both read and write
-//    bio::mapped_file_params in_params;
-//    in_params.path = in.data();
-//    in_params.flags = bio::mapped_file::mapmode::readonly;
-
     constexpr std::size_t mapped_regions = MB / page_size;
-    std::vector<bio::mapped_file_source> mmapRegions(mapped_regions);
-    std::for_each(
-        mmapRegions.begin(),
-        mmapRegions.end(),
-        [&in, offset = 0](bio::mapped_file_source& file) mutable {
-            file.open(in.data(), page_size, offset);
-            offset += page_size;
-        }
-    );
+
+    MMapRegions regions(mapped_regions);
+    regions.read_from_with_chunks(in.data(), page_size);
 
     bio::mapped_file_params out_params;
     out_params.path = out.data();
@@ -86,17 +62,12 @@ int main() {
     out_params.flags = bio::mapped_file::mapmode::readwrite;
 
     bio::stream<bio::mapped_file_sink> out_mapped(out_params);
-    std::for_each(
-        mmapRegions.begin(),
-        mmapRegions.end(),
-        [&out_mapped](bio::mapped_file_source& file) {
-            std::transform(file.data(), file.end(), std::ostream_iterator<char>(out_mapped),
-                [](char byte) -> char { return (byte != END_OF_LINE) ? static_cast<char>(byte + 1) : byte; }
-            );
-            file.close();
-        }
-    );
-    out_mapped.close();
+
+    regions.write_to(std::ostream_iterator<char>(out_mapped));
+//    auto && w = [](char byte) -> char { return (byte != '\n') ? static_cast<char>(byte + 1) : byte; };
+//    regions.transform_data_and_write_to(std::move(w), std::ostream_iterator<char>(out_mapped));
+
+    check_file_size(out.data(), MB);
 
     return 0;
 }
