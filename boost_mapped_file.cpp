@@ -35,18 +35,25 @@ void test_flat_map(const char* fname) {
 
 // todo: move to tests
 void check_file_size(const char* path, std::size_t const expected_size) {
-    static_assert(sizeof(boost::uintmax_t) == sizeof(unsigned long));
-    auto output_file_size = static_cast<unsigned long>(fs::file_size(fs::path(path)));
+    using ull = unsigned long long;
+    static_assert(sizeof(boost::uintmax_t) == sizeof(ull));
+    auto output_file_size = static_cast<ull>(fs::file_size(fs::path(path)));
     assert(output_file_size == expected_size);
 }
 
 int main() {
     constexpr std::size_t kB = 1024;
-    constexpr std::size_t page_size = 4 * kB;
     constexpr std::size_t MB = 1024 * kB;
 //    constexpr std::size_t GB = 1024 * MB;
 
-    assert(page_size == bip::mapped_region::get_page_size());
+// todo:check page size on Win platform
+#ifdef _MSC_VER
+    constexpr std::size_t page_size = 64 * kB;
+#else
+    constexpr std::size_t page_size = 4 * kB;
+#endif
+    size_t size = bip::mapped_region::get_page_size();
+    assert(page_size == size);
 
     std::string_view in = "../mmap_in.data";   // 1 MB
     std::string_view out = "../mmap_out.data"; // 1 MB
