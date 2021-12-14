@@ -53,6 +53,7 @@ int main() {
 //    constexpr std::size_t GB = 1024 * MB;
 
 // todo:check page size on Win platform
+// https://docs.microsoft.com/en-us/windows-hardware/drivers/display/support-for-64kb-pages
 #ifdef _MSC_VER
     constexpr std::size_t page_size = 64 * kB;
 #else
