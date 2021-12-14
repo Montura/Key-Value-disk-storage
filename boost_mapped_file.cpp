@@ -41,7 +41,13 @@ void check_file_size(const char* path, std::size_t const expected_size) {
     assert(output_file_size == expected_size);
 }
 
+void serialize_class(const char* path);
+void serialize_stl(const char* path);
+
 int main() {
+    serialize_class("../serialized_class");
+    serialize_stl("../serialized_stl");
+
     constexpr std::size_t kB = 1024;
     constexpr std::size_t MB = 1024 * kB;
 //    constexpr std::size_t GB = 1024 * MB;

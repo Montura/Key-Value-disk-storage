@@ -7,12 +7,12 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 find_package(Boost REQUIRED)
-find_package(Boost COMPONENTS iostreams REQUIRED)
+find_package(Boost COMPONENTS iostreams serialization REQUIRED)
 if(NOT Boost_FOUND)
     message(FATAL_ERROR "Failed to find boost library")
 endif()
 
-set(SOURCE_FILES boost_mapped_file.cpp)
+set(SOURCE_FILES boost_mapped_file.cpp serialization.cpp)
 include_directories(${Boost_INCLUDE_DIRS})
 
 add_executable(key-value-storage ${SOURCE_FILES})
@@ -38,6 +38,8 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 message(${Boost_IOSTREAMS_LIBRARY})
+message(${Boost_SERIALIZATION_LIBRARY})
 target_link_libraries(key-value-storage PRIVATE
     ${Boost_IOSTREAMS_LIBRARY}
+    ${Boost_SERIALIZATION_LIBRARY}
 )
