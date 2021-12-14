@@ -22,7 +22,7 @@ public:
 
     bool operator==(const gps_position& other) const {
         return  (degrees == other.degrees) &&
-                (minutes == other.degrees) &&
+                (minutes == other.minutes) &&
                 (combinedToleranceCompare(seconds, other.seconds));
     }
 };
