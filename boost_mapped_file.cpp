@@ -3,6 +3,7 @@ namespace fs = std::filesystem;
 
 #include "boost_include.h"
 #include "mmap_regions.h"
+#include "btree.h"
 
 // todo: investigate
 //  https://stackoverflow.com/questions/28217301/using-boostiostreamsmapped-file-source-with-stdmultimap
@@ -45,6 +46,8 @@ void serialize_class(const char* path);
 void serialize_stl(const char* path);
 
 int main() {
+    testBTree();
+
     serialize_class("../serialized_class");
     serialize_stl("../serialized_stl");
 
@@ -82,6 +85,10 @@ int main() {
 //    regions.transform_data_and_write_to(std::move(w), std::ostream_iterator<char>(out_mapped));
 
     check_file_size(out.data(), MB);
+
+    // change file data wia mapped stream
+    char *begin = out_mapped->data() + 2;
+    *begin = 50;
 
     return 0;
 }
