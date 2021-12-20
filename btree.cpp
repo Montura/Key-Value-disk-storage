@@ -1,6 +1,5 @@
 #include <vector>
 #include <cstdint>
-#include <memory>
 #include <iostream>
 
 using std::cout;
@@ -28,37 +27,40 @@ struct BTreeNode {
     uint8_t is_leaf = 0;
     std::vector<K> keys;
     std::vector<BTreeNode*> children;
-    std::vector<V> values; // only in leaves
+    std::vector<V*> values; // only in leaves
     int used_keys = 0;
 
     BTreeNode() = delete;
 
-    constexpr V default_value() {
-        if constexpr (std::is_fundamental_v<V>) {
-            return -1;
-        } else if (std::is_pointer_v<V>) {
-            return nullptr;
-        } else {
-            return V();
-        }
-    }
-
     explicit BTreeNode(bool is_leaf = false):
         is_leaf(is_leaf),
         keys(max_key_num, -1),
-        children(max_child_num)
-    {
-        if (is_leaf) {
-            values.resize(max_key_num, default_value());
-        }
-    }
+        children(max_child_num),
+        values(max_key_num)
+    {}
 
     ~BTreeNode() {
         if (!is_leaf) {
-            for (int i = 0; i < used_keys; ++i) {
+            for (int i = 0; i < used_keys + 1; ++i) {
                 delete children[i];
             }
+        } else {
+            for (int i = 0; i < used_keys; ++i)
+                delete values[i];
         }
+    }
+
+    int key_pos_in_leaf_node(const K& key) const {
+        assert(is_leaf);
+        for (int i = 0; i < used_keys; ++i) {
+            if (keys[i] == key)
+                return i;
+        }
+        return used_keys;
+    }
+
+    bool has_key(const K& key) const {
+        return key_pos_in_leaf_node(key) != used_keys;
     }
 
     int find_key_pos(const K& key) const {
@@ -66,6 +68,11 @@ struct BTreeNode {
         while (pos < used_keys && keys[pos] < key)
             ++pos;
         return pos;
+    }
+
+    void set(int pos, const V& value) {
+        delete values[pos]; // todo: think about deletion
+        values[pos] = new V(value);
     }
 
     void insert_non_full(const K& key, const V& value) {
@@ -76,7 +83,7 @@ struct BTreeNode {
                 values[i] = values[i - 1];
             }
             keys[pos] = key;
-            values[pos] = value;
+            values[pos] = new V(value);
             used_keys += 1;
         } else {
             if (children[pos]->used_keys == max_key_num) {
@@ -89,7 +96,7 @@ struct BTreeNode {
         }
     }
 
-    void split_child(const int &pos, Node* node) {
+    void split_child(const int& pos, Node* node) {
         // Create a new node to store (t-1) keys of divided node
         Node* new_node = new Node(node->is_leaf);
         new_node->used_keys = t - 1;
@@ -136,7 +143,7 @@ struct BTreeNode {
             traverse_child();
             cout << keys[i] << " ";
             if (is_leaf) {
-                cout << ": " << values[i] << " | ";
+                cout << ": " << *values[i] << " | ";
             }
         }
         traverse_child();
@@ -162,11 +169,38 @@ public:
     }
 
     ~BTree() {
-      delete root;
+        delete root;
     }
-
+    
+    Node* find_leaf_node(const K& key) {
+        Node* curr = root;
+        while (!curr->is_leaf) {
+            for (int i = 0; i <= curr->used_keys; ++i) {
+                if (i == curr->used_keys || key <= curr->keys[i]) {
+                    curr = curr->children[i];
+                    break;
+                }
+            }
+        }
+        return curr;
+    }
+    
+    bool exist(const K &key) {
+        Node* leaf_node = find_leaf_node(key);
+        return leaf_node->has_key(key);
+    }
+    
+    void set(const K &key, const V& value) {
+        Node* leaf_node = find_leaf_node(key);
+        int pos = leaf_node->key_pos_in_leaf_node(key);
+        if (pos != leaf_node->used_keys) {
+            leaf_node->set(pos, value);
+        } else {
+            insert(key, value);
+        }
+    }
+    
     bool insert(const K& key, const V& value) override {
-        // todo: ignore if already has a key
         if (root->used_keys == Node::max_key_num) {
             auto new_root = new Node(false);
             new_root->children[0] = root;
@@ -206,9 +240,26 @@ void testBTree() {
 
     auto bTree = std::make_unique<BTree<int, int, 5>>();
 
-    for (int i = 0; i < 50; i++) {
-        bTree->insert(i, char(65 + i));
+    for (int i = 0; i < 50; i += 2) {
+        bTree->set(i, char (65 + i)); // char for view in debugger
     }
+    for (int i = 1; i < 50; i += 2) {
+        bTree->set(i, char (65 + i)); // char for view in debugger
+    }
+
+    for (int i = 1; i < 50; i += 2) {
+        bTree->set(i, -165);
+    }
+
+    int found = 0;
+    for (int i = 0; i < 50; ++i) {
+        bool hasKey = bTree->exist(i);
+        if (!hasKey) {
+            cout << "Can't find key: " << i << endl;
+        }
+        found += hasKey ? 1 : 0;
+    }
+    cout << "Total keys found: " << found << endl;
 
     cout << endl;
     cout << "Tree traversal" << endl;

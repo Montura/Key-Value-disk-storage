@@ -12,7 +12,7 @@ if(NOT Boost_FOUND)
     message(FATAL_ERROR "Failed to find boost library")
 endif()
 
-set(SOURCE_FILES boost_mapped_file.cpp serialization.cpp)
+set(SOURCE_FILES boost_mapped_file.cpp serialization.cpp btree.cpp)
 include_directories(${Boost_INCLUDE_DIRS})
 
 add_executable(key-value-storage ${SOURCE_FILES})
