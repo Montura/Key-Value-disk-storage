@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <iterator>
+#include <cassert>
 
 /** Common Interface */
 template <typename Key, typename Value, typename Oit>
