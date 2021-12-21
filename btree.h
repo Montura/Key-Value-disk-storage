@@ -43,9 +43,10 @@ private:
         const uint8_t t;
         int used_keys = 0;
         uint8_t is_leaf = 0;
+        uint8_t is_deleted = 0;
         std::vector<K> keys;
-        std::vector<V *> values;
-        std::vector<BTreeNode *> children;
+        std::vector<V*> values;
+        std::vector<BTreeNode*> children;
 
         BTreeNode() = delete;
         explicit BTreeNode(int t, bool is_leaf);
@@ -58,8 +59,20 @@ private:
         void insert_non_full(const K& key, const V& value);
         void split_child(const int& pos, BTreeNode* node);
         void traverse();
+        bool remove(const K& idx);
 
         inline bool is_full() { return used_keys == max_key_num(); }
+
+    private:
+        bool remove_from_leaf(const int pos);
+        bool remove_from_non_leaf(const int pos);
+        std::pair<K, V*> get_previous_key_value(const int pos) const;
+        std::pair<K, V*> get_next_key_value(const int pos) const;
+        void fill_or_merge_node(const int pos);
+        void merge_node(const int pos);
+        void borrow_from_node_prev(const int pos);
+        void borrow_from_node_next(const int pos);
+
         inline int max_key_num() { return 2 * t - 1; }
         inline int max_child_num() { return 2 * t; }
     };

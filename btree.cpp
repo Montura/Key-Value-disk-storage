@@ -21,6 +21,7 @@ namespace {
     BOOST_AUTO_TEST_CASE(test_b_tree_init) {
         const int n = 1000;
         using BTreeIntInt = BTree<int, int>;
+        bool found_all = false, any_not_found = false, remove_all = false;
 
         for (int order = 2; order < 101; ++order) {
             BTreeIntInt btree(order);
@@ -32,52 +33,70 @@ namespace {
             for (int i = 0; i < n; ++i) {
                 total_found += btree.exist(i);
             }
+            found_all = (total_found == n);
 
             int total_not_found = 0;
             const int key_shift = 1000;
             for (int i = 0; i < n; ++i) {
                 total_not_found += !btree.exist(key_shift + i);
             }
+            any_not_found = (total_not_found == n);
+
+            int total_deleted = 0;
+            for (int i = 0; i < n * 2; ++i) {
+                total_deleted += btree.remove(i);
+            }
+            remove_all = (total_deleted == n);
+
             std::string msg = "BTree<int, int, " + std::to_string(order) + ">";
-            BOOST_REQUIRE_MESSAGE((total_found == n) && (total_not_found == n), msg);
+            BOOST_REQUIRE_MESSAGE(found_all && any_not_found && remove_all, msg);
         }
     }
 }
 #endif // UNIT_TESTS
 
 void testBTree() {
-    BTree<int, std::string> treeString(3);
-    BTree<int, char*> treeBlob(10);
+//    BTree<int, std::string> treeString(3);
+//    BTree<int, char*> treeBlob(10);
 //    cout << sizeof(std::unique_ptr<Node<int, int>>) << endl;
 //    cout << sizeof(BTreeNode<int, int>*) << endl;
 //    cout << sizeof(std::unique_ptr<int>) << endl;
 
-    auto bTree5 = std::make_unique<BTree<int, int>>(5);
 
-    for (int i = 0; i < 50; ++i) {
-        bTree5->set(i, char(65 + i)); // char for view in debugger
+    BTree<int, int> bTree5(5);
+
+//    for (int i = 0; i < 50; ++i) {/*
+//        bTree5.set(i, (char(65 + i))); // char for view in debugger
+//    }*/
+    for (int i = 0; i < 50; i += 2) {
+        bTree5.set(i, char(65 + i)); // char for view in debugger
     }
-//        for (int i = 1; i < 50; i += 2) {
-//            bTree->set(i, char(65 + i)); // char for view in debugger
-//        }
-
-//        for (int i = 1; i < 50; i += 2) {
-//            bTree->set(i, -165);
-//        }
+//
+    for (int i = 1; i < 50; i += 2) {
+        bTree5.set(i, -165);
+    }
 //
     int found = 0;
     for (int i = 0; i < 50; ++i) {
-        bool hasKey = bTree5->exist(i);
+        bool hasKey = bTree5.exist(i);
         if (!hasKey) {
             cout << "Can't find key: " << i << endl;
         }
         found += hasKey ? 1 : 0;
     }
+
+    for (int i = 0; i < 50; ++i) {
+        bool deleted = bTree5.remove(i);
+        if (!deleted) {
+            cout << "Can't delete key: " << i << endl;
+        }
+    }
+
     cout << "Total keys found: " << found << endl;
 
     cout << endl;
     cout << "Tree traversal" << endl;
     cout << "-----------------------------" << endl;
-    bTree5->traverse();
+    bTree5.traverse();
     cout << "-----------------------------" << endl;
 }

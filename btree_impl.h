@@ -52,7 +52,18 @@ Oit BTree<K, V, Oit>::get(const K& key) {
 
 template<typename K, typename V, typename Oit>
 bool BTree<K, V, Oit>::remove(const K& key) {
-    return false;
+    if (!root) {
+//        cout << "The tree is empty\n";
+        return false;
+    }
+    bool success = root && root->remove(key);
+    if (success && root->used_keys == 0) {
+        Node* tmp = root;
+        tmp->is_deleted = true;
+        root = root -> is_leaf ? nullptr : root->children[0];
+        delete tmp;
+    }
+    return success;
 }
 
 template<typename K, typename V, typename Oit>
