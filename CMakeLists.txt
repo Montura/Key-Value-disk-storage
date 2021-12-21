@@ -26,6 +26,7 @@ target_compile_definitions(key-value-storage PRIVATE
     BOOST_ALL_NO_LIB
     BOOST_TEST_MODULE=unit-cpp
     USE_BOOST_PREBUILT_STATIC_LIBRARY=false
+#    UNIT_TESTS
 )
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")

@@ -17,47 +17,18 @@ struct IKeyValueStorage {
 /** Tree */
 template <  typename K,
     typename V,
-    int t,
     typename Oit = std::istream_iterator<char>
 >
 class BTree final: IKeyValueStorage<K, V, Oit> {
-    static constexpr int max_key_num = 2 * t - 1;
-    static constexpr int max_child_num = 2 * t;
-
-    /** Node */
-    struct BTreeNode {
-        uint8_t is_leaf = 0;
-        std::vector<K> keys;
-        std::vector<BTreeNode *> children;
-        std::vector<V *> values; // only in leaves
-        int used_keys = 0;
-
-        BTreeNode() = delete;
-
-    public:
-        explicit BTreeNode(bool is_leaf = false);
-        ~BTreeNode();
-
-        int key_pos_in_leaf_node(const K& key) const;
-        bool has_key(const K& key) const;
-        int find_key_pos(const K& key) const;
-        void set(int pos, const V& value);
-        void insert_non_full(const K& key, const V& value);
-        void split_child(const int& pos, BTreeNode* node);
-        void traverse();
-    };
-
-    // Корень дерева содержит от (1 до 2t − 1) ключей (0 или от 2 до 2t детей).
-    // Все остальные узлы содержат от (t − 1) до (2t − 1) ключей (от t до 2t детей).
+    struct BTreeNode;
     BTreeNode* root = nullptr;
 
 public:
     using Node = BTreeNode;
 
-    explicit BTree();
+    explicit BTree(int order);
     ~BTree();
 
-    Node* find_leaf_node(const K& key);
     bool exist(const K &key);
     void set(const K &key, const V& value);
     void traverse();
@@ -65,4 +36,31 @@ public:
     bool insert(const K& key, const V& value) override;
     Oit get(const K& key) override;
     bool remove(const K& key) override;
+
+private:
+    /** Node */
+    struct BTreeNode {
+        const uint8_t t;
+        int used_keys = 0;
+        uint8_t is_leaf = 0;
+        std::vector<K> keys;
+        std::vector<V *> values;
+        std::vector<BTreeNode *> children;
+
+        BTreeNode() = delete;
+        explicit BTreeNode(int t, bool is_leaf);
+        ~BTreeNode();
+
+        BTreeNode* find_node(const K &key);
+        int key_idx_in_node(const K& key) const;
+        int find_key_pos(const K& key) const;
+        void set(int pos, const V& value);
+        void insert_non_full(const K& key, const V& value);
+        void split_child(const int& pos, BTreeNode* node);
+        void traverse();
+
+        inline bool is_full() { return used_keys == max_key_num(); }
+        inline int max_key_num() { return 2 * t - 1; }
+        inline int max_child_num() { return 2 * t; }
+    };
 };

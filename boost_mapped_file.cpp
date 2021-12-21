@@ -46,6 +46,7 @@ void serialize_stl(const char* path);
 
 void testBTree();
 
+#ifndef UNIT_TESTS
 int main() {
     testBTree();
 
@@ -93,3 +94,5 @@ int main() {
 
     return 0;
 }
+
+#endif // UNIT_TESTS
