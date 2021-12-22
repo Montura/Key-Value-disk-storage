@@ -13,11 +13,12 @@ if(NOT Boost_FOUND)
 endif()
 
 set(SOURCE_FILES
-        boost_mapped_file.cpp
-        serialization.cpp
+#        boost_mapped_file.cpp
+#        serialization.cpp
         btree.cpp
         btree_impl.h
         btree_node_impl.h
+        mem_util.cpp
 )
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -26,7 +27,7 @@ target_compile_definitions(key-value-storage PRIVATE
     BOOST_ALL_NO_LIB
     BOOST_TEST_MODULE=unit-cpp
     USE_BOOST_PREBUILT_STATIC_LIBRARY=false
-    UNIT_TESTS
+#    UNIT_TESTS
 )
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")

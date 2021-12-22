@@ -1,3 +1,5 @@
+#ifndef UNIT_TESTS
+
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -44,11 +46,7 @@ void check_file_size(const char* path, std::size_t const expected_size) {
 void serialize_class(const char* path);
 void serialize_stl(const char* path);
 
-void testBTree();
-
-#ifndef UNIT_TESTS
 int main() {
-    testBTree();
 
     serialize_class("../serialized_class");
     serialize_stl("../serialized_stl");
@@ -95,4 +93,4 @@ int main() {
     return 0;
 }
 
-#endif // UNIT_TESTS
+#endif

@@ -53,15 +53,18 @@ namespace {
         }
     }
 }
-#endif // UNIT_TESTS
+#else
 
-void testBTree() {
+void at_exit_handler();
+
+int main() {
+    const int handler = std::atexit(at_exit_handler);
+
 //    BTree<int, std::string> treeString(3);
 //    BTree<int, char*> treeBlob(10);
 //    cout << sizeof(std::unique_ptr<Node<int, int>>) << endl;
 //    cout << sizeof(BTreeNode<int, int>*) << endl;
 //    cout << sizeof(std::unique_ptr<int>) << endl;
-
 
     BTree<int, int> bTree5(5);
 
@@ -100,3 +103,4 @@ void testBTree() {
     bTree5.traverse();
     cout << "-----------------------------" << endl;
 }
+#endif // UNIT_TESTS
