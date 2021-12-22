@@ -19,7 +19,9 @@ set(SOURCE_FILES
         btree_impl.h
         btree_node_impl.h
         mem_util.cpp
-)
+        serializable_node.h
+        serializable_node_test.cpp
+        )
 include_directories(${Boost_INCLUDE_DIRS})
 
 add_executable(key-value-storage ${SOURCE_FILES})

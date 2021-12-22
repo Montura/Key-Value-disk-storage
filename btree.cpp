@@ -102,5 +102,6 @@ int main() {
     cout << "-----------------------------" << endl;
     bTree5.traverse();
     cout << "-----------------------------" << endl;
+    return 0;
 }
 #endif // UNIT_TESTS

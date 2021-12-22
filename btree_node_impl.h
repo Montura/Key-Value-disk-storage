@@ -2,10 +2,6 @@
 
 #include "btree.h"
 
-//static int ctors = 0;
-//static int dtros = 0;
-//static int total_deleted = 0;
-//static int total_values = 0;
 
 template<typename K, typename V, typename Oit>
 BTree<K, V, Oit>::BTreeNode::BTreeNode(int order, bool is_leaf):
@@ -21,10 +17,8 @@ BTree<K, V, Oit>::BTreeNode::BTreeNode(int order, bool is_leaf):
 
 template<typename K, typename V, typename Oit>
 BTree<K, V, Oit>::BTreeNode::~BTreeNode() {
-//    std::cout << "BTreeNode dtors: " << ++dtros << endl;
     if (!is_deleted) {
         for (int i = 0; i < used_keys; ++i) {
-//            std::cout << "value dtors: " << ++total_deleted << endl;
             delete values[i];
         }
         for (int i = 0; i <= used_keys; ++i) {
@@ -74,7 +68,6 @@ void BTree<K, V, Oit>::BTreeNode::insert_non_full(const K &key, const V &value) 
             values[i] = values[i - 1];
         }
         keys[pos] = key;
-//        cout << "values created: " << ++total_values << endl;
         values[pos] = new V(value);
         used_keys += 1;
     } else {
@@ -129,7 +122,6 @@ void BTree<K, V, Oit>::BTreeNode::split_child(const int &pos, Node *node) {
 template<typename K, typename V, typename Oit>
 bool BTree<K, V, Oit>::BTreeNode::remove(const K &key) {
     int pos = find_key_pos(key);
-//    cout << "pos: " << pos << endl;
     bool success;
     if (pos < used_keys && (keys[pos] == key)) {
         success = is_leaf ? remove_from_leaf(pos) : remove_from_non_leaf(pos);
@@ -153,7 +145,6 @@ bool BTree<K, V, Oit>::BTreeNode::remove(const K &key) {
 
 template<typename K, typename V, typename Oit>
 bool BTree<K, V, Oit>::BTreeNode::remove_from_leaf(const int pos) {
-//    std::cout << "value dtors: " << ++total_deleted << endl;
     delete values[pos];
     // shift to the left by 1 all the keys after the pos
     for (int i = pos + 1; i < used_keys; ++i) {

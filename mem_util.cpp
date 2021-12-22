@@ -6,14 +6,14 @@
 #include <unordered_map>
 
 template <class T>
-class custom_allocator {
+class CustomAllocator {
 public:
     typedef T value_type;
 
-    custom_allocator() noexcept = default;
+    CustomAllocator() noexcept = default;
 
     template <class U>
-    explicit custom_allocator (const custom_allocator<U>&) noexcept {}
+    explicit CustomAllocator (const CustomAllocator<U>&) noexcept {}
 
     T* allocate (std::size_t n) {
         void* p = std::malloc(n * sizeof(T));
@@ -28,7 +28,7 @@ public:
 using HashTableT = std::unordered_map < uint64_t, std::size_t,
                                         std::hash<uint64_t>,
                                         std::equal_to<>,
-                                        custom_allocator<std::pair<const uint64_t, std::size_t>>
+                                        CustomAllocator<std::pair<const uint64_t, std::size_t>>
                                         >;
 HashTableT ma;
 static uint64_t total_bytes_allocated = 0;
