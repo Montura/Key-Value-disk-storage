@@ -42,8 +42,8 @@ private:
     struct BTreeNode {
         const uint8_t t;
         int used_keys = 0;
-        uint8_t is_leaf = 0;
-        uint8_t is_deleted = 0;
+        bool is_leaf = false;
+        bool is_deleted = false;
         std::vector<K> keys;
         std::vector<V*> values;
         std::vector<BTreeNode*> children;
