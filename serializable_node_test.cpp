@@ -3,6 +3,7 @@
 int main() {
     SerializableNode old_node(10);
     {
+        old_node.used_keys = 6;
         std::ofstream ofs("../output.txt");
         old_node.serialize(ofs);
     }

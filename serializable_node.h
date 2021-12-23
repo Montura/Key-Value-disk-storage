@@ -55,7 +55,13 @@ namespace boost::serialization {
         ar & l.prev;
         ar & l.next;
         ar & l.used_keys;
-        ar & l.keys;
-        ar & l.data;
+        l.keys.resize(l.used_keys);
+        l.data.resize(l.used_keys);
+        for (int i = 0; i < l.used_keys; ++i) {
+            ar & l.keys[i];
+            ar & l.data[i];
+        }
+//        ar & l.keys;
+//        ar & l.data;
     }
 } // namespace boost
