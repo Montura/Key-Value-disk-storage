@@ -19,8 +19,13 @@ set(SOURCE_FILES
         btree_impl.h
         btree_node_impl.h
         mem_util.cpp
-        serializable_node.h
-        serializable_node_test.cpp
+        serialization.h
+        manage_file.h
+        manage_file.cpp
+        data_writer.cpp
+        data_writer.h
+        byte_data.cpp
+        byte_data.h
         )
 include_directories(${Boost_INCLUDE_DIRS})
 

@@ -2,8 +2,8 @@
 
 int main() {
     SerializableNode old_node(8);
-    std::ofstream ofs("../output.txt");
-    std::ifstream ifs("../output.txt");
+//    std::ofstream ofs("../output.txt");
+//    std::ifstream ifs("../output.txt");
     {
         old_node.used_keys = 6;
         old_node.serialize(ofs);

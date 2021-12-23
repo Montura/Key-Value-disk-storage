@@ -71,36 +71,36 @@ int main() {
 //    for (int i = 0; i < 50; ++i) {/*
 //        bTree5.set(i, (char(65 + i))); // char for view in debugger
 //    }*/
-    for (int i = 0; i < 50; i += 2) {
-        bTree5.set(i, char(65 + i)); // char for view in debugger
+    for (int i = 0; i < 2; ++i) {
+        bTree5.set(i, 65 + i); // char for view in debugger
     }
 //
-    for (int i = 1; i < 50; i += 2) {
-        bTree5.set(i, -165);
-    }
+//    for (int i = 1; i < 50; i += 2) {
+//        bTree5.set(i, -165);
+//    }
 //
     int found = 0;
-    for (int i = 0; i < 50; ++i) {
-        bool hasKey = bTree5.exist(i);
-        if (!hasKey) {
-            cout << "Can't find key: " << i << endl;
-        }
-        found += hasKey ? 1 : 0;
-    }
-
-    for (int i = 0; i < 50; ++i) {
-        bool deleted = bTree5.remove(i);
-        if (!deleted) {
-            cout << "Can't delete key: " << i << endl;
-        }
-    }
+//    for (int i = 0; i < 50; ++i) {
+//        bool hasKey = bTree5.exist(i);
+//        if (!hasKey) {
+//            cout << "Can't find key: " << i << endl;
+//        }
+//        found += hasKey ? 1 : 0;
+//    }
+//
+//    for (int i = 0; i < 50; ++i) {
+//        bool deleted = bTree5.remove(i);
+//        if (!deleted) {
+//            cout << "Can't delete key: " << i << endl;
+//        }
+//    }
 
     cout << "Total keys found: " << found << endl;
 
     cout << endl;
     cout << "Tree traversal" << endl;
     cout << "-----------------------------" << endl;
-    bTree5.traverse();
+//    bTree5.traverse();
     cout << "-----------------------------" << endl;
     return 0;
 }
