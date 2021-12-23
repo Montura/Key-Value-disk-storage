@@ -1,16 +1,16 @@
 #include "serializable_node.h"
 
 int main() {
-    SerializableNode old_node(10);
+    SerializableNode old_node(8);
+    std::ofstream ofs("../output.txt");
+    std::ifstream ifs("../output.txt");
     {
         old_node.used_keys = 6;
-        std::ofstream ofs("../output.txt");
         old_node.serialize(ofs);
     }
 
     SerializableNode new_node;
     {
-        std::ifstream ifs("../output.txt");
         new_node.deserialize(ifs);
     }
 
