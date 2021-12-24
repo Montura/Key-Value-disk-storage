@@ -31,7 +31,6 @@ T MappedFile::read_next(std::int64_t f_pos) {
 template <typename T>
 void MappedFile::write(T val, std::int64_t f_pos) {
     static_assert(std::is_arithmetic_v<T>);
-//    assert(f_pos < m_pos);
     m_pos = write_to_dst(val, f_pos * sizeof(T));
 }
 
@@ -48,7 +47,6 @@ std::int64_t  MappedFile::write_to_dst(T val, std::int64_t dst) {
     }
     char* value_begin = reinterpret_cast<char *>(&val);
     int value_size = sizeof(T);
-//        cout << "my m_pos: " << m_pos  << endl;
     std::copy(value_begin, value_begin + value_size, mapped_region_begin + dst);
     return dst + value_size;
 }

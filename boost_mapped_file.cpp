@@ -46,7 +46,7 @@ void check_file_size(const char* path, std::size_t const expected_size) {
 void serialize_class(const char* path);
 void serialize_stl(const char* path);
 
-int main() {
+int main2() {
 
     serialize_class("../serialized_class");
     serialize_stl("../serialized_stl");

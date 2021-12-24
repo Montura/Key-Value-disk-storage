@@ -22,7 +22,6 @@ set(SOURCE_FILES
         btree_node_impl.h
         entry.h
         mem_util.cpp
-        serialization.h
         manage_file.h
         manage_file.cpp
         data_writer.cpp
