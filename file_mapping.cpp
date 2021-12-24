@@ -13,20 +13,24 @@ MappedFile::MappedFile(const std::string &fn, std::int64_t bytes_num) : path(fn)
 
 MappedFile::~MappedFile() {}
 
-std::int32_t MappedFile::readInt(std::int64_t f_pos) {
-    return *(mapped_region_begin + f_pos * sizeof(std::int32_t));
+template <typename T>
+T MappedFile::read(std::int64_t f_pos) {
+    static_assert(std::is_arithmetic_v<T>);
+    char *value_begin = mapped_region_begin + (f_pos) * sizeof(T);
+    return *(reinterpret_cast<T*>(value_begin));
 }
 
-void MappedFile::writeInt(std::int32_t val) {
+template <typename T>
+void MappedFile::write(T val) {
+    static_assert(std::is_arithmetic_v<T>);
     if (2 * m_pos > m_size) {
         resize(m_size);
     }
     char* value_begin = reinterpret_cast<char *>(&val);
-    int value_size = sizeof(std::int32_t);
-    m_pos += value_size;
+    int value_size = sizeof(T);
 //        cout << "my m_pos: " << m_pos  << endl;
     std::copy(value_begin, value_begin + value_size, mapped_region_begin + m_pos);
-//        *(mapped_region_begin + m_pos) = val;
+    m_pos += value_size;
 }
 
 void MappedFile::resize(std::int64_t bytes_num) {
@@ -49,31 +53,38 @@ void MappedFile::remap() {
     mapped_region_begin = reinterpret_cast<char *>(mapped_region.get_address());
 }
 
+//#ifdef UNIT_TESTS
+//#if USE_BOOST_PREBUILT_STATIC_LIBRARY
+//#include <boost/test/unit_test.hpp>
+//#else
+//#include <boost/test/included/unit_test.hpp>
+//#endif
+//
+//#include <boost/test/data/test_case.hpp>
+//#include <boost/range/iterator_range.hpp>
 
-void createFile(const std::string &fn, std::int64_t bytes_num) {
-    std::filebuf fbuf;
-    fbuf.open(fn, std::ios_base::out | std::ios_base::trunc);
 
-    fbuf.pubseekoff(bytes_num, std::ios_base::beg);
-    fbuf.sputc(0);
-    fbuf.close();
+//namespace {
+//    BOOST_AUTO_TEST_CASE(file_mapping_test) {
+int main() {
+//        std::string fn = std::string("../save") + std::strin g(".txt");
+    std::string fmap = std::string("../file_mapping_text") + std::string(".txt");
+
+    MappedFile file(fmap, 32);
+    for (int i = 0; i < 1000000; ++i) {
+        file.write(i);
+    }
+
+        bool success = true;
+        for (int i = 0; i < 1000000; ++i) {
+            int32_t anInt = file.read<int>(i);
+            assert(i == anInt);
+//            success &= b;
+        }
+
+    std::string msg = "File mapping test";
+//        BOOST_REQUIRE_MESSAGE(success, msg);
 }
-
-void writeToFile(const std::string &fn, std::uint64_t pos, std::int32_t val) {
-    bip::file_mapping fm(fn.data(), bip::read_write);
-    bip::mapped_region rg(fm, bip::read_write);
-
-    char *p = reinterpret_cast<char *>(rg.get_address());
-//    cout << "m_pos: " << m_pos * 4 << endl;
-    *(p + pos * 4) = val;       // write value into position
-}
-
-void resizeFile(const std::string &fn) {
-    constexpr auto offset = sizeof(std::uint64_t) * 6 - 1;
-
-    std::filebuf fbuf;
-    fbuf.open(fn, std::ios_base::in | std::ios_base::out);
-    fbuf.pubseekoff(offset, std::ios_base::beg);
-    fbuf.sputc(0);
-    fbuf.close();
-}
+//    }
+//}
+//#endif
