@@ -5,6 +5,7 @@
 #include <boost/fusion/adapted/std_pair.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/interprocess/managed_mapped_file.hpp>
+#include <boost/interprocess/file_mapping.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 namespace m_boost {
