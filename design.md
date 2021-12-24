@@ -22,7 +22,7 @@
 * the same `volume node` can be `mounted` to multiple `storage mount nodes`
 * when several `volume nodes` from one or several `volumes` hit one `storage mount node`:
   * `volume nodes` data is merged
-  * if the `volume node keys` match, then `volume node data` from the highest priority `volume` is taken
+  * if the `volume node arrayPosKey` match, then `volume node data` from the highest priority `volume` is taken
 * the total number of `mount nodes` in the `Storage` can reach ~ `10^5` 
 * `Storage` should work optimally with a variety of data types: `uint32`, `uint64`, `float`, `double`, `string`, `blob`, ...
 

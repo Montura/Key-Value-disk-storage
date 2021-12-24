@@ -1,554 +1,658 @@
 #pragma once
 
+#include "btree_node.h"
 #include "btree.h"
 
-
-template<typename K, typename V, typename Oit>
-BTree<K, V, Oit>::BTreeNode::BTreeNode(int order, bool is_leaf):
-    t(order),
-//    is_leaf(is_leaf),
-    keys(max_key_num(), -1),
-//    values(max_key_num(), nullptr),
-//    children(max_child_num(), nullptr),
-    children_idx(max_child_num(), -1)
-    {
-//        std::cout << "BTreeNode ctors: " << ++ctors << endl;
-    }
-
-
-template<typename K, typename V, typename Oit>
-BTree<K, V, Oit>::BTreeNode::~BTreeNode() {
-//    if (!is_deleted) {
-        for (int i = 0; i < used_keys; ++i) {
-//            delete values[i];
-        }
-        for (int i = 0; i <= used_keys; ++i) {
-//            delete children[i];
-        }
-//    }
-}
-
-//template<typename K, typename V, typename Oit>
-//typename BTree<K, V, Oit>::Node* BTree<K, V, Oit>::BTreeNode::find_node(const K &key) {
-//    int idx = find_key_pos(key);
-//    if (idx < used_keys && keys[idx] == key) {
-//        return this;
-//    }
-//    return is_leaf ? nullptr : children[idx]->find_node(key);
-//}
-
-//template<typename K, typename V, typename Oit>
-//int BTree<K, V, Oit>::BTreeNode::key_idx_in_node(const K &key) const {
-//    for (int i = 0; i < used_keys; ++i) {
-//        if (keys[i] == key)
-//            return i;
-//    }
-//    return used_keys;
-//}
-//
-//template<typename K, typename V, typename Oit>
-//int BTree<K, V, Oit>::BTreeNode::find_key_pos(const K &key) const {
-//    int pos = 0;
-//    while (pos < used_keys && keys[pos] < key)
-//        ++pos;
-//    return pos;
-//}
-
-template <typename K, typename V, typename Oit>
-std::optional<std::pair<K, V>> BTree<K, V, Oit>::BTreeNode::search(BTree* tree, const K& key) {
-    int i = find_key_binary_search(tree, key);
-
-    if (i < used_keys) {
-        auto optional = get_key_value(tree, i);
-        assert(optional.has_value());
-        auto pair = optional.value();
-        if (pair.first == key) {
-            return pair;
-        }
-    }
-
-    if (checkIsLeaf()) {
-        return {};
-    }
-
-    Node* node = getBTreeNodeStore(tree, i);
-    auto optional = node->search(tree, key);
-
-    delete node;
-    return optional;
-}
-
-
-template<typename K, typename V, typename Oit>
-bool BTree<K, V, Oit>::BTreeNode::set(BTree* tree, const K& key , const V &value) {
-    int i = find_key_binary_search(tree, key);
-
-    Node* node;
-    if (i < used_keys) {
-        auto optional = get_key_value(tree, i);
-        assert(optional.has_value());
-        auto [tmp_key, tmp_value] = optional.value();
-        if (tmp_key == key) {
-            tree->writeFlag('0', keys[i]);
-
-            tree->setPosEndFileWrite();
-            int f_pos = tree->getPosFileWrite();
-
-            keys[i] = f_pos;
-
-            tree->write_key_value(f_pos, key, value);
-
-            tree->writeNode(this, pos);
-
-            return true;
-        }
-    }
-    if (checkIsLeaf()) {
-        return false;
-    }
-
-    node = getBTreeNodeStore(tree, i);
-    bool success = node->set(tree, key, value);
-
-    delete node;
-    return success;
-}
-
-template<typename K, typename V, typename Oit>
-void BTree<K, V, Oit>::BTreeNode::insert_non_full(BTree* tree, const K &key, const V &value) {
-    int i = used_keys - 1;
-    K tmp_key;
-    V tmp_value;
-    auto optional = get_key_value(tree, i);
-    assert(optional.has_value());
-    std::tie(tmp_key, tmp_value) = optional.value();
-
-    if (checkIsLeaf()) {
-        while (i >= 0 && tmp_key > key) {
-            keys[i + 1] = keys[i];
-            i--;
-            auto optional = get_key_value(tree, i);
-            assert(optional.has_value());
-            std::tie(tmp_key, tmp_value) = optional.value();
-        }
-
-        tree->setPosEndFileWrite();
-        int pos = tree->getPosFileWrite();
-
-        // write entry
-        tree->write_key_value(pos, key, value);
-
-        keys[i + 1] = pos;
-        ++used_keys;
-
-        // write node
-        tree->writeNode(this, pos);
+template<class K, class V>
+BTreeNodeStore<K, V> ::BTreeNodeStore(const int& t, bool isLeaf) {
+    this->t = t;
+    if (isLeaf) {
+        this->flag = 1;
     } else {
-        int i = find_key_binary_search(tree, key);
+        this->flag = 0;
+    }
+    int size = 2 * t;
+    this->arrayPosKey = new int[size - 1];
+    this->arrayPosChild = new int [size];
+    for (int i = 0; i < size - 1; ++i) {
+        this->arrayPosKey[i] = -1;
+        this->arrayPosChild[i] = -1;
+    }
+    this->arrayPosChild[size - 1] = -1;
+    this->nCurrentEntry = 0;
+}
 
-        Node* node = getBTreeNodeStore(tree, i);
+template<class K, class V>
+BTreeNodeStore<K, V> ::BTreeNodeStore(const int &t) {
+    int size = 2 * t;
+    this->arrayPosKey = new int[size - 1];
+    this->arrayPosChild = new int [size];
+    for (int i = 0; i < size - 1; ++i) {
+        this->arrayPosKey[i] = -1;
+        this->arrayPosChild[i] = -1;
+    }
+    this->arrayPosChild[size - 1] = -1;
+    this->nCurrentEntry = 0;
+}
 
-        if (node->is_full()) {
-            split_child(tree, i, node);
-            auto optional = get_key_value(tree, i);
-            assert(optional.has_value());
-            std::tie(tmp_key, tmp_value) = optional.value();
-            if (tmp_key < key) {
+template<class K, class V>
+BTreeNodeStore<K, V> ::~BTreeNodeStore() {
+    if (this->arrayPosKey != NULL) {
+        delete[] this->arrayPosKey;
+        this->arrayPosKey = NULL;
+    }
+
+    if (this->arrayPosChild != NULL) {
+        delete[] this->arrayPosChild;
+        this->arrayPosChild = NULL;
+    }
+
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::addPosEntry(const int &i, const int &pos) {
+    this->arrayPosKey[i] = pos;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::addPosChild(const int &i, const int &pos) {
+    this->arrayPosChild[i] = pos;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::increaseNCurrentEntry() {
+    this->nCurrentEntry++;
+}
+
+template<class K, class V>
+int* BTreeNodeStore<K, V> ::getArrayPosKey() const {
+    return this->arrayPosKey;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::setArrayPosKey(int* arrPosKey) {
+    memcpy(this->arrayPosKey, arrPosKey, (2 * this->t - 1) * sizeof (int));
+}
+
+template<class K, class V>
+int* BTreeNodeStore<K, V> ::getArrayPosChild() const {
+    return this->arrayPosChild;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::setArrayPosChild(int* arrPosChild) {
+    memcpy(this->arrayPosChild, arrPosChild, (2 * this->t) * sizeof (int));
+}
+
+template<class K, class V>
+int BTreeNodeStore<K, V> ::getPos() const {
+    return this->pos;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::setPost(const int& pos) {
+    this->pos = pos;
+}
+
+template<class K, class V>
+char BTreeNodeStore<K, V>::getFlag() const {
+    return this->flag;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::setFlag(char flag) {
+    this->flag = flag;
+}
+
+template<class K, class V>
+int BTreeNodeStore<K, V> ::getNCurrentEntry() const {
+    return this->nCurrentEntry;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::setNCurrentEntry(const int& nCurrentEntry) {
+    this->nCurrentEntry = nCurrentEntry;
+}
+
+template<class K, class V>
+bool BTreeNodeStore<K, V>::checkIsLeaf() const {
+    return (this->flag & 1) == 1;
+}
+
+template<class K, class V>
+int BTreeNodeStore<K, V> ::getPosChild(const int& i) {
+    return this->arrayPosChild[i];
+}
+
+template<class K, class V>
+int BTreeNodeStore<K, V> ::getPosEntry(const int& i) const {
+    return this->arrayPosKey[i];
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::setMinimumDegre(const int& t) {
+    this->t = t;
+}
+
+template<class K, class V>
+int BTreeNodeStore<K, V> ::getMinimumDegre() const {
+    return this->t;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::splitChild(BTreeStore<K, V>* bTree, const int &index, BTreeNodeStore<K, V>* &node) {
+    BTreeNodeStore<K, V>* newNode = new BTreeNodeStore<K, V>(node->t, node->checkIsLeaf());
+    newNode->nCurrentEntry = this->t - 1;
+    for (int i = 0; i < this->t - 1; i++) {
+        newNode->arrayPosKey[i] = node->arrayPosKey[i + t];
+        node->arrayPosKey[i + t] = -1;
+    }
+    if (!node->checkIsLeaf()) {
+        for (int i = 0; i < this->t; i++) {
+            newNode->arrayPosChild[i] = node->arrayPosChild[i + t];
+            node->arrayPosChild[i + t] = -1;
+        }
+    }
+
+    bTree->setPosEndFileWrite();
+    newNode->setPost(bTree->getPosFileWrite());
+    //write new node
+    bTree->writeNode(newNode, newNode->getPos());
+
+    node->nCurrentEntry = this->t - 1;
+
+    //write node
+    bTree->writeNode(node, node->getPos());
+
+    for (int i = this->nCurrentEntry; i >= index + 1; --i) {
+        this->arrayPosChild[i + 1] = this->arrayPosChild[i];
+    }
+    this->arrayPosChild[index + 1] = newNode->getPos();
+
+    for (int i = this->nCurrentEntry - 1; i >= index; --i) {
+        this->arrayPosKey[i + 1] = this->arrayPosKey[i];
+    }
+
+    this->arrayPosKey[index] = node->arrayPosKey[this->t - 1];
+    this->nCurrentEntry = this->nCurrentEntry + 1;
+
+    //write node
+    bTree->writeNode(this, this->pos);
+    delete newNode;
+}
+
+template<class K, class V>
+Entry<K, V>* BTreeNodeStore<K, V> ::getEntry(BTreeStore<K, V>* bTree, const int& i) {
+    if (i < 0 || i > nCurrentEntry - 1) {
+        return NULL;
+    }
+
+    int pos = this->arrayPosKey[i];
+    Entry<K, V>* entry = new Entry<K, V>();
+
+    //read entry
+    bTree->readEntry(entry, pos);
+    return entry;
+}
+
+template<class K, class V>
+BTreeNodeStore<K, V>* BTreeNodeStore<K, V> ::getBTreeNodeStore(BTreeStore<K, V>* bTree, const int& i) {
+    if (i < 0 || i > this->nCurrentEntry) {
+        return NULL;
+    }
+
+    int pos = this->arrayPosChild[i];
+    BTreeNodeStore<K, V>* node = new BTreeNodeStore(this->t);
+
+    //read node
+    bTree->readNode(node, pos);
+    return node;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::insertNotFull(BTreeStore<K, V>* bTree, const Entry<K, V>* entry) {
+    int i = this->nCurrentEntry - 1;
+    Entry<K, V>* entryTmp;
+    entryTmp = this->getEntry(bTree, i);
+    int pos;
+
+    if (this->checkIsLeaf()) {
+        while (i >= 0 && entryTmp != NULL && entryTmp->getKey() > entry->getKey()) {
+            this->arrayPosKey[i + 1] = this->arrayPosKey[i];
+            i--;
+            delete entryTmp;
+            entryTmp = this->getEntry(bTree, i);
+        }
+
+        bTree->setPosEndFileWrite();
+        pos = bTree->getPosFileWrite();
+
+        //write entry
+        bTree->writeEntry(entry, pos);
+
+        this->arrayPosKey[i + 1] = pos;
+        this->nCurrentEntry = this->nCurrentEntry + 1;
+
+        //write node
+        bTree->writeNode(this, this->pos);
+    } else {
+        //nho dung binary search
+        //        while (i >= 0 && entryTmp != NULL && this->myCompare->compareKey(entryTmp->getKey(),
+        //                entry->getKey()) > 0) {
+        //            i--;
+        //            delete entryTmp;
+        //            entryTmp = this->getEntry(bTree, i);
+        //        }
+
+        i = this->findKeyBinarySearch(bTree, entry->getKey());
+
+        BTreeNodeStore<K, V>* node = this->getBTreeNodeStore(bTree, i);
+
+        if (node->nCurrentEntry == 2 * this->t - 1) {
+            this->splitChild(bTree, i, node);
+
+            entryTmp = this->getEntry(bTree, i);
+
+            if (entryTmp->getKey() < entry->getKey()) {
                 i++;
             }
+            delete entryTmp;
 
             delete node;
         }
 
-        node = getBTreeNodeStore(tree, i);
-        node->insert_non_full(tree, key, value);
+        node = this->getBTreeNodeStore(bTree, i);
+        node->insertNotFull(bTree, entry);
 
         delete node;
     }
 }
 
-template<typename K, typename V, typename Oit>
-void BTree<K, V, Oit>::BTreeNode::split_child(BTree* tree, const int &idx, Node *node) {
-    // Create a new node to store (t-1) keys of divided node
-    Node *new_node = new Node(node->t, checkIsLeaf());
-    new_node->used_keys = t - 1;
-
-    // Copy the last (t-1) keys of divided node to new_node
-    for (int i = 0; i < t - 1; ++i) {
-        new_node->keys[i] = node->keys[i + t];
-        node->keys[i + t] = -1;
-    }
-    // Copy the last (t-1) children of divided node to new_node
-    if (!checkIsLeaf()) {
-        for (int i = 0; i < t; ++i) {
-            new_node->children_idx[i] = node->children_idx[i + t];
-            node->children_idx[i] = -1;
-        }
-    }
-
-    tree->setPosEndFileWrite();
-//    new_node->pos = tree->getPosFileWrite();
-    //write new node
-    tree->writeNode(new_node, new_node->pos);
-
-    // Reduce the number of keys in the divided node
-    node->used_keys = t - 1;
-
-    //write node
-    tree->writeNode(node, node->pos);
-
-    // Shift children, keys and values to right
-    for (int i = used_keys + 1; i > idx + 1; --i) {
-        children_idx[i] = children_idx[i - 1];
-    }
-    children_idx[idx + 1] = new_node->pos;
-
-    for (int i = used_keys; i > idx; --i) {
-        keys[i] = keys[i - 1];
-//        values[i] = values[i - 1];
-    }
-    // set the key-divider
-    keys[idx] = node->keys[t - 1];
-//    values[idx] = node->values[t - 1];
-    ++used_keys;
-
-    //write node
-    tree->writeNode(this, pos);
-    delete new_node;
-}
-
-template<typename K, typename V, typename Oit>
-bool BTree<K, V, Oit>::BTreeNode::remove(BTree* tree, const K &key) {
-    int idx = find_key_binary_search(tree, key);
-    bool success;
-    K tmp_key;
-    K tmp_value;
-
-    auto optional = get_key_value(tree, idx);
-    assert(optional.has_value());
-    std::tie(tmp_key, tmp_value) = optional.value();
-
-
-    if (idx < used_keys && (tmp_key == key)) {
-        success = checkIsLeaf() ? remove_from_leaf(tree, idx) : remove_from_non_leaf(tree, idx);
-        //write node;
-        tree->writeNode(this, pos);
-    } else {
-        if (checkIsLeaf()) {
-            return false;
-        }
-        Node* node = getBTreeNodeStore(tree, idx);
-
-        // If the child where the key is supposed to exist has less that t keys, we fill that child
-        if (node->used_keys < t) {
-            fill_or_merge_node(tree, idx);
-            node = getBTreeNodeStore(tree, idx);
-        }
-
-        // If the last child has been merged, it must have merged with the previous child and
-        //      so we recurse on the (pos-1)-th child.
-        // Else, we recurse on the (pos)-th child which now has at least t keys
-        if (idx > used_keys) {
-            Node* nodePrev = getBTreeNodeStore(tree, idx - 1);
-            success = nodePrev->remove(tree, key);
-
-            // write node
-            tree->writeNode(nodePrev, nodePrev->pos);
-            delete nodePrev;
-        } else {
-            // write node
-            success = node->remove(tree, key);
-            tree->writeNode(node, node->pos);
-        }
-
-        delete node;
-    }
-    return success;
-}
-
-template<typename K, typename V, typename Oit>
-bool BTree<K, V, Oit>::BTreeNode::remove_from_leaf(BTree* tree, const int idx) {
-    tree->writeFlag('0', keys[idx]);
-
-    // shift to the left by 1 all the keys after the pos
-    for (int i = idx + 1; i < used_keys; ++i) {
-        keys[i - 1] = keys[i];
-    }
-    --used_keys;
-    return true;
-}
-
-template<typename K, typename V, typename Oit>
-bool BTree<K, V, Oit>::BTreeNode::remove_from_non_leaf(BTree* tree, const int idx) {
-    auto node = getBTreeNodeStore(tree, idx);
-    auto nodeNext = getBTreeNodeStore(tree, idx + 1);
-
-    bool success = false;
-    // 1. If the child[idx] has >= T keys, find the PREVIOUS in the subtree rooted at child[idx].
-    // 2. Replace keys[idx], values[idx] by the PREVIOUS[key|value].
-    // 3. Recursively delete PREVIOUS in child[idx].
-    if (node->used_keys >= t) {
-        int pos = get_previous_key_value(tree, idx);
-        keys[idx] = pos;
-
-        auto [key, value] = tree->read_key_value(pos);
-        success = node->remove(tree, key);
-    }
-    // If the child[idx] has <= T keys, check the child[idx + 1].
-    // 1. If child[idx + 1] has >= T keys, find the NEXT in the subtree rooted at child[idx + 1].
-    // 2. Replace keys[idx], values[idx] by the NEXT[key|value].
-    // 3. Recursively delete NEXT in child[idx + 1].
-    else if (nodeNext->used_keys >= t) {
-        int pos = get_next_key_value(tree, idx);
-        keys[idx] = pos;
-
-        auto [key, value] = tree->read_key_value(pos);
-        success = nodeNext->remove(tree, key);
-    // 1. Now child[idx] and child[idx + 1] has < T keys.
-    // 2. Merge key and child[idx + 1] into child[idx].
-    // 3. Now child[idx] has (2 * t - 1) keys
-    // 4. Recursively delete KEY from child[idx]
-    } else {
-        merge_node(tree, idx);
-        auto [key, value] = get_key_value(tree, idx);
-
-        delete node;
-        node = getBTreeNodeStore(tree, idx);
-        success = node->remove(tree, key);
-        node = nullptr;
-    }
-    delete node;
-    delete nodeNext;
-
-    return success;
-}
-
-template<typename K, typename V, typename Oit>
-int BTree<K, V, Oit>::BTreeNode::get_previous_key_value(BTree* tree, const int idx) const {
-    Node* curr = new Node(t, false);
-    tree->readNode(curr, children_idx[idx]);
-    // Keep moving to the right most node until CURR becomes a leaf
-    while (!curr->is_leaf) {
-        tree->readNode(curr, curr->children_idx[curr->used_keys]);
-    }
-    int last_key_pos = curr->keys[curr->used_keys - 1];
-    delete curr;
-    return last_key_pos;
-}
-
-template<typename K, typename V, typename Oit>
-int BTree<K, V, Oit>::BTreeNode::get_next_key_value(BTree* tree, const int idx) const {
-    Node* curr = new Node(t, false);
-    tree->readNode(curr, children_idx[idx + 1]);
-    // Keep moving the left most node until CURR becomes a leaf
-    while (!curr->is_leaf) {
-        tree->readNode(curr, curr->children_idx[0]);
-    }
-    int last_key_pos = curr->keys[0];
-    delete curr;
-    return last_key_pos;
-}
-
-template<typename K, typename V, typename Oit>
-void BTree<K, V, Oit>::BTreeNode::merge_node(BTree* tree, const int idx) {
-    Node* curr = getBTreeNodeStore(tree, idx);
-    Node* next = getBTreeNodeStore(tree, idx + 1);
-
-    curr->keys[t - 1] = keys[idx];
-
-    // Copy all from child[idx + 1] to child[idx]
-    for (int i = 0; i < next->used_keys; ++i) {
-        curr->keys[i + t] = next->keys[i];
-    }
-
-    // Copy the children from child[idx + 1] to child[idx]
-    if (!curr->is_leaf) {
-        for (int i = 0; i <= next->used_keys; ++i) {
-            curr->children_idx[i + t] = next->children_idx[i];
-        }
-    }
-    curr->used_keys += next->used_keys + 1;
-
-    //write node
-    tree->writeNode(curr, children_idx[idx]);
-
-    next->flag = next->flag | (1 << 1);
-
-    //write node
-    tree->writeNode(next, children_idx[idx + 1]);
-
-    for (int i = idx + 1; i < used_keys; ++i) {
-        keys[i - 1] = keys[i];
-    }
-    for (int i = idx + 1; i < used_keys; ++i) {
-        children_idx[i] = children_idx[i + 1];
-    }
-
-    --used_keys;
-    tree->writeNode(this, this->pos);
-
-    delete curr;
-    delete next;
-}
-
-template<typename K, typename V, typename Oit>
-void BTree<K, V, Oit>::BTreeNode::fill_or_merge_node(BTree* tree, const int idx) {
-    Node* prev = getBTreeNodeStore(tree, idx - 1);
-    Node* next = getBTreeNodeStore(tree, idx + 1);
-
-    // If the left child has >= (T - 1) keys, borrow a key from it
-    if (idx != 0 && prev->used_keys >= t) {
-        borrow_from_node_prev(tree, idx);
-
-    // If the right child has >= (T - 1) keys, borrow a key from it
-    } else if (idx != used_keys && next->used_keys >= t) {
-        borrow_from_node_next(tree, idx);
-
-    // Merge child[idx] with its sibling
-    // If child[idx] is the last child, merge it with its previous sibling
-    // Otherwise merge it with its next sibling
-    } else {
-        int new_idx = (idx != used_keys) ? idx : idx - 1;
-        merge_node(tree, new_idx);
-    }
-    delete prev;
-    delete next;
-}
-
-template<typename K, typename V, typename Oit>
-void BTree<K, V, Oit>::BTreeNode::borrow_from_node_prev(BTree* tree, const int idx) {
-    Node* prev = getBTreeNodeStore(tree, idx - 1);
-    Node* curr = getBTreeNodeStore(tree, idx);
-
-    for (int i = curr->used_keys - 1; i >= 0; --i) {
-        curr->keys[i + 1] = curr->keys[i];
-    }
-    if (!curr->is_leaf) {
-        for (int i = curr->used_keys; i >= 0; --i) {
-            curr->children_idx[i + 1] = curr->children_idx[i];
-        }
-    }
-
-    curr->keys[0] = keys[idx - 1];
-
-    if (!curr->is_leaf) {
-        curr->children_idx[0] = prev->children_idx[prev->used_keys];
-    }
-    keys[pos - 1] = prev->keys[prev->used_keys - 1];
-
-    curr->used_keys++;
-    prev->used_keys--;
-
-    tree->writeNode(curr, curr->pos);
-    tree->writeNode(prev, prev->pos);
-    tree->writeNode(this, this->pos);
-
-    delete prev;
-    delete curr;
-}
-
-template<typename K, typename V, typename Oit>
-void BTree<K, V, Oit>::BTreeNode::borrow_from_node_next(BTree* tree, const int idx) {
-    Node* curr = getBTreeNodeStore(tree, idx);
-    Node* next = getBTreeNodeStore(tree, idx + 1);
-
-    curr->keys[curr->used_keys] = keys[idx];
-
-    if (!curr->is_leaf) {
-        curr->children_idx[curr->used_keys + 1] = next->children_idx[0];
-    }
-
-    keys[idx] = next->keys[0];
-    for (int i = 1; i < next->used_keys; ++i) {
-        next->keys[i - 1] = next->keys[i];
-    }
-    if (!next->is_leaf) {
-        for (int i = 1; i <= next->used_keys; ++i) {
-            next->children_idx[i - 1] = next->children_idx[i];
-        }
-    }
-    curr->used_keys++;
-    next->used_keys--;
-
-    tree->writeNode(curr, curr->pos);
-    tree->writeNode(next, next->pos);
-    tree->writeNode(this, this->pos);
-
-    delete next;
-    delete curr;
-}
-
-template<typename K, typename V, typename Oit>
-void BTree<K, V, Oit>::BTreeNode::traverse(BTree* tree) {
+template<class K, class V>
+void BTreeNodeStore<K, V> ::traverse(BTreeStore<K, V>* bTree) {
     int i;
-    K key;
-    V value;
-    auto traverse_child = [&]() {
-        if (!checkIsLeaf()) {
-            Node *node = getBTreeNodeStore(tree, i);
+    int pos;
+    BTreeNodeStore<K, V>* node;
+    Entry<K, V>* entry;
+    for (i = 0; i < this->nCurrentEntry; ++i) {
+        if (!this->checkIsLeaf()) {
+            node = this->getBTreeNodeStore(bTree, i);
             cout << endl;
-            node->traverse(tree);
+            node->traverse(bTree);
             cout << endl;
             delete node;
         }
-    };
-
-    for (i = 0; i < used_keys; ++i) {
-        traverse_child();
-        std::tie(key, value) = get_key_value(tree, i);
-        cout << "[key]: " << key << " - [value]: " << value << " ";
+        entry = this->getEntry(bTree, i);
+        cout << "[key]: " << entry->getKey() << " - [value]: " << entry->getValue() << " ";
+        delete entry;
     }
-    traverse_child();
+    if (!this->checkIsLeaf()) {
+        node = this->getBTreeNodeStore(bTree, i);
+        cout << endl;
+        node->traverse(bTree);
+        cout << endl;
+        delete node;
+    }
 }
 
-
-template <typename K, typename V, typename Oit>
-std::optional<std::pair<K,V>> BTree<K, V, Oit>::BTreeNode::get_key_value(BTree* bTree, const int idx) {
-    if (idx < 0 || idx > used_keys - 1) {
-        return {};
-    }
-
-    int pos = keys[idx];
-    return bTree->read_key_value(pos);
-}
-
-template <typename K, typename V, typename Oit>
-int BTree<K, V, Oit>::BTreeNode::find_key_binary_search(BTree *tree, const K& key) {
+template<class K, class V>
+int BTreeNodeStore<K, V> ::findKeyBinarySearch(BTreeStore<K, V>*bTree, const K& key) {
     int low = 0;
-    int hight = used_keys - 1;
+    int hight = this->nCurrentEntry - 1;
     int middle = (low + hight) / 2;
-
-    K tmp_key;
-    V tmp_value;
-    auto optional = get_key_value(tree, middle);
-    assert(optional.has_value());
-    std::tie(tmp_key, tmp_value) = optional.value();
+    Entry<K, V>* entry = this->getEntry(bTree, middle);
     while (low <= hight) {
-        if (tmp_key == key) {
+        if (entry->getKey() == key) {
+            delete entry;
             return middle;
-        } else if (tmp_key > key) {
+        } else if (entry->getKey() > key) {
             hight = middle - 1;
         } else {
             low = middle + 1;
         }
+        delete entry;
         middle = (low + hight) / 2;
-        auto optional = get_key_value(tree, middle);
-        assert(optional.has_value());
-        std::tie(tmp_key, tmp_value) = optional.value();
+        entry = this->getEntry(bTree, middle);
     }
+    delete entry;
     return hight + 1;
 }
 
-template <typename K, typename V, typename Oit>
-typename BTree<K, V, Oit>::BTreeNode* BTree<K, V, Oit>::BTreeNode::getBTreeNodeStore(BTree* bTree, const int& i) {
-    if (i < 0 || i > used_keys) {
-        return nullptr;
+//su dung ham search nho delete con tro tra ve
+
+template<class K, class V>
+Entry<K, V>* BTreeNodeStore<K, V>::search(BTreeStore<K, V>* bTree, const K& key) {
+    int i = 0;
+    i = this->findKeyBinarySearch(bTree, key);
+    Entry<K, V>* entry = NULL;
+    BTreeNodeStore<K, V>* node;
+
+    if (i < this->nCurrentEntry) {
+        entry = const_cast<Entry<K, V>*> (this->getEntry(bTree, i));
+        if (entry->getKey() == key) {
+            return entry;
+        }
     }
 
-    int pos = children_idx[i];
-    Node* node = new Node(t, false);
+    if (this->checkIsLeaf()) {
+        delete entry;
+        return NULL;
+    }
 
-    // read node
-    bTree->readNode(node, pos);
-    return node;
+    if (entry != NULL) {
+        delete entry;
+        entry = NULL;
+    }
+
+    node = this->getBTreeNodeStore(bTree, i);
+
+    entry = node->search(bTree, key);
+
+    delete node;
+    return entry;
+}
+
+template<class K, class V>
+bool BTreeNodeStore<K, V> ::set(BTreeStore<K, V>* bTree, const K& key, const V& value) {
+    int i = 0;
+    int pos;
+    i = this->findKeyBinarySearch(bTree, key);
+    Entry<K, V>* entry = NULL;
+    BTreeNodeStore<K, V>* node;
+    bool res = false;
+    if (i < this->nCurrentEntry) {
+        entry = this->getEntry(bTree, i);
+        if (entry->getKey() == key) {
+            bTree->writeFlag('0', this->arrayPosKey[i]);
+
+            bTree->setPosEndFileWrite();
+            pos = bTree->getPosFileWrite();
+
+            this->arrayPosKey[i] = pos;
+            entry->setValue(value);
+
+            bTree->writeEntry(entry, pos);
+
+            bTree->writeNode(this, this->pos);
+
+            delete entry;
+            return true;
+        }
+    }
+    if (this->checkIsLeaf()) {
+        delete entry;
+        return false;
+    }
+    if (entry != NULL) {
+        delete entry;
+        entry = NULL;
+    }
+
+    node = this->getBTreeNodeStore(bTree, i);
+    res = node->set(bTree, key, value);
+
+    delete node;
+    return res;
+}
+
+template<class K, class V>
+bool BTreeNodeStore<K, V>::remove(BTreeStore<K, V>* bTree, const K& key) {
+    int index = this->findKeyBinarySearch(bTree, key);
+    bool res;
+    Entry<K, V>* entry = this->getEntry(bTree, index);
+    if (index < this->nCurrentEntry && entry->getKey() == key) {
+        if (this->checkIsLeaf()) {
+            res = this->removeFromLeaf(bTree, index);
+        } else {
+            res = this->removeFromNonLeaf(bTree, index);
+        }
+        //write node;
+        bTree->writeNode(this, this->pos);
+    } else {
+        if (this->checkIsLeaf()) {
+            delete entry;
+            return false;
+        }
+
+        bool flag = (index == this->nCurrentEntry) ? true : false;
+        BTreeNodeStore<K, V>* node = this->getBTreeNodeStore(bTree, index); // nho delete node
+
+        if (node->nCurrentEntry < this->t) {
+            this->fillNode(bTree, index);
+            node = this->getBTreeNodeStore(bTree, index);
+        }
+        if (flag && index > this->nCurrentEntry) {
+            BTreeNodeStore<K, V>* nodePrev = this->getBTreeNodeStore(bTree, index - 1);
+            nodePrev->remove(bTree, key);
+
+            //write node
+            bTree->writeNode(nodePrev, nodePrev->pos);
+            delete nodePrev;
+        } else {
+            res = node->remove(bTree, key);
+            bTree->writeNode(node, node->pos);
+        }
+
+        //write node
+
+        delete node;
+    }
+
+    delete entry;
+
+    return res;
+}
+
+template<class K, class V>
+bool BTreeNodeStore<K, V> ::removeFromLeaf(BTreeStore<K, V>* bTree, const int& index) {
+    bTree->writeFlag('0', this->arrayPosKey[index]); //gan flag danh dau remove
+
+    for (int i = index + 1; i < this->nCurrentEntry; ++i) {
+        this->arrayPosKey[i - 1] = this->arrayPosKey[i];
+    }
+    this->nCurrentEntry--;
+
+    return true;
+}
+
+template<class K, class V>
+bool BTreeNodeStore<K, V> ::removeFromNonLeaf(BTreeStore<K, V>* bTree, const int& index) {
+    Entry<K, V>* entry = this->getEntry(bTree, index);
+    BTreeNodeStore<K, V>* node = this->getBTreeNodeStore(bTree, index); //nho delete node
+    BTreeNodeStore<K, V>* nodeNext = this->getBTreeNodeStore(bTree, index + 1); // nho delete
+
+    int pos;
+    bool res;
+
+    if (node->nCurrentEntry >= t) {
+        pos = this->getPosEntryPred(bTree, index);
+        this->arrayPosKey[index] = pos;
+
+        entry = new Entry<K, V> ();
+        bTree->readEntry(entry, pos);
+
+        K key = entry->getKey();
+        delete entry;
+
+        res = node->remove(bTree, key);
+    } else if (nodeNext->nCurrentEntry >= t) {
+        pos = this->getPosEntrySucc(bTree, index);
+        this->arrayPosKey[index] = pos;
+
+        entry = new Entry<K, V>();
+        bTree->readEntry(entry, pos);
+
+        K key = entry->getKey();
+        delete entry;
+
+        res = nodeNext->remove(bTree, key);
+    } else {
+        this->mergeNode(bTree, index);
+        K key = entry->getKey();
+        delete entry;
+
+        node = this->getBTreeNodeStore(bTree, index);
+        res = node->remove(bTree, key);
+    }
+
+    bTree->writeNode(node, node->pos);
+
+    delete node;
+    delete nodeNext;
+
+    return res;
+}
+
+template<class K, class V>
+int BTreeNodeStore<K, V>::getPosEntryPred(BTreeStore<K, V>* bTree, const int& index) {
+    //    BTreeNodeStore<K, V>* nodeCurrent = this->getBTreeNodeStore(bTree, index);
+    BTreeNodeStore<K, V>* nodeCurrent = new BTreeNodeStore<K, V>(this->t);
+    bTree->readNode(nodeCurrent, this->arrayPosChild[index]);
+    int tmp;
+    while (!nodeCurrent->checkIsLeaf()) {
+        bTree->readNode(nodeCurrent, nodeCurrent->arrayPosChild[nodeCurrent->nCurrentEntry]);
+    }
+
+    int pos = nodeCurrent->arrayPosKey[nodeCurrent->nCurrentEntry - 1];
+    delete nodeCurrent;
+
+    return pos;
+}
+
+template<class K, class V>
+int BTreeNodeStore<K, V> ::getPosEntrySucc(BTreeStore<K, V>* bTree, const int& index) {
+    //    BTreeNodeStore<K, V>* nodeCurrent = this->getBTreeNodeStore(bTree, index + 1);
+    BTreeNodeStore<K, V>* nodeCurrent = new BTreeNodeStore<K, V>(this->t);
+    bTree->readNode(nodeCurrent, this->arrayPosChild[index + 1]);
+    while (!nodeCurrent->checkIsLeaf()) {
+        bTree->readNode(nodeCurrent, nodeCurrent->arrayPosChild[0]);
+    }
+
+    int pos = nodeCurrent->arrayPosKey[0];
+    delete nodeCurrent;
+
+    return pos;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::mergeNode(BTreeStore<K, V>* bTree, const int& index) {
+    BTreeNodeStore<K, V>* child = this->getBTreeNodeStore(bTree, index); //nho delete
+    BTreeNodeStore<K, V>* childNext = this->getBTreeNodeStore(bTree, index + 1); //nho delete
+
+    child->arrayPosKey[this->t - 1] = this->arrayPosKey[index];
+
+    for (int i = 0; i < childNext->nCurrentEntry; ++i) {
+        child->arrayPosKey[i + this->t] = childNext->arrayPosKey[i];
+    }
+    if (!child->checkIsLeaf()) {
+        for (int i = 0; i <= childNext->nCurrentEntry; ++i) {
+            child->arrayPosChild[i + this->t] = childNext->arrayPosChild[i];
+        }
+    }
+
+    child->nCurrentEntry = child->nCurrentEntry + childNext->nCurrentEntry + 1;
+
+    //write node
+    bTree->writeNode(child, this->arrayPosChild[index]);
+
+    childNext->flag = childNext->flag | (1 << 1); //bat co da xoa node nay
+    //write node
+    bTree->writeNode(childNext, this->arrayPosChild[index + 1]);
+
+    for (int i = index + 1; i < this->nCurrentEntry; ++i) {
+        this->arrayPosKey[i - 1] = this->arrayPosKey[i];
+    }
+    for (int i = index + 1; i < this->nCurrentEntry; ++i) {
+
+        this->arrayPosChild[i] = this->arrayPosChild[i + 1];
+    }
+
+    this->nCurrentEntry--;
+    bTree->writeNode(this, this->pos);
+
+    delete child;
+    delete childNext;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::fillNode(BTreeStore<K, V>* bTree, const int& index) {
+    BTreeNodeStore<K, V>* childPrev = this->getBTreeNodeStore(bTree, index - 1); // nho delete
+    BTreeNodeStore<K, V>* childNext = this->getBTreeNodeStore(bTree, index + 1); // nho delete
+
+    if (index != 0 && childPrev->nCurrentEntry >= t) {
+        this->borrowFromNodePrev(bTree, index);
+    } else if (index != this->nCurrentEntry && childNext->nCurrentEntry >= t) {
+        this->borrowFromNodeNext(bTree, index);
+    } else {
+        if (index != this->nCurrentEntry) {
+            this->mergeNode(bTree, index);
+        } else {
+
+            this->mergeNode(bTree, index - 1);
+        }
+    }
+
+    delete childPrev;
+    delete childNext;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::borrowFromNodePrev(BTreeStore<K, V>* bTree, const int& index) {
+    BTreeNodeStore<K, V>* childPrev = this->getBTreeNodeStore(bTree, index - 1); // nho delete
+    BTreeNodeStore<K, V>* child = this->getBTreeNodeStore(bTree, index); // nho delete
+    for (int i = child->nCurrentEntry - 1; i >= 0; --i) {
+        child->arrayPosKey[i + 1] = child->arrayPosKey[i];
+    }
+    if (!child->checkIsLeaf()) {
+        for (int i = child->nCurrentEntry; i >= 0; --i) {
+            child->arrayPosChild[i + 1] = child->arrayPosChild[i];
+        }
+    }
+
+    child->arrayPosKey[0] = this->arrayPosKey[index - 1];
+    if (!child->checkIsLeaf()) {
+
+        child->arrayPosChild[0] = childPrev->arrayPosChild[childPrev->nCurrentEntry];
+    }
+    this->arrayPosKey[index - 1] = childPrev->arrayPosKey[childPrev->nCurrentEntry - 1];
+    child->nCurrentEntry++;
+    childPrev->nCurrentEntry--;
+
+    bTree->writeNode(child, child->pos);
+    bTree->writeNode(childPrev, childPrev->pos);
+    bTree->writeNode(this, this->pos);
+
+    delete childPrev;
+    delete child;
+}
+
+template<class K, class V>
+void BTreeNodeStore<K, V> ::borrowFromNodeNext(BTreeStore<K, V>* bTree, const int& index) {
+    BTreeNodeStore<K, V>* childNext = this->getBTreeNodeStore(bTree, index + 1); // nho delete
+    BTreeNodeStore<K, V>* child = this->getBTreeNodeStore(bTree, index); // nho delete
+    child->arrayPosKey[child->nCurrentEntry] = this->arrayPosKey[index];
+
+    if (!child->checkIsLeaf()) {
+        child->arrayPosChild[child->nCurrentEntry + 1] = childNext->arrayPosChild[0];
+    }
+
+    this->arrayPosKey[index] = childNext->arrayPosKey[0];
+    for (int i = 1; i < childNext->nCurrentEntry; ++i) {
+        childNext->arrayPosKey[i - 1] = childNext->arrayPosKey[i];
+    }
+    if (!childNext->checkIsLeaf()) {
+        for (int i = 1; i <= childNext->nCurrentEntry; ++i) {
+            childNext->arrayPosChild[i - 1] = childNext->arrayPosChild[i];
+        }
+    }
+    child->nCurrentEntry++;
+    childNext->nCurrentEntry--;
+
+    bTree->writeNode(child, child->pos);
+    bTree->writeNode(childNext, childNext->pos);
+    bTree->writeNode(this, this->pos);
+
+    delete childNext;
+    delete child;
+
 }

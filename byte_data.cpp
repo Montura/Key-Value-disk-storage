@@ -66,12 +66,10 @@ BytesDataOutputStore::~BytesDataOutputStore() {
 }
 
 void BytesDataOutputStore::writeByte(uint8_t b) {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
     writeBytes(&b, 0, 1);
 }
 
 void BytesDataOutputStore::writeBytes(const uint8_t* b, size_t offset, size_t length) {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
     int remain = length;
     int minByteWrite;
     int remainBuffer;
