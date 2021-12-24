@@ -16,8 +16,11 @@ set(SOURCE_FILES
 #        boost_mapped_file.cpp
 #        serialization.cpp
         btree.cpp
+        btree.h
         btree_impl.h
+        btree_node.h
         btree_node_impl.h
+        entry.h
         mem_util.cpp
         serialization.h
         manage_file.h

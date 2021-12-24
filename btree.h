@@ -24,7 +24,7 @@ struct IKeyValueStorage {
 /** Tree */
 template <typename K, typename V>
 class BTreeStore final {
-    struct BTreeNode;
+//    struct BTreeNode;
     const int MAXLEN = 1024;
     const std::string PATH;
 
@@ -37,7 +37,7 @@ class BTreeStore final {
     DataInput* readDisk;
 
 public:
-    using Node = BTreeNode;
+//    using Node = BTreeNode;
 
     explicit BTreeStore(const std::string& path, int order);
     ~BTreeStore();
@@ -46,33 +46,26 @@ public:
     void set(const K &key, const V& value);
     void traverse();
 
-    void insert(const Entry<K, V>* entry);
+    void insert(const Entry<K, V>& entry);
 //    Oit get(const K& key);
     bool remove(const K& key);
 
 //private:
 
-    void writeEntry(const Entry<K, V>* entry, const int& pos);
-    void readEntry(Entry<K, V>* entry, const int& pos);
+    void writeEntry(const Entry<K, V>& entry, const int pos);
+    void readEntry(Entry<K, V>& entry, const int pos);
 
-    void writeFlag(char flag, const int &pos);
+    void writeFlag(char flag, const int pos);
 
     void readHeader(int& t, int& posRoot);
     void readNode(BTreeNodeStore<K,V>* node, const int pos);
 
-    int getPosFileRead() const;
-    void setPosFileRead(const int& i);
-    void setPosEndFileRead();
-
     int getPosFileWrite() const;
-    void setPosFileWrite(const int& i);
     void setPosEndFileWrite();
 
     void writeNode(BTreeNodeStore<K,V>* node, const int pos);
-    void writeMinimumDegree(const int &t) const;
-    void writeHeader(const int &t, const int &posRoot);
-    void writeHeaderNode(const char &flag, const int &nCurrentKey);
-    void writeUpdatePosRoot(const int &posRoot);
+    void writeHeader(const int t, const int posRoot);
+    void writeUpdatePosRoot(const int posRoot);
 
     inline int max_key_num() { return 2 * t - 1; }
     inline int max_child_num() { return 2 * t; }
@@ -80,7 +73,7 @@ private:
     /** Node */
 //    struct BTreeNode {
 //        const uint8_t t;
-//        int pos;
+//        int m_pos;
 //
 //        int nCurrentEntry = 0;
 //        char flag = 0;
@@ -110,15 +103,15 @@ private:
 //
 ////        inline bool is_full() { return used_keys == max_key_num(); }
 //
-//        Entry<K, V>* getEntry(BTreeStore* tree, const int pos);
+//        Entry<K, V>* getEntry(BTreeStore* tree, const int m_pos);
 //        int findKeyBinarySearch(BTreeStore *tree, const K& key);
 //
 //        BTreeNode* getBTreeNodeStore(BTreeStore* bTree, const int i);
 //
 //        bool checkIsLeaf() const;
 //
-//        void addPosEntry(const int &i, const int &pos);
-//        void addPosChild(const int &i, const int &pos);
+//        void addPosEntry(const int &i, const int &m_pos);
+//        void addPosChild(const int &i, const int &m_pos);
 //
 //        void increaseNCurrentEntry();
 //
@@ -128,7 +121,7 @@ private:
 //        void setArrayPosChild(int* arrPosChild);
 //
 //        int getPos() const;
-//        void setPost(const int& pos);
+//        void setPost(const int& m_pos);
 //
 //        char getFlag() const;
 //        void setFlag(char flag);

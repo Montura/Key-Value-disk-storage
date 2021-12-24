@@ -6,308 +6,248 @@
 
 template<class K, class V>
 BTreeStore<K, V> ::BTreeStore(const std::string& path, int order) : PATH(path), t(order) {
-    int fdr, fdw, pos;
-    char flag;
-    int nCurrentKey;
+    manageFileWrite = new ManageFileWrite();
+    manageFileRead = new ManageFileRead();
 
-    this->manageFileWrite = new ManageFileWrite();
-
-    this->manageFileRead = new ManageFileRead();
-
-    fdw = this->manageFileWrite->openFile(this->PATH);
+    int fdw = manageFileWrite->openFile(PATH);
     if (fdw < 0) {
         exit(EXIT_FAILURE);
     }
 
-    fdr = this->manageFileRead->openFile(this->PATH);
+    int fdr = manageFileRead->openFile(PATH);
     if (fdr < 0) {
         exit(EXIT_FAILURE);
     }
 
+    writeDisk = new BytesDataOutputStore(MAXLEN, fdw);
+    readDisk = new BytesDataInputStore(MAXLEN, fdr);
 
-    this->writeDisk = new BytesDataOutputStore(this->MAXLEN, fdw);
-    this->readDisk = new BytesDataInputStore(this->MAXLEN, fdr);
+//    pthread_rwlock_init(&(rwLock), NULL);
 
-//    this->myCompare = new IntComparator();
-//    this->mySerialization = new StringSerialization();
-
-//    pthread_rwlock_init(&(this->rwLock), NULL);
-
-    if (this->manageFileRead->isEmptyFile()) {
-        this->root = NULL;
+    if (manageFileRead->isEmptyFile()) {
+        root = NULL;
         return;
     }
+    int root_pos;
     int t_2 = 0;
-    this->readHeader(t_2, pos);
+    readHeader(t_2, root_pos);
     assert(t == t_2);
 
-    if (pos == -1) {
-        this->root = NULL;
+    if (root_pos == -1) {
+        root = NULL;
         return;
     }
 
-    this->root = new BTreeNodeStore<K, V>(t);
-    this->readNode(this->root, pos);
+    root = new BTreeNodeStore<K, V>(t, false);
+    readNode(root, root_pos);
 }
 
 template<class K, class V>
 BTreeStore<K, V> ::~BTreeStore() {
-    if (this->root != NULL) {
-        delete this-> root;
-        this->root = NULL;
-    }
-//
-//    if (this->myCompare != NULL) {
-//        delete this->myCompare;
-//        this->myCompare = NULL;
-//    }
+    delete root;
+    delete manageFileRead;
+    delete manageFileWrite;
+    delete writeDisk;
+    delete readDisk;
 
-    if (this->manageFileRead != NULL) {
-        delete this->manageFileRead;
-        this->manageFileRead = NULL;
-    }
-
-    if (this->manageFileWrite != NULL) {
-        delete this->manageFileWrite;
-        this->manageFileWrite = NULL;
-    }
-
-//    if (this->mySerialization != NULL) {
-//        delete this->mySerialization;
-//        this->mySerialization = NULL;
-//    }
-
-    if (this->writeDisk != NULL) {
-        delete this->writeDisk;
-        this->writeDisk = NULL;
-    }
-
-    if (this->readDisk != NULL) {
-        delete this->readDisk;
-        this->readDisk = NULL;
-    }
-
-//    pthread_rwlock_destroy(&(this->rwLock));
-}
-
-template<class K, class V>
-void BTreeStore<K, V>::writeMinimumDegree(const int &t) const {
-    this->writeDisk->writeInt(t);
-    this->writeDisk->flush();
+//    pthread_rwlock_destroy(&(rwLock));
 }
 
 template<class K, class V>
 void BTreeStore<K, V>::readHeader(int& t, int& posRoot) {
-    this->manageFileRead->setPosFile(0);
+    manageFileRead->setPosFile(0);
 
-    this->readDisk->resetBuffer();
-    this->readDisk->readInt(t);
-    this->readDisk->readInt(posRoot);
+    readDisk->resetBuffer();
+    readDisk->readInt(t);
+    readDisk->readInt(posRoot);
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::writeHeader(const int& t, const int& posRoot) {
-    this->manageFileWrite->setPosFile(0);
+void BTreeStore<K, V> ::writeHeader(const int t, const int posRoot) {
+    manageFileWrite->setPosFile(0);
 
-    this->writeDisk->writeInt(t);
-    this->writeDisk->writeInt(posRoot);
-    this->writeDisk->flush();
+    writeDisk->writeInt(t);
+    writeDisk->writeInt(posRoot);
+    writeDisk->flush();
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::writeUpdatePosRoot(const int& posRoot) {
-    this->manageFileWrite->setPosFile(4);
+void BTreeStore<K, V> ::writeUpdatePosRoot(const int posRoot) {
+    manageFileWrite->setPosFile(4);
 
-    this->writeDisk->writeInt(posRoot);
-    this->writeDisk->flush();
+    writeDisk->writeInt(posRoot);
+    writeDisk->flush();
 }
-
-template<class K, class V>
-void BTreeStore<K, V>::writeHeaderNode(const char& flag, const int& nCurrentKey) {
-    this->writeDisk->writeByte(flag); // write 1 byte flag = 1
-    this->writeDisk->writeInt(nCurrentKey); //write 4 byte : nCurrent = 1;
-    this->writeDisk->flush();
-}
-
-//template<class K, class V>
-//void BTreeStore<K, V>::readHeaderNode(char& flag, int& nCurrentKey) {
-//    this->readDisk->resetBuffer();
-//
-//    this->readDisk->readByte((uint8_t&) flag);
-//    this->readDisk->readInt(nCurrentKey);
-//}
 
 template<class K, class V>
 void BTreeStore<K, V> ::writeNode(BTreeNodeStore<K, V>* node, const int pos) {
-    this->manageFileWrite->setPosFile(pos);
+    manageFileWrite->setPosFile(pos);
     int* arrPosKey = node->getArrayPosKey();
     int* arrPosChild = node->getArrayPosChild();
     char flag = node->getFlag();
     int nCurrentEntry = node->getNCurrentEntry();
-    int size = 2 * this->t;
+    int size = 2 * t;
 
-    this->writeDisk->writeByte(flag);
-    this->writeDisk->writeInt(nCurrentEntry);
-    this->writeDisk->writeArrayInt(arrPosKey, size - 1);
-    this->writeDisk->writeArrayInt(arrPosChild, size);
-    this->writeDisk->flush();
+    writeDisk->writeByte(flag);
+    writeDisk->writeInt(nCurrentEntry);
+    writeDisk->writeArrayInt(arrPosKey, size - 1);
+    writeDisk->writeArrayInt(arrPosChild, size);
+    writeDisk->flush();
 }
 
 template<class K, class V>
 void BTreeStore<K, V>::readNode(BTreeNodeStore<K, V>* node, const int pos) {
     int nCurrentKey;
     char flag;
-    int size = 2 * this->t;
+    int size = 2 * t;
     int *arrPosKey = new int[size - 1];
     int *arrPosChild = new int[size];
 
-    this->manageFileRead->setPosFile(pos);
-    this->readDisk->resetBuffer();
+    manageFileRead->setPosFile(pos);
+    readDisk->resetBuffer();
 
-    this->readDisk->readByte((uint8_t&) flag);
-    this->readDisk->readInt(nCurrentKey);
-    this->readDisk->readArrayInt(arrPosKey, size - 1);
-    this->readDisk->readArrayInt(arrPosChild, size);
+    readDisk->readByte((uint8_t&) flag);
+    readDisk->readInt(nCurrentKey);
+    readDisk->readArrayInt(arrPosKey, size - 1);
+    readDisk->readArrayInt(arrPosChild, size);
 
     node->setFlag(flag);
     node->setPost(pos);
-    node->setMinimumDegre(this->t);
+    node->setMinimumDegre(t);
     node->setNCurrentEntry(nCurrentKey);
     node->setArrayPosKey(arrPosKey);
     node->setArrayPosChild(arrPosChild);
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::writeEntry(const Entry<K, V>* entry, const int& pos) {
+void BTreeStore<K, V>::writeEntry(const Entry<K, V>& entry, const int pos) {
     char flag = 1;
-    int strKey = entry->getKey();
-    int strValue = entry->getValue();
+    int strKey = entry.key;
+    int strValue = entry.value;
 
-//    string key = this->mySerialization->serializationKey(strKey);
-//    string value = this->mySerialization->serializationValue(strValue);
+//    string key = mySerialization->serializationKey(strKey);
+//    string value = mySerialization->serializationValue(strValue);
 
-    this->manageFileWrite->setPosFile(pos);
+    manageFileWrite->setPosFile(pos);
     //write flag: danh dau da remove or active or edit
-    this->writeDisk->writeByte(flag);
+    writeDisk->writeByte(flag);
     //write key
-    this->writeDisk->writeBytes((uint8_t*) &strKey, 0, 4);
+    writeDisk->writeBytes((uint8_t*) &strKey, 0, 4);
     //write value
-    this->writeDisk->writeBytes((uint8_t*) &strValue, 0, 4);
+    writeDisk->writeBytes((uint8_t*) &strValue, 0, 4);
 
-    this->writeDisk->flush();
+    writeDisk->flush();
     //
     //    delete[] key;
     //    delete[] value;
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::readEntry(Entry<K, V>* entry, const int& pos) {
+void BTreeStore<K, V>::readEntry(Entry<K, V>& entry, const int pos) {
     int key;
     int value;
     char flag;
-    int lenKey, lenValue;
+//    int lenKey, lenValue;
 
-    this->manageFileRead->setPosFile(pos);
-    this->readDisk->resetBuffer();
+    manageFileRead->setPosFile(pos);
+    readDisk->resetBuffer();
 
-    this->readDisk->readByte((uint8_t&) flag);
+    readDisk->readByte((uint8_t&) flag);
 
-//    this->readDisk->readBytes(reinterpret_cast<uint8_t*> (&lenKey), 0, sizeof (lenKey));
+//    readDisk->readBytes(reinterpret_cast<uint8_t*> (&lenKey), 0, sizeof (lenKey));
 //    key.resize(lenKey);
-    this->readDisk->readBytes((uint8_t*) &key, 0, 4);
+    readDisk->readBytes((uint8_t*) &key, 0, 4);
 
-//    this->readDisk->readBytes(reinterpret_cast<uint8_t*> (&lenValue), 0, sizeof (lenValue));
+//    readDisk->readBytes(reinterpret_cast<uint8_t*> (&lenValue), 0, sizeof (lenValue));
 //    value.resize(lenValue);
-    this->readDisk->readBytes((uint8_t*) &value, 0, 4);
+    readDisk->readBytes((uint8_t*) &value, 0, 4);
 
-    entry->setKeyValue(key, value);
+    entry.setKeyValue(key, value);
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::writeFlag(char flag, const int& pos) {
-    this->manageFileWrite->setPosFile(pos);
+void BTreeStore<K, V> ::writeFlag(char flag, const int pos) {
+    manageFileWrite->setPosFile(pos);
 
-    this->writeDisk->writeByte(flag);
-    this->writeDisk->flush();
+    writeDisk->writeByte(flag);
+    writeDisk->flush();
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::insert(const Entry<K, V>* entry) {
-    int pos = -1;
-    if (this->root == NULL) {
-        this->root = new BTreeNodeStore<K, V>(t, true);
-        this->writeHeader(t, 8);
-        this->root->setPost(8);
+void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
+    if (root == NULL) {
+        root = new BTreeNodeStore<K, V>(t, true);
+        writeHeader(t, 8);
+        root->setPost(8);
 
-        this->manageFileWrite->setPosEndFile();
-        pos = this->manageFileWrite->getPosFile();
+        manageFileWrite->setPosEndFile();
+        int pos = manageFileWrite->getPosFile();
         pos = pos + sizeof (int) * (2 * t - 1) + sizeof (int) * (2 * t) + 5; // 1 byte flag + 4 byte nCurrentKey
 
-        this->root->addPosEntry(0, pos);
-        this->root->setFlag(1);
-        this->root->increaseNCurrentEntry();
+        root->addPosEntry(0, pos);
+        root->setFlag(1);
+        root->increaseNCurrentEntry();
 
         //write node root
-        this->writeNode(this->root, root->getPos());
+        writeNode(root, root->getPos());
 
         //write key value
-        this->writeEntry(entry, pos);
+        writeEntry(entry, pos);
     } else {
-        if (this->root->getNCurrentEntry() == 2 * this->t - 1) {
-            BTreeNodeStore<K, V>* newRoot = new BTreeNodeStore<K, V>(this->t, false);
+        if (root->getNCurrentEntry() == 2 * t - 1) {
+            BTreeNodeStore<K, V>* newRoot = new BTreeNodeStore<K, V>(t, false);
 
-            newRoot->addPosChild(0, this->root->getPos());
+            newRoot->addPosChild(0, root->getPos());
 
-            this->manageFileWrite->setPosEndFile();
+            manageFileWrite->setPosEndFile();
 
-            newRoot->setPost(this->manageFileWrite->getPosFile());
+            newRoot->setPost(manageFileWrite->getPosFile());
             //write node
-            this->writeNode(newRoot, newRoot->getPos());
+            writeNode(newRoot, newRoot->getPos());
 
-            newRoot->splitChild(this, 0, this->root);
+            newRoot->splitChild(this, 0, root);
             //find child have new key
             int i = 0;
-            Entry<K, V>* entryOfRoot = newRoot->getEntry(this, 0);
-            if (entryOfRoot->getKey() < entry->getKey()) {
+            Entry<K, V> entryOfRoot = newRoot->getEntry(this, 0).value();
+            if (entryOfRoot.key < entry.key) {
                 i++;
             }
-            delete entryOfRoot;
 
-            BTreeNodeStore<K, V>* node = new BTreeNodeStore<K, V>(this->t, false);
-            pos = newRoot->getPosChild(i);
+            BTreeNodeStore<K, V>* node = new BTreeNodeStore<K, V>(t, false);
+            int pos = newRoot->getPosChild(i);
 
             //read node
-            this->readNode(node, pos);
+            readNode(node, pos);
 
             node->insertNotFull(this, entry);
 
-            this->readNode(this->root, newRoot->getPos());
+            readNode(root, newRoot->getPos());
 
             //cap nhat lai header
-            this->writeUpdatePosRoot(newRoot->getPos());
+            writeUpdatePosRoot(newRoot->getPos());
 
             delete newRoot;
 
             delete node;
         } else {
-            this->root->insertNotFull(this, entry);
+            root->insertNotFull(this, entry);
         }
     }
 }
 
 template<class K, class V>
 void BTreeStore<K, V> ::set(const K& key, const V& value) {
-//    pthread_rwlock_wrlock(&(this->rwLock));
+//    pthread_rwlock_wrlock(&(rwLock));
     //    int secs;
     //    timestamp_t timeFinish;
     //    timestamp_t timeStart = get_timestamp();
 
-    if (this->root == NULL) {
-        Entry<K, V>* entry = new Entry<K, V>(key, value);
-        this->insert(entry);
-    } else if (!this->root->set(this, key, value)) {
-        Entry<K, V>* entry = new Entry<K, V>(key, value);
-        this->insert(entry);
+    if (root == NULL) {
+        Entry<K, V> entry(key, value);
+        insert(entry);
+    } else if (!root->set(this, key, value)) {
+        Entry<K, V> entry(key, value);
+        insert(entry);
         //        timeFinish = get_timestamp();
     }
 
@@ -316,78 +256,72 @@ void BTreeStore<K, V> ::set(const K& key, const V& value) {
     //
     //    cout << " time API set: " << secs << " microsecond" << endl;
 
-//    pthread_rwlock_unlock(&(this->rwLock));
+//    pthread_rwlock_unlock(&(rwLock));
 }
 
 template<class K, class V>
 bool BTreeStore<K, V> ::exist(const K& key) {
-//    pthread_rwlock_wrlock(&(this->rwLock));
+//    pthread_rwlock_wrlock(&(rwLock));
 
-    int secs;
+//    int secs;
 //    timestamp_t timeFinish;
 //    timestamp_t timeStart = get_timestamp();
 
-    if (this->root == NULL) {
+    if (root == NULL) {
 //        timeFinish = get_timestamp();
 //        secs = (timeFinish - timeStart);
 
 //        cout << "time API exist: " << secs << " microsecond" << endl;
-//        pthread_rwlock_unlock(&(this->rwLock));
+//        pthread_rwlock_unlock(&(rwLock));
         return false;
     }
 
     bool res;
 
-    Entry<K, V>* entry = this->root->search(this, key);
+    auto opt = root->search(this, key);
 
-    if (entry == NULL) {
-        res = false;
-    } else {
-        delete entry;
-        res = true;
-    }
+    res = opt.has_value();
 
 //    timeFinish = get_timestamp();
 //    secs = (timeFinish - timeStart);
 
 //    cout << "time API exist: " << secs << " microsecond" << endl;
 
-//    pthread_rwlock_unlock(&(this->rwLock));
+//    pthread_rwlock_unlock(&(rwLock));
     return res;
 }
 
 template<class K, class V>
 bool BTreeStore<K, V> ::remove(const K& key) {
-    bool res;
-//    pthread_rwlock_wrlock(&(this->rwLock));
-    int secs;
+//    pthread_rwlock_wrlock(&(rwLock));
+//    int secs;
 //    timestamp_t timeFinish;
 //    timestamp_t timeStart = get_timestamp();
 
-    if (!this->root) {
+    if (!root) {
 //        timeFinish = get_timestamp();
 //        secs = (timeFinish - timeStart);
 
 //        cout << "time API remove : " << secs << " microsecond" << endl;
 
-//        pthread_rwlock_unlock(&(this->rwLock));
+//        pthread_rwlock_unlock(&(rwLock));
         return false;
     }
 
-    res = this->root->remove(this, key);
+    bool res = root->remove(this, key);
 
-    if (this->root->getNCurrentEntry() == 0) {
-        if (this->root->checkIsLeaf()) {
-            char flag = this->root->getFlag();
+    if (root->getNCurrentEntry() == 0) {
+        if (root->checkIsLeaf()) {
+            char flag = root->getFlag();
             flag = flag | (1 << 1);
-            this->writeFlag(flag, this->root->getPos());
-            delete this->root;
-            this->root = NULL;
-            this->writeUpdatePosRoot(-1);
+            writeFlag(flag, root->getPos());
+            delete root;
+            root = NULL;
+            writeUpdatePosRoot(-1);
         } else {
-            int pos = this->root->getPosChild(0);
-            this->writeUpdatePosRoot(pos);
-            this->readNode(this->root, pos);
+            int pos = root->getPosChild(0);
+            writeUpdatePosRoot(pos);
+            readNode(root, pos);
         }
     }
 
@@ -396,49 +330,24 @@ bool BTreeStore<K, V> ::remove(const K& key) {
 
 //    cout << "time API remove : " << secs << " microsecond" << endl;
 
-//    pthread_rwlock_unlock(&(this->rwLock));
+//    pthread_rwlock_unlock(&(rwLock));
     return res;
 }
 
 template<class K, class V>
 void BTreeStore<K, V> ::traverse() {
-    if (this->root != NULL) {
-        this->root->traverse(this);
+    if (root != NULL) {
+        root->traverse(this);
     }
 }
 
 template<class K, class V>
-int BTreeStore<K, V> ::getPosFileRead() const {
-
-    return this->manageFileRead->getPosFile();
-}
-
-template<class K, class V>
-void BTreeStore<K, V> ::setPosFileRead(const int& i) {
-
-    this->manageFileRead->setPosFile(i);
-}
-
-template<class K, class V>
-void BTreeStore<K, V> ::setPosEndFileRead() {
-
-    this->manageFileRead->setPosEndFile();
-}
-
-template<class K, class V>
 int BTreeStore<K, V> ::getPosFileWrite() const {
-
-    return this->manageFileWrite->getPosFile();
+    return manageFileWrite->getPosFile();
 }
 
 template<class K, class V>
 void BTreeStore<K, V>::setPosEndFileWrite() {
-
-    this->manageFileWrite->setPosEndFile();
-}
-
-template<class K, class V>
-void BTreeStore<K, V> ::setPosFileWrite(const int& i) {
-    this->manageFileWrite->setPosFile(i);
+    manageFileWrite->setPosEndFile();
 }
 

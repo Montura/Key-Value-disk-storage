@@ -22,33 +22,45 @@ namespace {
         const int n = 1000;
         using BTreeIntInt = BTreeStore<int, int>;
         bool found_all = false, any_not_found = false, remove_all = false;
-        std::string db_name = "../db_";
+        std::string db_prefix = "../db_";
         std::string end = ".txt";
 
         for (int order = 2; order < 101; ++order) {
-            BTreeIntInt btree(db_name + std::to_string(order) + end, order);
-            for (int i = 0; i < n; ++i) {
-                btree.set(i, 65 + i);
+            auto db_name = db_prefix + std::to_string(order) + end;
+            {
+                BTreeIntInt btree(db_name, order);
+                for (int i = 0; i < n; ++i) {
+                    btree.set(i, 65 + i);
+                }
             }
 
-            int total_found = 0;
-            for (int i = 0; i < n; ++i) {
-                total_found += btree.exist(i);
+            {
+                BTreeIntInt btree(db_name, order);
+                int total_found = 0;
+                for (int i = 0; i < n; ++i) {
+                    total_found += btree.exist(i);
+                }
+                found_all = (total_found == n);
             }
-            found_all = (total_found == n);
 
-            int total_not_found = 0;
-            const int key_shift = 1000;
-            for (int i = 0; i < n; ++i) {
-                total_not_found += !btree.exist(key_shift + i);
+            {
+                BTreeIntInt btree(db_name, order);
+                int total_not_found = 0;
+                const int key_shift = 1000;
+                for (int i = 0; i < n; ++i) {
+                    total_not_found += !btree.exist(key_shift + i);
+                }
+                any_not_found = (total_not_found == n);
             }
-            any_not_found = (total_not_found == n);
 
-            int total_deleted = 0;
-            for (int i = 0; i < n * 2; ++i) {
-                total_deleted += btree.remove(i);
+            {
+                BTreeIntInt btree(db_name, order);
+                int total_deleted = 0;
+                for (int i = 0; i < n * 2; ++i) {
+                    total_deleted += btree.remove(i);
+                }
+                remove_all = (total_deleted == n);
             }
-            remove_all = (total_deleted == n);
 
             std::string msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
             BOOST_REQUIRE_MESSAGE(found_all && any_not_found && remove_all, msg);

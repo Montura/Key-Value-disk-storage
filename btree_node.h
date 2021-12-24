@@ -12,14 +12,14 @@ private:
     int nCurrentEntry;
     int t;
     char flag;
-    int *arrayPosKey;
-    int *arrayPosChild;
-    int pos;
+    int* arrayPosKey;
+    int* arrayPosChild;
+    int m_pos;
 
 public:
     BTreeNodeStore(const int& t, bool isLeaf);
 
-    BTreeNodeStore(const int &t);
+//    BTreeNodeStore(const int &t);
 
     ~BTreeNodeStore();
 
@@ -54,15 +54,15 @@ public:
 
     void splitChild(BTreeStore<K, V>* bTree, const int &index, BTreeNodeStore<K, V>* &node);
 
-    Entry<K, V>* getEntry(BTreeStore<K, V>* bTree, const int &i);
+    std::optional<Entry<K, V>> getEntry(BTreeStore<K, V>* bTree, const int &i);
 
     BTreeNodeStore<K, V>* getBTreeNodeStore(BTreeStore<K, V>* bTree, const int &i);
 
-    void insertNotFull(BTreeStore<K, V>* bTree, const Entry<K, V>* entry);
+    void insertNotFull(BTreeStore<K, V>* bTree, const Entry<K, V>& entry);
 
     void traverse(BTreeStore<K, V>* bTree);
 
-    Entry<K, V>* search(BTreeStore<K, V>* bTree, const K& key);
+    std::optional<Entry<K, V>> search(BTreeStore<K, V>* bTree, const K& key);
 
     bool set(BTreeStore<K, V> *bTree, const K &key, const V &value);
 
@@ -80,5 +80,6 @@ public:
     void borrowFromNodePrev(BTreeStore<K, V>* bTree, const int &index);
     void borrowFromNodeNext(BTreeStore<K, V>* bTree, const int &index);
 
-
+    inline int max_key_num() { return 2 * t - 1; }
+    inline int max_child_num() { return 2 * t; }
 };
