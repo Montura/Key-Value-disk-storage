@@ -1,36 +1,56 @@
+#include <filesystem>
+
 #include "file_mapping.h"
 
-MappedFile::MappedFile(const std::string &fn, std::int64_t bytes_num) : path(fn), m_pos(0) {
-    std::filebuf fbuf;
-    fbuf.open(path.data(), std::ios_base::out | std::ios_base::trunc);
-    fbuf.pubseekoff(bytes_num, std::ios_base::beg);
-    fbuf.sputc(0);
-    fbuf.close();
+namespace fs = std::filesystem;
 
-    m_size = bytes_num;
+MappedFile::MappedFile(const std::string &fn, std::int64_t bytes_num) : path(fn), m_pos(0) {
+    bool file_exists = fs::exists(fn);
+    if (!file_exists) {
+        std::filebuf fbuf;
+        fbuf.open(path.data(), std::ios_base::out | std::ios_base::trunc);
+        fbuf.pubseekoff(bytes_num, std::ios_base::beg);
+        fbuf.sputc(0);
+        fbuf.close();
+        m_size = bytes_num;
+    } else {
+        m_size = static_cast<int64_t>(fs::file_size(fn));
+    }
     remap();
 }
 
 MappedFile::~MappedFile() {}
 
 template <typename T>
-T MappedFile::read(std::int64_t f_pos) {
+T MappedFile::read_next(std::int64_t f_pos) {
     static_assert(std::is_arithmetic_v<T>);
     char *value_begin = mapped_region_begin + (f_pos) * sizeof(T);
     return *(reinterpret_cast<T*>(value_begin));
 }
 
 template <typename T>
-void MappedFile::write(T val) {
+void MappedFile::write(T val, std::int64_t f_pos) {
     static_assert(std::is_arithmetic_v<T>);
-    if (2 * m_pos > m_size) {
+//    assert(f_pos < m_pos);
+    m_pos = write_to_dst(val, f_pos * sizeof(T));
+}
+
+template <typename T>
+void MappedFile::write_next(T val) {
+    static_assert(std::is_arithmetic_v<T>);
+    m_pos = write_to_dst(val, m_pos);
+}
+
+template <typename T>
+std::int64_t  MappedFile::write_to_dst(T val, std::int64_t dst) {
+    if (2 * dst > m_size) {
         resize(m_size);
     }
     char* value_begin = reinterpret_cast<char *>(&val);
     int value_size = sizeof(T);
 //        cout << "my m_pos: " << m_pos  << endl;
-    std::copy(value_begin, value_begin + value_size, mapped_region_begin + m_pos);
-    m_pos += value_size;
+    std::copy(value_begin, value_begin + value_size, mapped_region_begin + dst);
+    return dst + value_size;
 }
 
 void MappedFile::resize(std::int64_t bytes_num) {
@@ -64,23 +84,54 @@ void MappedFile::remap() {
 //#include <boost/range/iterator_range.hpp>
 
 
+void test_create_and_write() {
+    std::string fmap = std::string("../file_mapping_text") + std::string(".txt");
+    if (fs::exists(fmap)) {
+        fs::remove(fmap);
+    }
+
+    MappedFile file(fmap, 32);
+    for (int i = 0; i < 1000000; ++i) {
+        file.write_next(i);
+    }
+}
+
+void test_read() {
+    std::string fmap = std::string("../file_mapping_text") + std::string(".txt");
+    MappedFile file(fmap, 32);
+    for (int i = 0; i < 1000000; ++i) {
+        auto anInt = file.read_next<int>(i);
+        assert(i == anInt);
+    }
+}
+
+void test_modify_and_save() {
+    std::string fmap = std::string("../file_mapping_text") + std::string(".txt");
+    {
+        MappedFile file(fmap, 32);
+        for (int i = 0; i < 1000000; i += 1000) {
+            file.write(-1, i);
+        }
+    }
+    {
+        MappedFile file(fmap, 32);
+        for (int i = 0; i < 1000000; ++i) {
+            auto anInt = file.read_next<int>(i);
+            if (i % 1000 == 0) {
+                assert(anInt == -1);
+            } else {
+                assert(i == anInt);
+            }
+        }
+    }
+}
+
 //namespace {
 //    BOOST_AUTO_TEST_CASE(file_mapping_test) {
 int main() {
 //        std::string fn = std::string("../save") + std::strin g(".txt");
-    std::string fmap = std::string("../file_mapping_text") + std::string(".txt");
-
-    MappedFile file(fmap, 32);
-    for (int i = 0; i < 1000000; ++i) {
-        file.write(i);
-    }
-
-        bool success = true;
-        for (int i = 0; i < 1000000; ++i) {
-            int32_t anInt = file.read<int>(i);
-            assert(i == anInt);
-//            success &= b;
-        }
+//    test_create_and_write();
+    test_modify_and_save();
 
     std::string msg = "File mapping test";
 //        BOOST_REQUIRE_MESSAGE(success, msg);
