@@ -21,6 +21,8 @@ set(SOURCE_FILES
         mem_util.cpp
         serializable_node.h
         serializable_node_test.cpp
+        file_mapping.cpp
+        file_mapping.h
         )
 include_directories(${Boost_INCLUDE_DIRS})
 
