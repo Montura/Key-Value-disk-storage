@@ -4,7 +4,7 @@
 
 namespace fs = std::filesystem;
 
-MappedFile::MappedFile(const std::string &fn, std::int64_t bytes_num) : path(fn), m_pos(0) {
+MappedFile::MappedFile(const std::string &fn, int64_t bytes_num) : path(fn), m_pos(0) {
     bool file_exists = fs::exists(fn);
     if (!file_exists) {
         std::filebuf fbuf;
@@ -22,14 +22,14 @@ MappedFile::MappedFile(const std::string &fn, std::int64_t bytes_num) : path(fn)
 MappedFile::~MappedFile() {}
 
 template <typename T>
-T MappedFile::read_next(std::int64_t f_pos) {
+T MappedFile::read_next(int64_t f_pos) const {
     static_assert(std::is_arithmetic_v<T>);
     char *value_begin = mapped_region_begin + (f_pos) * sizeof(T);
     return *(reinterpret_cast<T*>(value_begin));
 }
 
 template <typename T>
-void MappedFile::write(T val, std::int64_t f_pos) {
+void MappedFile::write(T val, int64_t f_pos) {
     static_assert(std::is_arithmetic_v<T>);
     m_pos = write_to_dst(val, f_pos * sizeof(T));
 }
@@ -41,18 +41,18 @@ void MappedFile::write_next(T val) {
 }
 
 template <typename T>
-std::int64_t  MappedFile::write_to_dst(T val, std::int64_t dst) {
-    if (2 * dst > m_size) {
-        resize(m_size);
+std::int64_t MappedFile::write_to_dst(T val, int64_t dst) {
+    int32_t total_size = sizeof(T);
+    if (m_pos + total_size > m_size) {
+        resize(2 * m_size);
     }
-    char* value_begin = reinterpret_cast<char *>(&val);
-    int value_size = sizeof(T);
-    std::copy(value_begin, value_begin + value_size, mapped_region_begin + dst);
-    return dst + value_size;
+    char* data = reinterpret_cast<char *>(&val);
+    std::copy(data, data + total_size, mapped_region_begin + dst);
+    return dst + total_size;
 }
 
-void MappedFile::resize(std::int64_t bytes_num) {
-    m_size = (m_size != 0) ? m_size * 2 : bytes_num;
+void MappedFile::resize(int64_t new_size) {
+    m_size = new_size;
 
     std::filebuf fbuf;
     fbuf.open(path.data(), std::ios_base::in | std::ios_base::out);
@@ -69,6 +69,27 @@ void MappedFile::remap() {
     file_mapping.swap(new_mapping);
     mapped_region.swap(new_region);
     mapped_region_begin = reinterpret_cast<char *>(mapped_region.get_address());
+}
+
+void MappedFile::write_int_array(const std::vector<int32_t>& vec, const std::int32_t used) {
+    int64_t total_size = static_cast<int64_t>(sizeof(int32_t)) * used;
+    if (m_pos + total_size > m_size) {
+        resize(std::max(2 * m_size, total_size));
+    }
+    const char* data = reinterpret_cast<const char *>(vec.data());
+    std::copy(data, data + total_size, mapped_region_begin + m_pos);
+    m_pos += total_size;
+}
+
+int64_t MappedFile::read_int_array(std::vector<int32_t>& vec, int32_t used){
+    uint32_t total_size = sizeof(int32_t) * used;
+    assert(used <= static_cast<int32_t>(vec.size()));
+
+    char* data = reinterpret_cast<char *>(vec.data());
+    char* start = mapped_region_begin + m_pos;
+    char* end = start + total_size;
+    std::copy(start, end, data);
+    return m_pos + total_size;
 }
 
 //#ifdef UNIT_TESTS
@@ -124,12 +145,34 @@ void test_modify_and_save() {
     }
 }
 
+void test_array() {
+    std::string fmap = std::string("../file_mapping_array") + std::string(".txt");
+    if (fs::exists(fmap)) {
+        fs::remove(fmap);
+    }
+
+    int n = 1000000;
+    std::vector<int> out(n, 1);
+    std::vector<int> in(n, 0);
+    {
+        MappedFile file(fmap, 32);
+        file.write_int_array(out, n);
+    }
+
+    {
+        MappedFile file(fmap, 32);
+        file.read_int_array(in, n);
+    }
+    assert(in == out);
+}
+
 //namespace {
 //    BOOST_AUTO_TEST_CASE(file_mapping_test) {
 int main() {
 //        std::string fn = std::string("../save") + std::strin g(".txt");
 //    test_create_and_write();
-    test_modify_and_save();
+//    test_modify_and_save();
+    test_array();
 
     std::string msg = "File mapping test";
 //        BOOST_REQUIRE_MESSAGE(success, msg);
