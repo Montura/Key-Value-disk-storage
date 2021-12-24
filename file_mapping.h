@@ -6,8 +6,11 @@ struct MappedFile {
     MappedFile(const std::string& fn, std::int64_t bytes_num);
     ~MappedFile();
 
-    std::int32_t readInt(std::int64_t pos);
-    void writeInt(std::int32_t val);
+    template <typename T>
+    T read(std::int64_t pos);
+
+    template <typename T>
+    void write(T val);
 
 private:
     void resize(std::int64_t bytes_num);
