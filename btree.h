@@ -6,18 +6,18 @@
 #include <optional>
 #include <mutex>
 
-#include "btree_node.h"
 #include "file_mapping.h"
+#include "entry.h"
 
-/** Common Interface */
-template <typename Key, typename Value, typename Oit>
-struct IKeyValueStorage {
-    virtual bool insert(const Key& key, const Value& value) = 0;
-    virtual Oit get(const Key& key) = 0;
-    virtual bool remove(const Key& key) = 0;
-
-    virtual ~IKeyValueStorage() { };
-};
+///** Common Interface */
+//template <typename Key, typename Value, typename Oit>
+//struct IKeyValueStorage {
+//    virtual bool insert(const Key& key, const Value& value) = 0;
+//    virtual Oit get(const Key& key) = 0;
+//    virtual bool remove(const Key& key) = 0;
+//
+//    virtual ~IKeyValueStorage() { };
+//};
 
 /** Tree */
 template <typename K, typename V>
@@ -30,8 +30,9 @@ class BTree final {
     MappedFile file;
 public:
     using Node = BTreeNode;
+    using EntryT = Entry<K,V>;
 
-    explicit BTree(const std::string& path, int order);
+    BTree(const std::string& path, int order);
     ~BTree();
 
     bool exist(const K &key);
@@ -43,9 +44,9 @@ public:
     bool remove(const K& key);
 
 // todo: extract to reader|writer
-
-    void write_entry(const Entry<K, V>& entry, const int pos);
-    void read_entry(Entry<K, V>& entry, const int pos);
+private:
+    void write_entry(const EntryT& entry, const int pos);
+    void read_entry(EntryT& entry, const int pos);
 
     void write_flag(char flag, const int pos);
 
@@ -62,7 +63,7 @@ public:
     int calc_node_writable_node_size();
 private:
     /** Node */
-    struct BTreeNode {
+    struct BTreeNode final {
         int used_keys;
         int t;
         char flag;
@@ -73,34 +74,26 @@ private:
     public:
         BTreeNode(const int& t, bool isLeaf);
 
+        // todo: ugly code to ensure only move semantics
         BTreeNode(const BTreeNode& other) = delete;
         BTreeNode operator=(const BTreeNode& other) = delete;
 
         BTreeNode(BTreeNode && other) noexcept = default;
         BTreeNode& operator=(BTreeNode && other) noexcept = default;
 
-        ~BTreeNode();
-
         bool is_leaf() const;
-
         bool is_full() const;
-
-        int find_key_bin_search(BTree* bTree, const K& key);
-
-        void split_child(BTree* bTree, const int index, Node& node);
-
-        Entry<K, V> read_entry(BTree* bTree, const int i);
-
-        void insert_non_full(BTree* bTree, const Entry<K, V>& entry);
-
-        void traverse(BTree* bTree);
-
-        bool set(BTree *bTree, const K &key, const V &value);
-        bool remove(BTree* bTree, const K& key);
-        Entry<K, V> find(BTree* bTree, const K& key);
-
         inline int max_key_num() const { return 2 * t - 1; }
         inline int max_child_num() const { return 2 * t; }
+
+        int find_key_bin_search(BTree* bTree, const K& key);
+        void split_child(BTree* bTree, const int index, Node& curr_node);
+        EntryT read_entry(BTree* bTree, const int i);
+        void insert_non_full(BTree* bTree, const Entry<K, V>& entry);
+        void traverse(BTree* bTree);
+        bool set(BTree *bTree, const K &key, const V &value);
+        bool remove(BTree* bTree, const K& key);
+        EntryT find(BTree* bTree, const K& key);
     private:
         Node get_node(BTree* bTree, const int i);
 

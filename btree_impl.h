@@ -1,7 +1,6 @@
 #pragma once
 
 #include "btree.h"
-#include "btree_node.h"
 
 template<class K, class V>
 BTree<K, V>::BTree(const std::string& path, int order) : t(order), file(path, 0) {
@@ -76,10 +75,10 @@ void BTree<K, V>::read_node(Node* node, const int pos) {
 }
 
 template<class K, class V>
-void BTree<K, V>::write_entry(const Entry<K, V>& entry, const int pos) {
+void BTree<K, V>::write_entry(const EntryT& entry, const int pos) {
     char flag = 1;
-    int strKey = entry.key;
-    int strValue = entry.value;
+    K strKey = entry.key;
+    V strValue = entry.value;
 
     file.setPosFile(pos);
 
@@ -89,7 +88,7 @@ void BTree<K, V>::write_entry(const Entry<K, V>& entry, const int pos) {
 }
 
 template<class K, class V>
-void BTree<K, V>::read_entry(Entry<K, V>& entry, const int pos) {
+void BTree<K, V>::read_entry(EntryT& entry, const int pos) {
     char flag;
 //    int lenKey, lenValue;
 
@@ -127,7 +126,7 @@ int BTree<K, V>::calc_node_writable_node_size() {
 }
 
 template<class K, class V>
-void BTree<K, V>::insert(const Entry<K, V>& entry) {
+void BTree<K, V>::insert(const EntryT& entry) {
     if (root == NULL) {
         root = new Node(t, true);
         write_header(t, 8);
@@ -162,7 +161,7 @@ void BTree<K, V>::insert(const Entry<K, V>& entry) {
             newRoot.split_child(this, 0, *root);
             //find child have new key
             int i = 0;
-            Entry<K, V> entryOfRoot = newRoot.read_entry(this, 0);
+            EntryT entryOfRoot = newRoot.read_entry(this, 0);
             if (entryOfRoot.key < entry.key) {
                 i++;
             }
@@ -211,10 +210,10 @@ void BTree<K, V>::set(const K& key, const V& value) {
     //    timestamp_t timeStart = get_timestamp();
 
     if (!root) {
-        Entry<K, V> entry { key, value };
+        EntryT entry { key, value };
         insert(entry);
     } else if (!root->set(this, key, value)) {
-        Entry<K, V> entry { key, value };
+        EntryT entry { key, value };
         insert(entry);
         //        timeFinish = get_timestamp();
     }
