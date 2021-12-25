@@ -139,25 +139,24 @@ void BTree<K,V>::BTreeNode::insert_non_full(IOManagerT& io, const EntryT& entry)
 
 template<class K, class V>
 int BTree<K,V>::BTreeNode::find_key_bin_search(IOManagerT& io, const K& key) {
-    int low = 0;
-    int hight = used_keys - 1;
-    int middle = (low + hight) / 2;
-    EntryT entry = read_entry(io, middle);
+    int left = 0;
+    int right = used_keys - 1;
+    int mid = 0;
+    EntryT entry;
 
-    while (low <= hight) {
-        if (entry.key == key) {
-            return middle;
+    while (left <= right) {
+        mid = left + (right - left) / 2;
+        entry = read_entry(io, mid);
+
+        if (entry.key < key) {
+            left = mid + 1;
+        } else if (entry.key > key) {
+            right = mid - 1;
         } else {
-            if (entry.key > key) {
-                hight = middle - 1;
-            } else {
-                low = middle + 1;
-            }
+            return mid;
         }
-        middle = (low + hight) / 2;
-        entry = read_entry(io, middle);
     }
-    return hight + 1;
+    return right + 1;
 }
 
 

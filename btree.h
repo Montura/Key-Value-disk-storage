@@ -32,13 +32,13 @@ public:
 
     bool exist(const K &key);
     void set(const K &key, const V& value);
-    void traverse();
-
-    void insert(const Entry<K, V>& entry);
     const V get(const K& key);
     bool remove(const K& key);
 
 private:
+    void insert(const Entry<K, V>& entry);
+    void traverse();
+
     BTreeNode* root = nullptr;
     const int t;
 

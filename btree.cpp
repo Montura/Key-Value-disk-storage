@@ -29,7 +29,7 @@ using std::chrono::milliseconds;
 namespace {
     BOOST_AUTO_TEST_CASE(test_b_tree_init) {
         const int n = 10000;
-        using BTreeIntInt = BTreeStore<int, int>;
+        using BTreeIntInt = BTree<int, int>;
         bool found_all = false, any_not_found = false, remove_all = false;
         std::string db_prefix = "../db_";
         std::string end = ".txt";
@@ -99,7 +99,7 @@ namespace {
             /* Getting number of milliseconds as a double. */
             duration<double, std::milli> ms_double = t2 - t1;
 
-            std::string msg = "BTreeStore<int, int, " + std::to_string(order) + "> takes " + std::to_string(ms_double.count()) + " ms";
+            std::string msg = "BTree<int, int, " + std::to_string(order) + "> takes " + std::to_string(ms_double.count()) + " ms";
             BOOST_REQUIRE_MESSAGE(found_all && any_not_found && remove_all, msg);
         }
     }
@@ -108,7 +108,7 @@ namespace {
 
 void testBuildBTreeStore() {
     {
-      BTreeStore<int, int> bTree5("../a.txt", 2);
+      BTree<int, int> bTree5("../a.txt", 2);
 
       for (int i = 0; i < 1000; i++) {
         bTree5.set(i, 65 + i);
@@ -124,7 +124,7 @@ void testBuildBTreeStore() {
 
 
 void testFunctionExist() {
-    auto bTreeStore = new BTreeStore<int, int>("../a.txt", 2);
+    auto bTreeStore = new BTree<int, int>("../a.txt", 2);
     cout << "---------------Test Exist-------------------" << endl;
 
     int key;
@@ -151,8 +151,8 @@ void at_exit_handler();
 
 int main() {
     const int handler = std::atexit(at_exit_handler);
-    const int n = 10000;
-    using BTreeIntInt = BTreeStore<int, int>;
+    const int n = 1000;
+    using BTreeIntInt = BTree<int, int>;
     bool found_all = false, any_not_found = false, remove_all = false;
     std::string db_prefix = "../db_";
     std::string end = ".txt";
@@ -171,7 +171,7 @@ int main() {
         {
             BTreeIntInt btree(db_name, order);
             for (int i = 0; i < n; ++i) {
-                int value = btree.getValue(i);
+                int value = btree.get(i);
                 assert(value == i + 65);
             }
         }
@@ -186,7 +186,7 @@ int main() {
         {
             BTreeIntInt btree(db_name, order);
             for (int i = 0; i < n; ++i) {
-                int value = btree.getValue(i);
+                int value = btree.get(i);
                 assert(value == i + 1);
             }
         }
@@ -227,7 +227,7 @@ int main() {
 //        std::cout << ms_int.count() << "ms\n";
 //        std::cout <<  << "ms\n";
 
-        std::string msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
+        std::string msg = "BTree<int, int, " + std::to_string(order) + ">";
         cout << "Passed: " << msg << " in " << ms_double.count() << "ms" <<  endl;
         assert( found_all && any_not_found && remove_all);
     }
