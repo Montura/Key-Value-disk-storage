@@ -51,8 +51,8 @@ private:
         int t;
         char flag;
         int m_pos;
-        std::vector<int> arrayPosKey;
-        std::vector<int> arrayPosChild;
+        std::vector<int> key_pos;
+        std::vector<int> child_pos;
 
     public:
         BTreeNode(const int& t, bool isLeaf);
@@ -66,22 +66,26 @@ private:
 
         bool is_leaf() const;
         bool is_full() const;
-        inline int max_key_num() const { return 2 * t - 1; }
+
+        inline int max_key_num() const { return std::max(2 * t - 1, 0); }
         inline int max_child_num() const { return 2 * t; }
 
         int find_key_bin_search(IOManagerT& io_manager, const K& key);
         void split_child(IOManagerT& manager, const int idx, Node& curr_node);
-        EntryT read_entry(IOManagerT& io_manager, const int i);
+
+        K read_key(IOManagerT& io_manager, const int idx);
+        EntryT read_entry(IOManagerT& io_manager, const int idx);
+        EntryT find(IOManagerT& io_manager, const K& key);
+
         void insert_non_full(IOManagerT& io_manager, const Entry<K, V>& entry);
         void traverse(IOManagerT& io_manager);
         bool set(IOManagerT& io_manager, const K &key, const V &value);
         bool remove(IOManagerT& io_manager, const K& key);
-        EntryT find(IOManagerT& io_manager, const K& key);
     private:
-        Node get_node(IOManagerT& io_manager, const int i);
+        Node read_node(IOManagerT& io_manager, const int idx);
 
         bool remove_from_leaf(IOManagerT& io_manager, const int idx);
-        bool remove_from_non_leaf(IOManagerT& io_manager, const int index);
+        bool remove_from_non_leaf(IOManagerT& io_manager, const int idx);
 
         int get_prev_entry_pos(IOManagerT& io_manager, const int index);
         int get_next_entry_pos(IOManagerT& io_manager, const int index);
@@ -89,7 +93,7 @@ private:
         void merge_node(IOManagerT& io_manager, const int idx);
         void fill_node(IOManagerT& io_manager, const int index);
 
-        void borrow_from_node_prev(IOManagerT& io_manager, const int index);
-        void borrow_from_node_next(IOManagerT& io_manager, const int index);
+        void borrow_from_prev_node(IOManagerT& io_manager, const int idx);
+        void borrow_from_next_node(IOManagerT& io_manager, const int idx);
     };
 };

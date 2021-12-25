@@ -22,7 +22,13 @@ struct IOManager {
         file.write_next(entry.value);
     }
 
-    void read_entry(EntryT& entry, const int pos) {
+    K read_key(const int pos) {
+        file.set_pos(pos);
+        //        assert(key > -1);
+        return file.read_next<K>();
+    }
+
+    EntryT read_entry(const int pos) {
         file.set_pos(pos);
 
 //    readDisk->readByte((uint8_t&) flag);
@@ -33,9 +39,10 @@ struct IOManager {
 //    value.resize(lenValue);
 //    readDisk->readBytes((uint8_t*) &value, 0, 4);
 
-        entry.key = file.read_next<K>();
-        entry.value = file.read_next<V>();
-        assert(entry.key > -1);
+        K key = file.read_next<K>();
+        V value = file.read_next<V>();
+        assert(key > -1);
+        return { key, value };
     }
 
 
@@ -70,8 +77,8 @@ struct IOManager {
 
         file.write_byte(node.flag);
         file.write_int(node.used_keys);
-        file.write_vector(node.arrayPosKey);
-        file.write_vector(node.arrayPosChild);
+        file.write_vector(node.key_pos);
+        file.write_vector(node.child_pos);
         return file.get_pos();
     }
 
@@ -81,8 +88,8 @@ struct IOManager {
         node->m_pos = pos;
         node->flag = file.read_byte();
         node->used_keys = file.read_int();
-        file.read_vector(node->arrayPosKey);
-        file.read_vector(node->arrayPosChild);
+        file.read_vector(node->key_pos);
+        file.read_vector(node->child_pos);
     }
 
     int get_file_pos_end() {

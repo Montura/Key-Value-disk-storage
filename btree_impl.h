@@ -43,13 +43,13 @@ void BTree<K, V>::insert(const EntryT& entry) {
         int pos = io_manager.write_node(*root, root->m_pos);
         io_manager.write_entry(entry, pos);
 
-        root->arrayPosKey[0] = pos;
+        root->key_pos[0] = pos;
         root->used_keys++;
     } else {
         if (root->is_full()) {
             Node newRoot(t, false);
 
-            newRoot.arrayPosChild[0] = root->m_pos;
+            newRoot.child_pos[0] = root->m_pos;
 
             int posFile = io_manager.get_file_pos_end();
             newRoot.m_pos = posFile;
@@ -59,13 +59,13 @@ void BTree<K, V>::insert(const EntryT& entry) {
             newRoot.split_child(io_manager, 0, *root);
             // find the children have new key
             int i = 0;
-            EntryT entryOfRoot = newRoot.read_entry(io_manager, 0);
-            if (entryOfRoot.key < entry.key) {
+            K root_key = newRoot.read_key(io_manager, 0);
+            if (root_key < entry.key) {
                 i++;
             }
 
             Node node(t, false);
-            int pos = newRoot.arrayPosChild[i];
+            int pos = newRoot.child_pos[i];
 
             //read node
             io_manager.read_node(&node, pos);
@@ -169,7 +169,7 @@ bool BTree<K, V>::remove(const K& key) {
             root = nullptr;
             io_manager.writeUpdatePosRoot(-1);
         } else {
-            int pos = root->arrayPosChild[0];
+            int pos = root->child_pos[0];
             io_manager.writeUpdatePosRoot(pos);
             io_manager.read_node(root, pos);
         }
