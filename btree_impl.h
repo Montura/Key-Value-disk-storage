@@ -4,7 +4,7 @@
 #include "btree_node.h"
 
 template<class K, class V>
-BTreeStore<K, V> ::BTreeStore(const std::string& path, int order) : PATH(path), t(order) {
+BTreeStore<K, V> ::BTreeStore(const std::string& path, int order) : t(order) {
     file = new MappedFile(path, 0);
 //    pthread_rwlock_init(&(rwLock), NULL);
 
@@ -130,34 +130,34 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
     if (root == NULL) {
         root = new BTreeNodeStore<K, V>(t, true);
         writeHeader(t, 8);
-        root->setPost(8);
+        root->m_pos = 8;
 
         file->setPosEndFile();
         
         int pos = file->getPosFile();
         pos = pos + sizeof (int) * (2 * t - 1) + sizeof (int) * (2 * t) + 5; // 1 byte flag + 4 byte nCurrentKey
 
-        root->addPosEntry(0, pos);
-        root->setFlag(1);
-        root->increaseNCurrentEntry();
+        root->arrayPosKey[0] = pos;
+        root->flag = 1;
+        root->nCurrentEntry++;
 
         //write node root
-        writeNode(root, root->getPos());
+        writeNode(root, root->m_pos);
 
         //write key value
         writeEntry(entry, pos);
     } else {
-        if (root->getNCurrentEntry() == 2 * t - 1) {
+        if (root->nCurrentEntry == 2 * t - 1) {
             BTreeNodeStore<K, V>* newRoot = new BTreeNodeStore<K, V>(t, false);
 
-            newRoot->addPosChild(0, root->getPos());
+            newRoot->arrayPosChild[0] = root->m_pos;
 
             file->setPosEndFile();
 
             int posFile = file->getPosFile();
-            newRoot->setPost(posFile);
+            newRoot->m_pos = posFile;
             //write node
-            writeNode(newRoot, newRoot->getPos());
+            writeNode(newRoot, newRoot->m_pos);
 
             newRoot->splitChild(this, 0, root);
             //find child have new key
@@ -168,17 +168,17 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
             }
 
             BTreeNodeStore<K, V>* node = new BTreeNodeStore<K, V>(t, false);
-            int pos = newRoot->getPosChild(i);
+            int pos = newRoot->arrayPosChild[i];
 
             //read node
             readNode(node, pos);
 
             node->insertNotFull(this, entry);
 
-            readNode(root, newRoot->getPos());
+            readNode(root, newRoot->m_pos);
 
             //cap nhat lai header
-            writeUpdatePosRoot(newRoot->getPos());
+            writeUpdatePosRoot(newRoot->m_pos);
 
             delete newRoot;
 
@@ -285,16 +285,16 @@ bool BTreeStore<K, V> ::remove(const K& key) {
 
     bool res = root->remove(this, key);
 
-    if (root->getNCurrentEntry() == 0) {
+    if (root->nCurrentEntry == 0) {
         if (root->checkIsLeaf()) {
-            char flag = root->getFlag();
+            char flag = root->flag;
             flag = flag | (1 << 1);
-            writeFlag(flag, root->getPos());
+            writeFlag(flag, root->m_pos);
             delete root;
             root = NULL;
             writeUpdatePosRoot(-1);
         } else {
-            int pos = root->getPosChild(0);
+            int pos = root->arrayPosChild[0];
             writeUpdatePosRoot(pos);
             readNode(root, pos);
         }

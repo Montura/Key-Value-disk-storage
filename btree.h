@@ -23,8 +23,6 @@ struct IKeyValueStorage {
 template <typename K, typename V>
 class BTreeStore final {
 //    struct BTreeNode;
-    const int MAXLEN = 1024;
-    const std::string PATH;
 
     BTreeNodeStore<K,V>* root = nullptr;
     const int t;

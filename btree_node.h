@@ -21,22 +21,9 @@ public:
 
     ~BTreeNodeStore();
 
-    void addPosEntry(const int &i, const int &pos);
-    void addPosChild(const int &i, const int &pos);
-
-    void increaseNCurrentEntry();
-
-    int getPos() const;
-    void setPost(const int& pos);
-
-    char getFlag() const;
     void setFlag(char flag);
 
-    int getNCurrentEntry() const;
     void setNCurrentEntry(const int& nCurrentEntry);
-
-    int getPosChild(const int &i);
-    int getPosEntry(const int &i) const;
 
 
     bool checkIsLeaf() const;
