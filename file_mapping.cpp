@@ -25,38 +25,6 @@ MappedFile::~MappedFile() {
 #endif
 }
 
-template <typename T>
-T MappedFile::read_next() {
-    static_assert(std::is_arithmetic_v<T>);
-    char *value_begin = mapped_region_begin + m_pos;
-    m_pos += sizeof(T);
-    return *(reinterpret_cast<T*>(value_begin));
-}
-
-template <typename T>
-void MappedFile::write(T val, int64_t f_pos) {
-    static_assert(std::is_arithmetic_v<T>);
-    m_pos = write_to_dst(val, f_pos * sizeof(T));
-    m_capacity = std::max(m_pos, m_capacity);
-}
-
-template <typename T>
-void MappedFile::write_next(T val) {
-    static_assert(std::is_arithmetic_v<T>);
-    m_pos = write_to_dst(val, m_pos);
-    m_capacity = std::max(m_pos, m_capacity);
-}
-
-template <typename T>
-std::int64_t MappedFile::write_to_dst(T val, int64_t dst) {
-    int64_t total_size = sizeof(T);
-    if (m_pos + total_size > m_size) {
-        resize(std::max(2 * m_size, total_size));
-    }
-    char* data = reinterpret_cast<char *>(&val);
-    std::copy(data, data + total_size, mapped_region_begin + dst);
-    return dst + total_size;
-}
 
 void MappedFile::resize(int64_t new_size) {
     m_size = new_size;

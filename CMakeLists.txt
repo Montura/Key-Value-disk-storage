@@ -22,6 +22,7 @@ set(SOURCE_FILES
         mem_util.cpp
         file_mapping.cpp
         file_mapping.h
+        io_manager_impl.h
         )
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -40,6 +41,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         -Wall
         -Wextra
         -Wno-unused-parameter
+#        -O3
     )
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   target_compile_options(key-value-storage PRIVATE

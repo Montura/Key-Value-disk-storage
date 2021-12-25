@@ -41,4 +41,4 @@
  
 
 #### Questions:
-1. multithreading: `SWMR` -> Single Writer Multiple Reader (sync only write ops)
+1. multithreading: `SWMR` -> Single IOManagerT Multiple Reader (sync only write ops)
