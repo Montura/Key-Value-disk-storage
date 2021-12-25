@@ -36,6 +36,29 @@ namespace {
 
             {
                 BTreeIntInt btree(db_name, order);
+                for (int i = 0; i < n; ++i) {
+                    int value = btree.getValue(i);
+                    assert(value == i + 65);
+                }
+            }
+
+            {
+                BTreeIntInt btree(db_name, order);
+                for (int i = 0; i < n; ++i) {
+                    btree.set(i, i + 1);
+                }
+            }
+
+            {
+                BTreeIntInt btree(db_name, order);
+                for (int i = 0; i < n; ++i) {
+                    int value = btree.getValue(i);
+                    assert(value == i + 1);
+                }
+            }
+
+            {
+                BTreeIntInt btree(db_name, order);
                 int total_found = 0;
                 for (int i = 0; i < n; ++i) {
                     total_found += btree.exist(i);

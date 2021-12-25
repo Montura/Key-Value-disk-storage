@@ -113,7 +113,7 @@ void BTreeStore<K, V>::readEntry(Entry<K, V>& entry, const int pos) {
     value = file->read_next<V>();
     assert(flag > -1);
     assert(key > -1);
-    assert(value >= 65);
+//    assert(value >= 65);
 
     entry.setKeyValue(key, value);
 }
@@ -187,6 +187,27 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
             root->insertNotFull(this, entry);
         }
     }
+}
+
+template<class K, class V>
+const V BTreeStore<K, V>::getValue(const K& key) {
+//    pthread_rwlock_wrlock(&(this->rwLock));
+
+    if (root == NULL) {
+//        pthread_rwlock_unlock(&(this->rwLock));
+        return -1;
+    }
+
+    auto opt = root->search(this, key);
+
+    if (!opt.has_value()) {
+//        pthread_rwlock_unlock(&(this->rwLock));
+        return -1;
+    }
+    auto value = opt.value().value;
+
+//    pthread_rwlock_unlock(&(this->rwLock));
+    return value;
 }
 
 template<class K, class V>

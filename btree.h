@@ -41,7 +41,7 @@ public:
     void traverse();
 
     void insert(const Entry<K, V>& entry);
-//    Oit get(const K& key);
+    const V getValue(const K& key);
     bool remove(const K& key);
 
 //private:
