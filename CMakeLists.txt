@@ -20,7 +20,7 @@ set(SOURCE_FILES
         btree_node.h
         btree_node_impl.h
         entry.h
-#        mem_util.cpp
+        mem_util.cpp
         file_mapping.cpp
         file_mapping.h
         )

@@ -216,6 +216,7 @@ int main1() {
 
     std::string msg = "File mapping test";
 //        BOOST_REQUIRE_MESSAGE(success, msg);
+return 1;
 }
 //    }
 //}

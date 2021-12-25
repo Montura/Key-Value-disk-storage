@@ -93,17 +93,19 @@ namespace {
 #else
 
 void testBuildBTreeStore() {
-    BTreeStore<int, int> bTree5("../a.txt", 2);
+    {
+      BTreeStore<int, int> bTree5("../a.txt", 2);
 
-    for (int i = 0; i < 1000; i++) {
+      for (int i = 0; i < 1000; i++) {
         bTree5.set(i, 65 + i);
+      }
+      //
+      //    cout << "Traversal of the constucted tree is " << endl;
+      //    cout << "\n----------------" << endl;
+      //    bTreeStore->traverse();
     }
-    //
-    //    cout << "Traversal of the constucted tree is " << endl;
-    //    cout << "\n----------------" << endl;
-    //    bTreeStore->traverse();
-    //    cout << "\n----------------" << endl;
-    bTree5;
+    cout << "\n----------------" << endl;
+    
 }
 
 
@@ -128,16 +130,16 @@ void testFunctionExist() {
     }
     assert(n == count);
     cout << "---------------------------------------------" << endl;
-
+    delete bTreeStore;
 }
 
-//void at_exit_handler();
+void at_exit_handler();
 
 int main() {
-//    const int handler = std::atexit(at_exit_handler);
+    const int handler = std::atexit(at_exit_handler);
 
 
-//    testBuildBTreeStore();
+    testBuildBTreeStore();
     testFunctionExist();
 
     return 0;
