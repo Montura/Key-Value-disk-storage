@@ -33,43 +33,25 @@ BTree<K, V>::~BTree() {
 }
 
 template <typename K, typename V>
-int BTree<K, V>::calc_node_writable_node_size() {
-    return
-        sizeof (int) * root->max_key_num() +   // key positions array
-        sizeof (int) * root->max_child_num() + // child positions array
-        /* flag: is_deleted and is_leaf */ 1 +
-        /* sizeof(used_keys) */ 4;
-}
-
-template <typename K, typename V>
 void BTree<K, V>::insert(const EntryT& entry) {
     if (root == NULL) {
         root = new Node(t, true);
-        io_manager.write_header(t, 8);
         root->m_pos = 8;
 
-        io_manager.setPosEndFile();
-        
-        int pos = io_manager.getPosFile();
-        pos += calc_node_writable_node_size();
+        // write node root and key|value
+        io_manager.write_header(t, 8);
+        int pos = io_manager.write_node(*root, root->m_pos);
+        io_manager.write_entry(entry, pos);
 
         root->arrayPosKey[0] = pos;
         root->used_keys++;
-
-        // write node root
-        io_manager.write_node(*root, root->m_pos);
-
-        //write key value
-        io_manager.write_entry(entry, pos);
     } else {
         if (root->is_full()) {
             Node newRoot(t, false);
 
             newRoot.arrayPosChild[0] = root->m_pos;
 
-            io_manager.setPosEndFile();
-
-            int posFile = io_manager.getPosFile();
+            int posFile = io_manager.get_file_pos_end();
             newRoot.m_pos = posFile;
             //write node
             io_manager.write_node(newRoot, newRoot.m_pos);

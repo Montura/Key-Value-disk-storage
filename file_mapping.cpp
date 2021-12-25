@@ -68,7 +68,7 @@ void MappedFile::read_int_array(int* vec, int32_t used){
     m_pos += total_size;
 }
 
-void MappedFile::setPosFile(int64_t pos) {
+void MappedFile::set_pos(int64_t pos) {
     m_pos = pos > 0 ? pos : 0;
 }
 
@@ -76,7 +76,7 @@ int32_t MappedFile::read_int() {
     return read_next<int32_t>();
 }
 
-int64_t MappedFile::getPosFile() {
+int64_t MappedFile::get_pos() {
     return m_pos;
 }
 
@@ -92,7 +92,7 @@ uint8_t MappedFile::read_byte() {
     return read_next<uint8_t>();
 }
 
-void MappedFile::setPosEndFile() {
+void MappedFile::set_file_pos_to_end() {
     m_pos = m_capacity;
 }
 

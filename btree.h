@@ -4,7 +4,6 @@
 #include <cassert>
 #include <mutex>
 
-#include "file_mapping.h"
 #include "entry.h"
 
 ///** Common Interface */
@@ -38,8 +37,6 @@ public:
     void insert(const Entry<K, V>& entry);
     const V get(const K& key);
     bool remove(const K& key);
-
-    int calc_node_writable_node_size();
 
 private:
     BTreeNode* root = nullptr;
