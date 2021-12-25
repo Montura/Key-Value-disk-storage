@@ -28,13 +28,14 @@ using std::chrono::milliseconds;
 
 namespace {
     BOOST_AUTO_TEST_CASE(test_b_tree_init) {
-        const int n = 1000;
+        const int n = 10000;
         using BTreeIntInt = BTreeStore<int, int>;
         bool found_all = false, any_not_found = false, remove_all = false;
         std::string db_prefix = "../db_";
         std::string end = ".txt";
 
         for (int order = 2; order < 101; ++order) {
+            auto t1 = high_resolution_clock::now();
             auto db_name = db_prefix + std::to_string(order) + end;
             {
                 BTreeIntInt btree(db_name, order);
@@ -78,7 +79,7 @@ namespace {
             {
                 BTreeIntInt btree(db_name, order);
                 int total_not_found = 0;
-                const int key_shift = 1000;
+                const int key_shift = n + 1000;
                 for (int i = 0; i < n; ++i) {
                     total_not_found += !btree.exist(key_shift + i);
                 }
@@ -94,7 +95,11 @@ namespace {
                 remove_all = (total_deleted == n);
             }
 
-            std::string msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
+            auto t2 = high_resolution_clock::now();
+            /* Getting number of milliseconds as a double. */
+            duration<double, std::milli> ms_double = t2 - t1;
+
+            std::string msg = "BTreeStore<int, int, " + std::to_string(order) + "> takes " + std::to_string(ms_double.count()) + " ms";
             BOOST_REQUIRE_MESSAGE(found_all && any_not_found && remove_all, msg);
         }
     }
