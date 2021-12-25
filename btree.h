@@ -73,7 +73,7 @@ private:
         inline int max_child_num() const { return 2 * t; }
 
         int find_key_bin_search(IOManagerT& io_manager, const K& key);
-        void split_child(IOManagerT& io_manager, const int index, Node& curr_node);
+        void split_child(IOManagerT& manager, const int idx, Node& curr_node);
         EntryT read_entry(IOManagerT& io_manager, const int i);
         void insert_non_full(IOManagerT& io_manager, const Entry<K, V>& entry);
         void traverse(IOManagerT& io_manager);
@@ -83,13 +83,13 @@ private:
     private:
         Node get_node(IOManagerT& io_manager, const int i);
 
-        bool remove_from_leaf(IOManagerT& io_manager, const int index);
+        bool remove_from_leaf(IOManagerT& io_manager, const int idx);
         bool remove_from_non_leaf(IOManagerT& io_manager, const int index);
 
         int get_prev_entry_pos(IOManagerT& io_manager, const int index);
         int get_next_entry_pos(IOManagerT& io_manager, const int index);
 
-        void merge_node(IOManagerT& io_manager, const int index);
+        void merge_node(IOManagerT& io_manager, const int idx);
         void fill_node(IOManagerT& io_manager, const int index);
 
         void borrow_from_node_prev(IOManagerT& io_manager, const int index);

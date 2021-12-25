@@ -75,7 +75,7 @@ void BTree<K, V>::insert(const EntryT& entry) {
             io_manager.write_node(newRoot, newRoot.m_pos);
 
             newRoot.split_child(io_manager, 0, *root);
-            //find child have new key
+            // find the children have new key
             int i = 0;
             EntryT entryOfRoot = newRoot.read_entry(io_manager, 0);
             if (entryOfRoot.key < entry.key) {
@@ -176,19 +176,9 @@ bool BTree<K, V>::remove(const K& key) {
 //    timestamp_t timeFinish;
 //    timestamp_t timeStart = get_timestamp();
 
-    if (!root) {
-//        timeFinish = get_timestamp();
-//        secs = (timeFinish - timeStart);
+    bool success = root && root->remove(io_manager, key);
 
-//        cout << "time API remove : " << secs << " microsecond" << endl;
-
-//        pthread_rwlock_unlock(&(rwLock));
-        return false;
-    }
-
-    bool res = root->remove(io_manager, key);
-
-    if (root->used_keys == 0) {
+    if (success && root->used_keys == 0) {
         if (root->is_leaf()) {
             char flag = root->flag;
             flag = flag | (1 << 1);
@@ -209,7 +199,7 @@ bool BTree<K, V>::remove(const K& key) {
 //    cout << "time API remove : " << secs << " microsecond" << endl;
 
 //    pthread_rwlock_unlock(&(rwLock));
-    return res;
+    return success;
 }
 
 template <typename K, typename V>
