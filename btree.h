@@ -6,8 +6,6 @@
 #include <optional>
 #include <mutex>
 
-#include "manage_file.h"
-#include "data_writer.h"
 #include "btree_node.h"
 #include "file_mapping.h"
 
@@ -31,12 +29,7 @@ class BTreeStore final {
     BTreeNodeStore<K,V>* root = nullptr;
     const int t;
 
-//    ManageFile* manageFileRead;
-//    ManageFile* manageFileWrite;
-//    DataOutput* writeDisk;
-//    DataInput* readDisk;
     MappedFile* file;
-
 public:
 //    using Node = BTreeNode;
 
