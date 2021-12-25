@@ -30,11 +30,11 @@ public:
 
     int findKeyBinarySearch(BTreeStore<K, V>* bTree, const K& key);
 
-    void splitChild(BTreeStore<K, V>* bTree, const int &index, BTreeNodeStore<K, V>* &node);
+    void splitChild(BTreeStore<K, V>* bTree, const int &index, BTreeNodeStore<K, V>& node);
 
     std::optional<Entry<K, V>> getEntry(BTreeStore<K, V>* bTree, const int &i);
 
-    BTreeNodeStore<K, V>* getBTreeNodeStore(BTreeStore<K, V>* bTree, const int &i);
+    BTreeNodeStore<K, V> getBTreeNodeStore(BTreeStore<K, V>* bTree, const int &i);
 
     void insertNotFull(BTreeStore<K, V>* bTree, const Entry<K, V>& entry);
 

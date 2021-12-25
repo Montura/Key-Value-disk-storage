@@ -57,13 +57,13 @@ void BTreeStore<K, V> ::writeUpdatePosRoot(const int posRoot) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::writeNode(BTreeNodeStore<K, V>* node, const int pos) {
+void BTreeStore<K, V> ::writeNode(BTreeNodeStore<K, V>& node, const int pos) {
     file->setPosFile(pos);
 
-    file->write_byte(node->flag);
-    file->write_int(node->nCurrentEntry);
-    file->write_vector(node->arrayPosKey);
-    file->write_vector(node->arrayPosChild);
+    file->write_byte(node.flag);
+    file->write_int(node.nCurrentEntry);
+    file->write_vector(node.arrayPosKey);
+    file->write_vector(node.arrayPosChild);
 }
 
 template<class K, class V>
@@ -142,7 +142,7 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
         root->nCurrentEntry++;
 
         //write node root
-        writeNode(root, root->m_pos);
+        writeNode(*root, root->m_pos);
 
         //write key value
         writeEntry(entry, pos);
@@ -157,9 +157,9 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
             int posFile = file->getPosFile();
             newRoot->m_pos = posFile;
             //write node
-            writeNode(newRoot, newRoot->m_pos);
+            writeNode(*newRoot, newRoot->m_pos);
 
-            newRoot->splitChild(this, 0, root);
+            newRoot->splitChild(this, 0, *root);
             //find child have new key
             int i = 0;
             Entry<K, V> entryOfRoot = newRoot->getEntry(this, 0).value();

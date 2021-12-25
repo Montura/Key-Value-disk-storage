@@ -55,7 +55,7 @@ public:
     int getPosFileWrite() const;
     void setPosEndFileWrite();
 
-    void writeNode(BTreeNodeStore<K,V>* node, const int pos);
+    void writeNode(BTreeNodeStore<K,V>& node, const int pos);
     void writeHeader(const int t, const int posRoot);
     void writeUpdatePosRoot(const int posRoot);
 
