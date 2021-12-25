@@ -4,43 +4,43 @@
 #include "btree_node.h"
 
 template<class K, class V>
-BTreeStore<K, V> ::BTreeStore(const std::string& path, int order) : t(order), file(path, 0) {
+BTree<K, V>::BTree(const std::string& path, int order) : t(order), file(path, 0) {
 //    pthread_rwlock_init(&(rwLock), NULL);
 
     if (file.isEmpty()) {
-        root = NULL;
+        root = nullptr;
         return;
     }
     int root_pos;
     int t_2 = 0;
-    readHeader(t_2, root_pos);
+    read_header(t_2, root_pos);
     assert(t == t_2);
 
     if (root_pos == -1) {
-        root = NULL;
+        root = nullptr;
         return;
     }
 
-    root = new BTreeNodeStore<K, V>(t, false);
-    readNode(root, root_pos);
+    root = new Node(t, false);
+    read_node(root, root_pos);
 }
 
 template<class K, class V>
-BTreeStore<K, V> ::~BTreeStore() {
+BTree<K, V>::~BTree() {
     delete root;
 
 //    pthread_rwlock_destroy(&(rwLock));
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::readHeader(int& t, int& posRoot) {
+void BTree<K, V>::read_header(int& t, int& posRoot) {
     file.setPosFile(0);
     t = file.read_int();
     posRoot = file.read_int();
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::writeHeader(const int t, const int posRoot) {
+void BTree<K, V>::write_header(const int t, const int posRoot) {
     file.setPosFile(0);
 
     file.write_int(t);
@@ -48,35 +48,35 @@ void BTreeStore<K, V> ::writeHeader(const int t, const int posRoot) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::writeUpdatePosRoot(const int posRoot) {
+void BTree<K, V>::writeUpdatePosRoot(const int posRoot) {
     file.setPosFile(4);
 
     file.write_int(posRoot);
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::writeNode(BTreeNodeStore<K, V>& node, const int pos) {
+void BTree<K, V>::write_node(const Node& node, const int pos) {
     file.setPosFile(pos);
 
     file.write_byte(node.flag);
-    file.write_int(node.nCurrentEntry);
+    file.write_int(node.used_keys);
     file.write_vector(node.arrayPosKey);
     file.write_vector(node.arrayPosChild);
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::readNode(BTreeNodeStore<K, V>* node, const int pos) {
+void BTree<K, V>::read_node(Node* node, const int pos) {
     file.setPosFile(pos);
 
     node->m_pos = pos;
     node->flag = file.read_byte();
-    node->nCurrentEntry = file.read_int();
+    node->used_keys = file.read_int();
     file.read_vector(node->arrayPosKey);
     file.read_vector(node->arrayPosChild);
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::writeEntry(const Entry<K, V>& entry, const int pos) {
+void BTree<K, V>::write_entry(const Entry<K, V>& entry, const int pos) {
     char flag = 1;
     int strKey = entry.key;
     int strValue = entry.value;
@@ -89,9 +89,7 @@ void BTreeStore<K, V>::writeEntry(const Entry<K, V>& entry, const int pos) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::readEntry(Entry<K, V>& entry, const int pos) {
-    int key;
-    int value;
+void BTree<K, V>::read_entry(Entry<K, V>& entry, const int pos) {
     char flag;
 //    int lenKey, lenValue;
 
@@ -105,48 +103,52 @@ void BTreeStore<K, V>::readEntry(Entry<K, V>& entry, const int pos) {
 //    value.resize(lenValue);
 //    readDisk->readBytes((uint8_t*) &value, 0, 4);
 
-    
     flag = file.read_byte();
-    key = file.read_next<K>();
-    value = file.read_next<V>();
+    entry.key = file.read_next<K>();
+    entry.value = file.read_next<V>();
     assert(flag > -1);
-    assert(key > -1);
-//    assert(value >= 65);
-
-    entry.setKeyValue(key, value);
+    assert(entry.key > -1);
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::writeFlag(char flag, const int pos) {
+void BTree<K, V>::write_flag(char flag, const int pos) {
     file.setPosFile(pos);
 
     file.write_byte(flag);
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
+int BTree<K, V>::calc_node_writable_node_size() {
+    return
+        sizeof (int) * root->max_key_num() +   // key positions array
+        sizeof (int) * root->max_child_num() + // child positions array
+        /* flag: is_deleted and is_leaf */ 1 +
+        /* sizeof(used_keys) */ 4;
+}
+
+template<class K, class V>
+void BTree<K, V>::insert(const Entry<K, V>& entry) {
     if (root == NULL) {
-        root = new BTreeNodeStore<K, V>(t, true);
-        writeHeader(t, 8);
+        root = new Node(t, true);
+        write_header(t, 8);
         root->m_pos = 8;
 
         file.setPosEndFile();
         
         int pos = file.getPosFile();
-        pos = pos + sizeof (int) * (2 * t - 1) + sizeof (int) * (2 * t) + 5; // 1 byte flag + 4 byte nCurrentKey
+        pos += calc_node_writable_node_size();
 
         root->arrayPosKey[0] = pos;
-        root->flag = 1;
-        root->nCurrentEntry++;
+        root->used_keys++;
 
-        //write node root
-        writeNode(*root, root->m_pos);
+        // write node root
+        write_node(*root, root->m_pos);
 
         //write key value
-        writeEntry(entry, pos);
+        write_entry(entry, pos);
     } else {
-        if (root->nCurrentEntry == 2 * t - 1) {
-            BTreeNodeStore<K, V> newRoot(t, false);
+        if (root->is_full()) {
+            Node newRoot(t, false);
 
             newRoot.arrayPosChild[0] = root->m_pos;
 
@@ -155,67 +157,64 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
             int posFile = file.getPosFile();
             newRoot.m_pos = posFile;
             //write node
-            writeNode(newRoot, newRoot.m_pos);
+            write_node(newRoot, newRoot.m_pos);
 
-            newRoot.splitChild(this, 0, *root);
+            newRoot.split_child(this, 0, *root);
             //find child have new key
             int i = 0;
-            Entry<K, V> entryOfRoot = newRoot.getEntry(this, 0).value();
+            Entry<K, V> entryOfRoot = newRoot.read_entry(this, 0);
             if (entryOfRoot.key < entry.key) {
                 i++;
             }
 
-            BTreeNodeStore<K, V> node(t, false);
+            Node node(t, false);
             int pos = newRoot.arrayPosChild[i];
 
             //read node
-            readNode(&node, pos);
+            read_node(&node, pos);
 
-            node.insertNotFull(this, entry);
+            node.insert_non_full(this, entry);
 
-            readNode(root, newRoot.m_pos);
+            read_node(root, newRoot.m_pos);
 
-            //cap nhat lai header
             writeUpdatePosRoot(newRoot.m_pos);
         } else {
-            root->insertNotFull(this, entry);
+            root->insert_non_full(this, entry);
         }
     }
 }
 
 template<class K, class V>
-const V BTreeStore<K, V>::getValue(const K& key) {
+const V BTree<K, V>::get(const K& key) {
 //    pthread_rwlock_wrlock(&(this->rwLock));
 
-    if (root == NULL) {
+    if (!root) {
 //        pthread_rwlock_unlock(&(this->rwLock));
         return -1;
     }
 
-    auto opt = root->search(this, key);
-
-    if (!opt.has_value()) {
+    auto entry = root->find(this, key);
+    if (entry.key == Entry<K,V>::INVALID_KEY) {
 //        pthread_rwlock_unlock(&(this->rwLock));
         return -1;
     }
-    auto value = opt.value().value;
 
 //    pthread_rwlock_unlock(&(this->rwLock));
-    return value;
+    return entry.value;
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::set(const K& key, const V& value) {
+void BTree<K, V>::set(const K& key, const V& value) {
 //    pthread_rwlock_wrlock(&(rwLock));
     //    int secs;
     //    timestamp_t timeFinish;
     //    timestamp_t timeStart = get_timestamp();
 
-    if (root == NULL) {
-        Entry<K, V> entry(key, value);
+    if (!root) {
+        Entry<K, V> entry { key, value };
         insert(entry);
     } else if (!root->set(this, key, value)) {
-        Entry<K, V> entry(key, value);
+        Entry<K, V> entry { key, value };
         insert(entry);
         //        timeFinish = get_timestamp();
     }
@@ -229,14 +228,14 @@ void BTreeStore<K, V> ::set(const K& key, const V& value) {
 }
 
 template<class K, class V>
-bool BTreeStore<K, V> ::exist(const K& key) {
+bool BTree<K, V>::exist(const K& key) {
 //    pthread_rwlock_wrlock(&(rwLock));
 
 //    int secs;
 //    timestamp_t timeFinish;
 //    timestamp_t timeStart = get_timestamp();
 
-    if (root == NULL) {
+    if (!root) {
 //        timeFinish = get_timestamp();
 //        secs = (timeFinish - timeStart);
 
@@ -245,23 +244,18 @@ bool BTreeStore<K, V> ::exist(const K& key) {
         return false;
     }
 
-    bool res;
-
-    auto opt = root->search(this, key);
-
-    res = opt.has_value();
-
+    bool success = root->find(this, key).key != Entry<K,V>::INVALID_KEY;
 //    timeFinish = get_timestamp();
 //    secs = (timeFinish - timeStart);
 
 //    cout << "time API exist: " << secs << " microsecond" << endl;
 
 //    pthread_rwlock_unlock(&(rwLock));
-    return res;
+    return success;
 }
 
 template<class K, class V>
-bool BTreeStore<K, V> ::remove(const K& key) {
+bool BTree<K, V>::remove(const K& key) {
 //    pthread_rwlock_wrlock(&(rwLock));
 //    int secs;
 //    timestamp_t timeFinish;
@@ -279,18 +273,18 @@ bool BTreeStore<K, V> ::remove(const K& key) {
 
     bool res = root->remove(this, key);
 
-    if (root->nCurrentEntry == 0) {
-        if (root->checkIsLeaf()) {
+    if (root->used_keys == 0) {
+        if (root->is_leaf()) {
             char flag = root->flag;
             flag = flag | (1 << 1);
-            writeFlag(flag, root->m_pos);
+            write_flag(flag, root->m_pos);
             delete root;
-            root = NULL;
+            root = nullptr;
             writeUpdatePosRoot(-1);
         } else {
             int pos = root->arrayPosChild[0];
             writeUpdatePosRoot(pos);
-            readNode(root, pos);
+            read_node(root, pos);
         }
     }
 
@@ -304,19 +298,19 @@ bool BTreeStore<K, V> ::remove(const K& key) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::traverse() {
+void BTree<K, V>::traverse() {
     if (root != NULL) {
         root->traverse(this);
     }
 }
 
 template<class K, class V>
-int BTreeStore<K, V> ::getPosFileWrite() {
+int BTree<K, V>::getPosFileWrite() {
     return file.getPosFile();
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::setPosEndFileWrite() {
+void BTree<K, V>::setPosEndFileWrite() {
     file.setPosEndFile();
 }
 

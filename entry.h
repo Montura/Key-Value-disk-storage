@@ -2,18 +2,9 @@
 
 template <typename K, typename V>
 struct Entry {
+    static constexpr K INVALID_KEY = -1;
+    static constexpr V INVALID_VALUE = -1;
+
     K key;
     V value;
-
-    Entry() {}
-    Entry(const K &key, const V &value) : key(key), value(value) {}
-
-    void setKeyValue(const K &key, const V &value) {
-        this->key = key;
-        this->value = value;
-    }
-
-    void setValue(const V &value) {
-        this->value = value;
-    }
 };

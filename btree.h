@@ -21,123 +21,99 @@ struct IKeyValueStorage {
 
 /** Tree */
 template <typename K, typename V>
-class BTreeStore final {
-//    struct BTreeNode;
+class BTree final {
+    struct BTreeNode;
 
-    BTreeNodeStore<K,V>* root = nullptr;
+    BTreeNode* root = nullptr;
     const int t;
 
     MappedFile file;
 public:
-//    using Node = BTreeNode;
+    using Node = BTreeNode;
 
-    explicit BTreeStore(const std::string& path, int order);
-    ~BTreeStore();
+    explicit BTree(const std::string& path, int order);
+    ~BTree();
 
     bool exist(const K &key);
     void set(const K &key, const V& value);
     void traverse();
 
     void insert(const Entry<K, V>& entry);
-    const V getValue(const K& key);
+    const V get(const K& key);
     bool remove(const K& key);
 
-//private:
+// todo: extract to reader|writer
 
-    void writeEntry(const Entry<K, V>& entry, const int pos);
-    void readEntry(Entry<K, V>& entry, const int pos);
+    void write_entry(const Entry<K, V>& entry, const int pos);
+    void read_entry(Entry<K, V>& entry, const int pos);
 
-    void writeFlag(char flag, const int pos);
+    void write_flag(char flag, const int pos);
 
-    void readHeader(int& t, int& posRoot);
-    void readNode(BTreeNodeStore<K,V>* node, const int pos);
+    void write_header(const int t, const int posRoot);
+    void read_header(int& t, int& posRoot);
+
+    void read_node(Node* node, const int pos);
+    void write_node(const Node& node, const int pos);
 
     int getPosFileWrite();
     void setPosEndFileWrite();
-
-    void writeNode(BTreeNodeStore<K,V>& node, const int pos);
-    void writeHeader(const int t, const int posRoot);
     void writeUpdatePosRoot(const int posRoot);
 
-    inline int max_key_num() { return 2 * t - 1; }
-    inline int max_child_num() { return 2 * t; }
+    int calc_node_writable_node_size();
 private:
     /** Node */
-//    struct BTreeNode {
-//        const uint8_t t;
-//        int m_pos;
-//
-//        int nCurrentEntry = 0;
-//        char flag = 0;
-//
-////        bool is_leaf = false;
-////        bool is_deleted = false;
-//        K* arrayPosKey;
-////        std::vector<V*> values;
-////        std::vector<BTreeNode*> children;
-//        K* arrayPosChild;
-//
-//        BTreeNode() = delete;
-//        explicit BTreeNode(int t, bool is_leaf);
-//        ~BTreeNode();
-//
-////        BTreeNode* find_node(const K &key);
-////        int key_idx_in_node(const K& key) const;
-////        int find_key_pos(const K& key) const;
-//        Entry<K, V>* search(BTreeStore* tree, const K& key);
-//        bool set(BTreeStore* tree, const K& key, const V& value);
-//        void insertNotFull(BTreeStore* tree, const Entry<K, V>* entry);
-//        void splitChild(BTreeStore* tree, const int idx, BTreeNode* node);
-//        void traverse(BTreeStore* tree);
-//        bool remove(BTreeStore* tree, const K& idx);
-//
-//        BTreeNode* getNode(BTreeStore* bTree, const int i);
-//
-////        inline bool is_full() { return used_keys == max_key_num(); }
-//
-//        Entry<K, V>* getEntry(BTreeStore* tree, const int m_pos);
-//        int findKeyBinarySearch(BTreeStore *tree, const K& key);
-//
-//        BTreeNode* getBTreeNodeStore(BTreeStore* bTree, const int i);
-//
-//        bool checkIsLeaf() const;
-//
-//        void addPosEntry(const int &i, const int &m_pos);
-//        void addPosChild(const int &i, const int &m_pos);
-//
-//        void increaseNCurrentEntry();
-//
-//        K* getArrayPosKey();
-//        void setArrayPosKey(int* arrPosKey);
-//        K* getArrayPosChild();
-//        void setArrayPosChild(int* arrPosChild);
-//
-//        int getPos() const;
-//        void setPost(const int& m_pos);
-//
-//        char getFlag() const;
-//        void setFlag(char flag);
-//
-//        int getNCurrentEntry() const;
-//        void setNCurrentEntry(const int& nCurrentEntry);
-//
-//        int getPosChild(const int &i);
-//        int getPosEntry(const int &i) const;
-//
-//        void setMinimumDegre(const int& t);
-//        int getMinimumDegre() const;
-//
-//    private:
-//        bool removeFromLeaf(BTreeStore* tree, const int idx);
-//        bool removeFromNonLeaf(BTreeStore* tree, const int idx);
-//        int getPosEntryPred(BTreeStore* tree, const int idx) const;
-//        int getPosEntrySucc(BTreeStore* tree, const int idx) const;
-//        void fillNode(BTreeStore* tree, const int idx);
-//        void mergeNode(BTreeStore* tree, const int idx);
-//        void borrowFromNodePrev(BTreeStore* tree, const int idx);
-//        void borrowFromNodeNext(BTreeStore* tree, const int idx);
-//
-//        inline int max_key_num() { return 2 * t - 1; }
-//        inline int max_child_num() { return 2 * t; }
-//    };
+    struct BTreeNode {
+        int used_keys;
+        int t;
+        char flag;
+        int m_pos;
+        std::vector<int> arrayPosKey;
+        std::vector<int> arrayPosChild;
+
+    public:
+        BTreeNode(const int& t, bool isLeaf);
+
+        BTreeNode(const BTreeNode& other) = delete;
+        BTreeNode operator=(const BTreeNode& other) = delete;
+
+        BTreeNode(BTreeNode && other) noexcept = default;
+        BTreeNode& operator=(BTreeNode && other) noexcept = default;
+
+        ~BTreeNode();
+
+        bool is_leaf() const;
+
+        bool is_full() const;
+
+        int find_key_bin_search(BTree* bTree, const K& key);
+
+        void split_child(BTree* bTree, const int index, Node& node);
+
+        Entry<K, V> read_entry(BTree* bTree, const int i);
+
+        void insert_non_full(BTree* bTree, const Entry<K, V>& entry);
+
+        void traverse(BTree* bTree);
+
+        bool set(BTree *bTree, const K &key, const V &value);
+        bool remove(BTree* bTree, const K& key);
+        Entry<K, V> find(BTree* bTree, const K& key);
+
+        inline int max_key_num() const { return 2 * t - 1; }
+        inline int max_child_num() const { return 2 * t; }
+    private:
+        Node get_node(BTree* bTree, const int i);
+
+        bool remove_from_leaf(BTree* bTree, const int index);
+        bool remove_from_non_leaf(BTree* bTree, const int index);
+
+        int get_prev_entry_pos(BTree* bTree, const int index);
+        int get_next_entry_pos(BTree* bTree, const int index);
+
+        void merge_node(BTree* bTree, const int index);
+        void fill_node(BTree* bTree, const int index);
+
+        void borrow_from_node_prev(BTree* bTree, const int index);
+        void borrow_from_node_next(BTree* bTree, const int index);
+    };
 };
