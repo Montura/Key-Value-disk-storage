@@ -27,7 +27,7 @@ class BTreeStore final {
     BTreeNodeStore<K,V>* root = nullptr;
     const int t;
 
-    MappedFile* file;
+    MappedFile file;
 public:
 //    using Node = BTreeNode;
 
@@ -52,7 +52,7 @@ public:
     void readHeader(int& t, int& posRoot);
     void readNode(BTreeNodeStore<K,V>* node, const int pos);
 
-    int getPosFileWrite() const;
+    int getPosFileWrite();
     void setPosEndFileWrite();
 
     void writeNode(BTreeNodeStore<K,V>& node, const int pos);
