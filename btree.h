@@ -36,7 +36,7 @@ public:
     bool remove(const K& key);
 
 private:
-    void insert(const Entry<K, V>& entry);
+    void insert(const K& key, const V& value);
     void traverse();
 
     BTreeNode* root = nullptr;
@@ -66,6 +66,7 @@ private:
 
         bool is_leaf() const;
         bool is_full() const;
+        char is_deleted_or_is_leaf() const;
 
         inline int max_key_num() const { return std::max(2 * t - 1, 0); }
         inline int max_child_num() const { return 2 * t; }
@@ -77,7 +78,7 @@ private:
         EntryT read_entry(IOManagerT& io_manager, const int idx);
         EntryT find(IOManagerT& io_manager, const K& key);
 
-        void insert_non_full(IOManagerT& io_manager, const Entry<K, V>& entry);
+        void insert_non_full(IOManagerT& io_manager, const K& key, const V& value);
         void traverse(IOManagerT& io_manager);
         bool set(IOManagerT& io_manager, const K &key, const V &value);
         bool remove(IOManagerT& io_manager, const K& key);
@@ -87,11 +88,11 @@ private:
         bool remove_from_leaf(IOManagerT& io_manager, const int idx);
         bool remove_from_non_leaf(IOManagerT& io_manager, const int idx);
 
-        int get_prev_entry_pos(IOManagerT& io_manager, const int index);
-        int get_next_entry_pos(IOManagerT& io_manager, const int index);
+        int get_prev_entry_pos(IOManagerT& io_manager, const int idx);
+        int get_next_entry_pos(IOManagerT& io_manager, const int idx);
 
         void merge_node(IOManagerT& io_manager, const int idx);
-        void fill_node(IOManagerT& io_manager, const int index);
+        int fill_node(IOManagerT& io_manager, const int idx);
 
         void borrow_from_prev_node(IOManagerT& io_manager, const int idx);
         void borrow_from_next_node(IOManagerT& io_manager, const int idx);

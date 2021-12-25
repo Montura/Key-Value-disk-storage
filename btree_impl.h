@@ -6,20 +6,15 @@
 template <typename K, typename V>
 BTree<K, V>::BTree(const std::string& path, int order) : t(order), io_manager(path) {
 //    pthread_rwlock_init(&(rwLock), NULL);
-
-    if (!io_manager.is_ready()) {
-        root = nullptr;
+    if (!io_manager.is_ready())
         return;
-    }
-    int root_pos;
-    int t_2 = 0;
-    io_manager.read_header(t_2, root_pos);
-    assert(t == t_2);
 
-    if (root_pos == -1) {
-        root = nullptr;
+    int t_from_file = 0;
+    int root_pos = io_manager.read_header(t_from_file);
+    assert(t == t_from_file);
+
+    if (root_pos == -1)
         return;
-    }
 
     root = new Node(t, false);
     io_manager.read_node(root, root_pos);
@@ -28,55 +23,52 @@ BTree<K, V>::BTree(const std::string& path, int order) : t(order), io_manager(pa
 template <typename K, typename V>
 BTree<K, V>::~BTree() {
     delete root;
-
 //    pthread_rwlock_destroy(&(rwLock));
 }
 
 template <typename K, typename V>
-void BTree<K, V>::insert(const EntryT& entry) {
-    if (root == NULL) {
+void BTree<K, V>::insert(const K& key, const V& value) {
+    if (root == nullptr) {
+        // write header
+        io_manager.write_header(t, 8);
+
         root = new Node(t, true);
         root->m_pos = 8;
+        root->used_keys++;
 
         // write node root and key|value
-        io_manager.write_header(t, 8);
         int pos = io_manager.write_node(*root, root->m_pos);
-        io_manager.write_entry(entry, pos);
+        io_manager.write_entry({ key, value }, pos);
 
         root->key_pos[0] = pos;
-        root->used_keys++;
     } else {
         if (root->is_full()) {
             Node newRoot(t, false);
-
             newRoot.child_pos[0] = root->m_pos;
 
+            // Write node
             int posFile = io_manager.get_file_pos_end();
             newRoot.m_pos = posFile;
-            //write node
             io_manager.write_node(newRoot, newRoot.m_pos);
 
             newRoot.split_child(io_manager, 0, *root);
-            // find the children have new key
+
+            // Find the children have new key
             int i = 0;
             K root_key = newRoot.read_key(io_manager, 0);
-            if (root_key < entry.key) {
+            if (root_key < key)
                 i++;
-            }
-
-            Node node(t, false);
-            int pos = newRoot.child_pos[i];
 
             //read node
+            Node node(t, false);
+            int pos = newRoot.child_pos[i];
             io_manager.read_node(&node, pos);
-
-            node.insert_non_full(io_manager, entry);
+            node.insert_non_full(io_manager, key, value);
 
             io_manager.read_node(root, newRoot.m_pos);
-
             io_manager.writeUpdatePosRoot(newRoot.m_pos);
         } else {
-            root->insert_non_full(io_manager, entry);
+            root->insert_non_full(io_manager, key, value);
         }
     }
 }
@@ -85,16 +77,7 @@ template <typename K, typename V>
 const V BTree<K, V>::get(const K& key) {
 //    pthread_rwlock_wrlock(&(this->rwLock));
 
-    if (!root) {
-//        pthread_rwlock_unlock(&(this->rwLock));
-        return -1;
-    }
-
-    auto entry = root->find(io_manager, key);
-    if (entry.key == Entry<K,V>::INVALID_KEY) {
-//        pthread_rwlock_unlock(&(this->rwLock));
-        return -1;
-    }
+    auto entry = root ? root->find(io_manager, key) : EntryT { EntryT::INVALID_KEY, EntryT::INVALID_KEY };
 
 //    pthread_rwlock_unlock(&(this->rwLock));
     return entry.value;
@@ -107,14 +90,10 @@ void BTree<K, V>::set(const K& key, const V& value) {
     //    timestamp_t timeFinish;
     //    timestamp_t timeStart = get_timestamp();
 
-    if (!root) {
-        EntryT entry { key, value };
-        insert(entry);
-    } else if (!root->set(io_manager, key, value)) {
-        EntryT entry { key, value };
-        insert(entry);
+    if (!root || !root->set(io_manager, key, value))
+        insert(key, value);
         //        timeFinish = get_timestamp();
-    }
+
 
     //    timeFinish = get_timestamp();
     //    secs = (timeFinish - timeStart);
@@ -132,16 +111,7 @@ bool BTree<K, V>::exist(const K& key) {
 //    timestamp_t timeFinish;
 //    timestamp_t timeStart = get_timestamp();
 
-    if (!root) {
-//        timeFinish = get_timestamp();
-//        secs = (timeFinish - timeStart);
-
-//        cout << "time API exist: " << secs << " microsecond" << endl;
-//        pthread_rwlock_unlock(&(rwLock));
-        return false;
-    }
-
-    bool success = root->find(io_manager, key).key != Entry<K,V>::INVALID_KEY;
+    bool success = root && root->find(io_manager, key).key != Entry<K,V>::INVALID_KEY;
 //    timeFinish = get_timestamp();
 //    secs = (timeFinish - timeStart);
 
@@ -162,9 +132,7 @@ bool BTree<K, V>::remove(const K& key) {
 
     if (success && root->used_keys == 0) {
         if (root->is_leaf()) {
-            char flag = root->flag;
-            flag = flag | (1 << 1);
-            io_manager.write_flag(flag, root->m_pos);
+            io_manager.write_flag(root->is_deleted_or_is_leaf(), root->m_pos);
             delete root;
             root = nullptr;
             io_manager.writeUpdatePosRoot(-1);
@@ -186,7 +154,6 @@ bool BTree<K, V>::remove(const K& key) {
 
 template <typename K, typename V>
 void BTree<K, V>::traverse() {
-    if (root != NULL) {
+    if (root != nullptr)
         root->traverse(io_manager);
-    }
 }

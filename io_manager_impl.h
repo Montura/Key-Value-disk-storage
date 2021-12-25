@@ -52,11 +52,12 @@ struct IOManager {
         file.write_byte(flag);
     }
 
-    void read_header(int& t, int& posRoot) {
+    int read_header(int& t) {
         file.set_pos(0);
 
         t = file.read_int();
-        posRoot = file.read_int();
+        int posRoot = file.read_int();
+        return posRoot;
     }
 
     void write_header(const int t, const int posRoot) {
