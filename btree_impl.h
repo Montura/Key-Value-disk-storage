@@ -6,25 +6,26 @@
 
 template<class K, class V>
 BTreeStore<K, V> ::BTreeStore(const std::string& path, int order) : PATH(path), t(order) {
-    manageFileWrite = new ManageFileWrite();
-    manageFileRead = new ManageFileRead();
+//    manageFileWrite = new ManageFileWrite();
+//    manageFileRead = new ManageFileRead();
+    file = new MappedFile(path, 0);
 
-    int fdw = manageFileWrite->openFile(PATH);
-    if (fdw < 0) {
-        exit(EXIT_FAILURE);
-    }
+//    int fdw = manageFileWrite->openFile(PATH);
+//    if (fdw < 0) {
+//        exit(EXIT_FAILURE);
+//    }
 
-    int fdr = manageFileRead->openFile(PATH);
-    if (fdr < 0) {
-        exit(EXIT_FAILURE);
-    }
+//    int fdr = manageFileRead->openFile(PATH);
+//    if (fdr < 0) {
+//        exit(EXIT_FAILURE);
+//    }
 
-    writeDisk = new BytesDataOutputStore(MAXLEN, fdw);
-    readDisk = new BytesDataInputStore(MAXLEN, fdr);
+//    writeDisk = new BytesDataOutputStore(MAXLEN, fdw);
+//    readDisk = new BytesDataInputStore(MAXLEN, fdr);
 
 //    pthread_rwlock_init(&(rwLock), NULL);
 
-    if (manageFileRead->isEmptyFile()) {
+    if (file->isEmpty()) {
         root = NULL;
         return;
     }
@@ -45,54 +46,84 @@ BTreeStore<K, V> ::BTreeStore(const std::string& path, int order) : PATH(path), 
 template<class K, class V>
 BTreeStore<K, V> ::~BTreeStore() {
     delete root;
-    delete manageFileRead;
-    delete manageFileWrite;
-    delete writeDisk;
-    delete readDisk;
+//    delete manageFileRead;
+//    delete manageFileWrite;
+//    delete writeDisk;
+//    delete readDisk;
+    delete file;
 
 //    pthread_rwlock_destroy(&(rwLock));
 }
 
 template<class K, class V>
 void BTreeStore<K, V>::readHeader(int& t, int& posRoot) {
-    manageFileRead->setPosFile(0);
+//    assert(manageFileRead->getPosFile() == file->getPosFile());
+//    manageFileRead->setPosFile(0);
+    file->setPosFile(0);
 
-    readDisk->resetBuffer();
-    readDisk->readInt(t);
-    readDisk->readInt(posRoot);
+//    readDisk->resetBuffer();
+//    readDisk->readInt(t);
+//    readDisk->readInt(posRoot);
+    
+    t = file->read_int();
+    posRoot = file->read_int();
+//    assert(t == t_1);
+//    assert(posRoot == posRoot_1);
+//    assert(manageFileRead->getPosFile() == file->getPosFile());
 }
 
 template<class K, class V>
 void BTreeStore<K, V> ::writeHeader(const int t, const int posRoot) {
-    manageFileWrite->setPosFile(0);
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
+//    manageFileWrite->setPosFile(0);
+    file->setPosFile(0);
 
-    writeDisk->writeInt(t);
-    writeDisk->writeInt(posRoot);
-    writeDisk->flush();
+//    writeDisk->writeInt(t);
+//    writeDisk->writeInt(posRoot);
+//    writeDisk->flush();
+    
+    file->write_int(t);
+    file->write_int(posRoot);
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
 }
 
 template<class K, class V>
 void BTreeStore<K, V> ::writeUpdatePosRoot(const int posRoot) {
-    manageFileWrite->setPosFile(4);
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
+//    manageFileWrite->setPosFile(4);
+    file->setPosFile(4);
 
-    writeDisk->writeInt(posRoot);
-    writeDisk->flush();
+//    writeDisk->writeInt(posRoot);
+//    writeDisk->flush();
+
+    file->write_int(posRoot);
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
 }
 
 template<class K, class V>
 void BTreeStore<K, V> ::writeNode(BTreeNodeStore<K, V>* node, const int pos) {
-    manageFileWrite->setPosFile(pos);
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
+//    manageFileWrite->setPosFile(pos);
+    file->setPosFile(pos);
+    
     int* arrPosKey = node->getArrayPosKey();
     int* arrPosChild = node->getArrayPosChild();
     char flag = node->getFlag();
     int nCurrentEntry = node->getNCurrentEntry();
     int size = 2 * t;
 
-    writeDisk->writeByte(flag);
-    writeDisk->writeInt(nCurrentEntry);
-    writeDisk->writeArrayInt(arrPosKey, size - 1);
-    writeDisk->writeArrayInt(arrPosChild, size);
-    writeDisk->flush();
+//    writeDisk->writeByte(flag);
+//    writeDisk->writeInt(nCurrentEntry);
+//    writeDisk->writeArrayInt(arrPosKey, size - 1);
+//    writeDisk->writeArrayInt(arrPosChild, size);
+//    writeDisk->flush();
+
+
+    file->write_byte(flag);
+    file->write_int(nCurrentEntry);
+    file->write_int_array(arrPosKey, size - 1);
+    file->write_int_array(arrPosChild, size);
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
 }
 
 template<class K, class V>
@@ -103,13 +134,23 @@ void BTreeStore<K, V>::readNode(BTreeNodeStore<K, V>* node, const int pos) {
     int *arrPosKey = new int[size - 1];
     int *arrPosChild = new int[size];
 
-    manageFileRead->setPosFile(pos);
-    readDisk->resetBuffer();
+//    assert(manageFileRead->getPosFile() == file->getPosFile());
+//    manageFileRead->setPosFile(pos);
+//    readDisk->resetBuffer();
+    file->setPosFile(pos);
 
-    readDisk->readByte((uint8_t&) flag);
-    readDisk->readInt(nCurrentKey);
-    readDisk->readArrayInt(arrPosKey, size - 1);
-    readDisk->readArrayInt(arrPosChild, size);
+
+//    readDisk->readByte((uint8_t&) flag);
+//    readDisk->readInt(nCurrentKey);
+//    readDisk->readArrayInt(arrPosKey, size - 1);
+//    readDisk->readArrayInt(arrPosChild, size);
+
+    flag = file->read_byte();
+    nCurrentKey = file->read_int();
+    file->read_int_array(arrPosKey, size - 1);
+    file->read_int_array(arrPosChild, size);
+//    assert(flag_1 == flag);
+//    assert(nCurrentKey_1 == nCurrentKey);
 
     node->setFlag(flag);
     node->setPost(pos);
@@ -125,21 +166,19 @@ void BTreeStore<K, V>::writeEntry(const Entry<K, V>& entry, const int pos) {
     int strKey = entry.key;
     int strValue = entry.value;
 
-//    string key = mySerialization->serializationKey(strKey);
-//    string value = mySerialization->serializationValue(strValue);
-
-    manageFileWrite->setPosFile(pos);
-    //write flag: danh dau da remove or active or edit
-    writeDisk->writeByte(flag);
-    //write key
-    writeDisk->writeBytes((uint8_t*) &strKey, 0, 4);
-    //write value
-    writeDisk->writeBytes((uint8_t*) &strValue, 0, 4);
-
-    writeDisk->flush();
-    //
-    //    delete[] key;
-    //    delete[] value;
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
+//    manageFileWrite->setPosFile(pos);
+    file->setPosFile(pos);
+    
+//    writeDisk->writeByte(flag);
+//    writeDisk->writeBytes((uint8_t*) &strKey, 0, 4);
+//    writeDisk->writeBytes((uint8_t*) &strValue, 0, 4);
+//    writeDisk->flush();
+    
+    file->write_byte(flag);
+    file->write_next(strKey);
+    file->write_next(strValue);
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
 }
 
 template<class K, class V>
@@ -148,29 +187,43 @@ void BTreeStore<K, V>::readEntry(Entry<K, V>& entry, const int pos) {
     int value;
     char flag;
 //    int lenKey, lenValue;
+    
+//    assert(manageFileRead->getPosFile() == file->getPosFile());
 
-    manageFileRead->setPosFile(pos);
-    readDisk->resetBuffer();
+//    manageFileRead->setPosFile(pos);
+//    readDisk->resetBuffer();
+    file->setPosFile(pos);
 
-    readDisk->readByte((uint8_t&) flag);
-
+//    readDisk->readByte((uint8_t&) flag);
 //    readDisk->readBytes(reinterpret_cast<uint8_t*> (&lenKey), 0, sizeof (lenKey));
 //    key.resize(lenKey);
-    readDisk->readBytes((uint8_t*) &key, 0, 4);
-
+//    readDisk->readBytes((uint8_t*) &key, 0, 4);
 //    readDisk->readBytes(reinterpret_cast<uint8_t*> (&lenValue), 0, sizeof (lenValue));
 //    value.resize(lenValue);
-    readDisk->readBytes((uint8_t*) &value, 0, 4);
+//    readDisk->readBytes((uint8_t*) &value, 0, 4);
+
+    
+    flag = file->read_byte();
+    key = file->read_next<K>();
+    value = file->read_next<V>();
+    assert(flag > -1);
+    assert(key > -1);
+    assert(value >= 65);
 
     entry.setKeyValue(key, value);
 }
 
 template<class K, class V>
 void BTreeStore<K, V> ::writeFlag(char flag, const int pos) {
-    manageFileWrite->setPosFile(pos);
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
+//    manageFileWrite->setPosFile(pos);
+    file->setPosFile(pos);
 
-    writeDisk->writeByte(flag);
-    writeDisk->flush();
+//    writeDisk->writeByte(flag);
+//    writeDisk->flush();
+    
+    file->write_byte(flag);
+//    assert(manageFileWrite->getPosFile() == file->getPosFile());
 }
 
 template<class K, class V>
@@ -180,8 +233,13 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
         writeHeader(t, 8);
         root->setPost(8);
 
-        manageFileWrite->setPosEndFile();
-        int pos = manageFileWrite->getPosFile();
+//        assert(manageFileWrite->getPosFile() == file->getPosFile());
+//        manageFileWrite->setPosEndFile();
+        file->setPosEndFile();
+        
+//        int pos = manageFileWrite->getPosFile();
+        int pos = file->getPosFile();
+//        assert(pos == actual);
         pos = pos + sizeof (int) * (2 * t - 1) + sizeof (int) * (2 * t) + 5; // 1 byte flag + 4 byte nCurrentKey
 
         root->addPosEntry(0, pos);
@@ -199,9 +257,12 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
 
             newRoot->addPosChild(0, root->getPos());
 
-            manageFileWrite->setPosEndFile();
+//            manageFileWrite->setPosEndFile();
+            file->setPosEndFile();
 
-            newRoot->setPost(manageFileWrite->getPosFile());
+            int posFile = file->getPosFile();
+//            assert(posFile == actual);
+            newRoot->setPost(posFile);
             //write node
             writeNode(newRoot, newRoot->getPos());
 
@@ -343,11 +404,16 @@ void BTreeStore<K, V> ::traverse() {
 
 template<class K, class V>
 int BTreeStore<K, V> ::getPosFileWrite() const {
-    return manageFileWrite->getPosFile();
+//    int i = manageFileWrite->getPosFile();
+//    assert(i == file->getPosFile());
+    return file->getPosFile();
 }
 
 template<class K, class V>
 void BTreeStore<K, V>::setPosEndFileWrite() {
-    manageFileWrite->setPosEndFile();
+//    manageFileWrite->setPosEndFile();
+    file->setPosEndFile();
+//    int i = manageFileWrite->getPosFile();
+//    assert(i == file->getPosFile());
 }
 

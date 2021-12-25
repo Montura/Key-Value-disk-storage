@@ -7,7 +7,7 @@ struct MappedFile {
     ~MappedFile();
 
     template <typename T>
-    T read_next(const int64_t pos) const;
+    T read_next();
 
     template <typename T>
     void write_next(T val);
@@ -15,10 +15,26 @@ struct MappedFile {
     template <typename T>
     void write(T val, const int64_t pos);
 
-    void write_string(const std::string& s);
+//    void write_string(const std::string& s);
 
-    void write_int_array(const std::vector<int32_t>& vec, int32_t used);
-    int64_t read_int_array(std::vector<int32_t>& vec, int32_t len);
+    void write_int_array(int* vec, int32_t used);
+    void read_int_array(int* vec, int32_t len);
+
+    void setPosFile(int64_t pos);
+
+    int64_t getPosFile();
+
+    int32_t read_int();
+
+    void write_int(const int32_t i);
+
+    void write_byte(uint8_t i);
+
+    uint8_t read_byte();
+
+    void setPosEndFile();
+
+    bool isEmpty();
 
 private:
     template <typename T>
@@ -27,10 +43,11 @@ private:
     void resize(int64_t new_size);
     void remap();
 
-    std::string_view path;
+    const std::string path;
     char* mapped_region_begin;
     int64_t m_pos;
     int64_t m_size;
+    int64_t m_capacity;
     bip::file_mapping file_mapping;
     bip::mapped_region mapped_region;
 };

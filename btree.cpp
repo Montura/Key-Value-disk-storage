@@ -70,10 +70,10 @@ namespace {
 #else
 
 void testBuildBTreeStore() {
-    BTreeStore<int, int> bTree5;
+    BTreeStore<int, int> bTree5("../a.txt", 2);
 
-    for (int i = 0; i < 50; i++) {
-        bTree5.set(i,65 + i);
+    for (int i = 0; i < 1000; i++) {
+        bTree5.set(i, 65 + i);
     }
     //
     //    cout << "Traversal of the constucted tree is " << endl;
@@ -85,32 +85,36 @@ void testBuildBTreeStore() {
 
 
 void testFunctionExist() {
-    auto bTreeStore = new BTreeStore<int, int>();
+    auto bTreeStore = new BTreeStore<int, int>("../a.txt", 2);
     cout << "---------------Test Exist-------------------" << endl;
 
     int key;
     int value;
-    for (int i = 0; i < 50; ++i) {
+    int count = 0;
+    int n = 1000;
+    for (int i = 0; i < n; ++i) {
         key = i;
         if (bTreeStore->exist(key)) {
-            cout << "Key is exist: " << key << ", ";
+            ++count;
+//            cout << "Key is exist: " << key << ", ";
 //            bTreeStore->get(key, value);
 //            cout << "[value]: " << value << endl;
         } else {
-            cout << "Key is not exist" << endl;
+            cout << "Key " << key << " is not exist" << endl;
         }
     }
+    assert(n == count);
     cout << "---------------------------------------------" << endl;
 
 }
 
-void at_exit_handler();
+//void at_exit_handler();
 
 int main() {
-    const int handler = std::atexit(at_exit_handler);
+//    const int handler = std::atexit(at_exit_handler);
 
 
-    testBuildBTreeStore();
+//    testBuildBTreeStore();
     testFunctionExist();
 
     return 0;
