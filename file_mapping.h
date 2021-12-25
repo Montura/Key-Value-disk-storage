@@ -20,6 +20,30 @@ struct MappedFile {
     void write_int_array(int* vec, int32_t used);
     void read_int_array(int* vec, int32_t len);
 
+    template <typename T>
+    void write_vector(const std::vector<T>& vec) {
+        int64_t total_size = static_cast<int64_t>(sizeof(T)) * vec.size();
+        if (m_pos + total_size > m_size) {
+            resize(std::max(2 * m_size, total_size));
+        }
+        const char* data = reinterpret_cast<const char *>(vec.data());
+        std::copy(data, data + total_size, mapped_region_begin + m_pos);
+        m_pos += total_size;
+        m_capacity = std::max(m_pos, m_capacity);
+    }
+
+    template <typename T>
+    void read_vector(std::vector<T>& vec) {
+        uint32_t total_size = sizeof(T) * vec.size();
+//    assert(used <= static_cast<int32_t>(vec.size()));
+
+        char* data = reinterpret_cast<char *>(vec.data());
+        char* start = mapped_region_begin + m_pos;
+        char* end = start + total_size;
+        std::copy(start, end, data);
+        m_pos += total_size;
+    };
+
     void setPosFile(int64_t pos);
 
     int64_t getPosFile();

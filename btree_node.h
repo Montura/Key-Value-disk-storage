@@ -7,19 +7,17 @@ template<class K, class V>
 class BTreeStore;
 
 template<class K, class V>
-class BTreeNodeStore {
-private:
+struct BTreeNodeStore {
+
     int nCurrentEntry;
     int t;
     char flag;
-    int* arrayPosKey;
-    int* arrayPosChild;
+    std::vector<int> arrayPosKey;
+    std::vector<int> arrayPosChild;
     int m_pos;
 
 public:
     BTreeNodeStore(const int& t, bool isLeaf);
-
-//    BTreeNodeStore(const int &t);
 
     ~BTreeNodeStore();
 
@@ -27,11 +25,6 @@ public:
     void addPosChild(const int &i, const int &pos);
 
     void increaseNCurrentEntry();
-
-    int* getArrayPosKey() const;
-    void setArrayPosKey(int* arrPosKey);
-    int* getArrayPosChild() const;
-    void setArrayPosChild(int* arrPosChild);
 
     int getPos() const;
     void setPost(const int& pos);
@@ -45,8 +38,6 @@ public:
     int getPosChild(const int &i);
     int getPosEntry(const int &i) const;
 
-    void setMinimumDegre(const int& t);
-    int getMinimumDegre() const;
 
     bool checkIsLeaf() const;
 

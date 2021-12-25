@@ -59,41 +59,22 @@ void BTreeStore<K, V> ::writeUpdatePosRoot(const int posRoot) {
 template<class K, class V>
 void BTreeStore<K, V> ::writeNode(BTreeNodeStore<K, V>* node, const int pos) {
     file->setPosFile(pos);
-    
-    int* arrPosKey = node->getArrayPosKey();
-    int* arrPosChild = node->getArrayPosChild();
-    char flag = node->getFlag();
-    int nCurrentEntry = node->getNCurrentEntry();
-    int size = 2 * t;
 
-    file->write_byte(flag);
-    file->write_int(nCurrentEntry);
-    file->write_int_array(arrPosKey, size - 1);
-    file->write_int_array(arrPosChild, size);
+    file->write_byte(node->flag);
+    file->write_int(node->nCurrentEntry);
+    file->write_vector(node->arrayPosKey);
+    file->write_vector(node->arrayPosChild);
 }
 
 template<class K, class V>
 void BTreeStore<K, V>::readNode(BTreeNodeStore<K, V>* node, const int pos) {
-    int nCurrentKey;
-    char flag;
-    int size = 2 * t;
-    int *arrPosKey = new int[size - 1];
-    int *arrPosChild = new int[size];
-
     file->setPosFile(pos);
 
-
-    flag = file->read_byte();
-    nCurrentKey = file->read_int();
-    file->read_int_array(arrPosKey, size - 1);
-    file->read_int_array(arrPosChild, size);
-
-    node->setFlag(flag);
-    node->setPost(pos);
-    node->setMinimumDegre(t);
-    node->setNCurrentEntry(nCurrentKey);
-    node->setArrayPosKey(arrPosKey);
-    node->setArrayPosChild(arrPosChild);
+    node->m_pos = pos;
+    node->flag = file->read_byte();
+    node->nCurrentEntry = file->read_int();
+    file->read_vector(node->arrayPosKey);
+    file->read_vector(node->arrayPosChild);
 }
 
 template<class K, class V>

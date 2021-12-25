@@ -7,31 +7,13 @@ template<class K, class V>
 BTreeNodeStore<K, V> ::BTreeNodeStore(const int& t, bool isLeaf) :
     nCurrentEntry(0),
     t(t),
-    flag(isLeaf ? 1 : 0)
-{
-    int size = max_child_num();
-    this->arrayPosKey = new int[size - 1];
-    this->arrayPosChild = new int [size];
-    for (int i = 0; i < size - 1; ++i) {
-        this->arrayPosKey[i] = -1;
-        this->arrayPosChild[i] = -1;
-    }
-    this->arrayPosChild[size - 1] = -1;
-}
+    flag(isLeaf ? 1 : 0),
+    arrayPosKey(max_key_num(), -1),
+    arrayPosChild(max_child_num(), -1)
+{}
 
 template<class K, class V>
-BTreeNodeStore<K, V> ::~BTreeNodeStore() {
-    if (this->arrayPosKey != NULL) {
-        delete[] this->arrayPosKey;
-        this->arrayPosKey = NULL;
-    }
-
-    if (this->arrayPosChild != NULL) {
-        delete[] this->arrayPosChild;
-        this->arrayPosChild = NULL;
-    }
-
-}
+BTreeNodeStore<K, V> ::~BTreeNodeStore() {}
 
 template<class K, class V>
 void BTreeNodeStore<K, V> ::addPosEntry(const int &i, const int &pos) {
@@ -46,26 +28,6 @@ void BTreeNodeStore<K, V> ::addPosChild(const int &i, const int &pos) {
 template<class K, class V>
 void BTreeNodeStore<K, V> ::increaseNCurrentEntry() {
     this->nCurrentEntry++;
-}
-
-template<class K, class V>
-int* BTreeNodeStore<K, V> ::getArrayPosKey() const {
-    return this->arrayPosKey;
-}
-
-template<class K, class V>
-void BTreeNodeStore<K, V> ::setArrayPosKey(int* arrPosKey) {
-    memcpy(this->arrayPosKey, arrPosKey, (2 * this->t - 1) * sizeof (int));
-}
-
-template<class K, class V>
-int* BTreeNodeStore<K, V> ::getArrayPosChild() const {
-    return this->arrayPosChild;
-}
-
-template<class K, class V>
-void BTreeNodeStore<K, V> ::setArrayPosChild(int* arrPosChild) {
-    memcpy(this->arrayPosChild, arrPosChild, (2 * this->t) * sizeof (int));
 }
 
 template<class K, class V>
@@ -113,15 +75,6 @@ int BTreeNodeStore<K, V> ::getPosEntry(const int& i) const {
     return this->arrayPosKey[i];
 }
 
-template<class K, class V>
-void BTreeNodeStore<K, V> ::setMinimumDegre(const int& t) {
-    this->t = t;
-}
-
-template<class K, class V>
-int BTreeNodeStore<K, V> ::getMinimumDegre() const {
-    return this->t;
-}
 
 template<class K, class V>
 void BTreeNodeStore<K, V> ::splitChild(BTreeStore<K, V>* bTree, const int &index, BTreeNodeStore<K, V>* &node) {
