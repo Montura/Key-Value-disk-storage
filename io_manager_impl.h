@@ -4,6 +4,8 @@
 
 template <typename K, typename V>
 struct IOManager {
+    static constexpr int INVALID_ROOT_POS = -1;
+
     using EntryT = Entry<K,V>;
     using Node = typename BTree<K,V>::Node;
 
@@ -24,20 +26,14 @@ struct IOManager {
 
     K read_key(const int pos) {
         file.set_pos(pos);
-        //        assert(key > -1);
-        return file.read_next<K>();
+
+        K key = file.read_next<K>();
+        assert(key > -1);
+        return key;
     }
 
     EntryT read_entry(const int pos) {
         file.set_pos(pos);
-
-//    readDisk->readByte((uint8_t&) flag);
-//    readDisk->readBytes(reinterpret_cast<uint8_t*> (&lenKey), 0, sizeof (lenKey));
-//    key.resize(lenKey);
-//    readDisk->readBytes((uint8_t*) &key, 0, 4);
-//    readDisk->readBytes(reinterpret_cast<uint8_t*> (&lenValue), 0, sizeof (lenValue));
-//    value.resize(lenValue);
-//    readDisk->readBytes((uint8_t*) &value, 0, 4);
 
         K key = file.read_next<K>();
         V value = file.read_next<V>();
@@ -49,37 +45,53 @@ struct IOManager {
     void write_flag(char flag, const int pos) {
         file.set_pos(pos);
 
-        file.write_byte(flag);
+        file.write_next(flag);
     }
 
     int read_header(int& t) {
         file.set_pos(0);
 
         t = file.read_int();
+//        auto key_size = file.read_next<uint8_t>();
+//        auto curr_value_type = file.read_next<uint8_t>();
+//        auto cur_value_type_size = file.read_next<uint8_t>();
+//
+//        assert(key_size == sizeof(K));
+//        assert(curr_value_type == value_type<V>());
+//        assert(cur_value_type_size == value_type_size<V>());
+
         int posRoot = file.read_int();
         return posRoot;
     }
 
-    void write_header(const int t, const int posRoot) {
+    int write_header(const int t) {
         file.set_pos(0);
+//        uint8_t val = value_type_size<V>();
+//        uint8_t i = value_type<V>();
+//        assert((sizeof(t) + 1 + i + val) == 5);
+//        const int root_pos = 6;
 
-        file.write_int(t);
-        file.write_int(posRoot);
+        file.write_next(t);                             // 2 bytes
+//        file.write_next<uint8_t>(sizeof(K));            // 1 byte
+//        file.write_next<uint8_t>(i);                    // 1 byte
+//        file.write_next<uint8_t>(val);                      // 1 byte
+        file.write_next(8);                      // 4 byte -> write root pos
+        return file.get_pos();
     }
 
     void writeUpdatePosRoot(const int posRoot) {
         file.set_pos(4);
 
-        file.write_int(posRoot);
+        file.write_next(posRoot);
     }
 
     int write_node(const Node& node, const int pos) {
         file.set_pos(pos);
 
-        file.write_byte(node.flag);
-        file.write_int(node.used_keys);
-        file.write_vector(node.key_pos);
-        file.write_vector(node.child_pos);
+        file.write_next(node.flag);
+        file.write_next(node.used_keys);
+        file.write_next(node.key_pos);
+        file.write_next(node.child_pos);
         return file.get_pos();
     }
 

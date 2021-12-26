@@ -170,7 +170,7 @@ Entry<K, V> BTree<K,V>::BTreeNode::find(IOManagerT& io, const K& key) {
     }
 
     if (is_leaf())
-        return { EntryT::INVALID_KEY, EntryT::INVALID_VALUE };
+        return { EntryT::INVALID_KEY, V() };
 
     Node child = read_node(io, idx);
     return child.find(io, key);
