@@ -38,16 +38,16 @@ private:
     void write_vector(const std::vector<T>& vec);
 
     template <typename T>
-    std::int64_t write_arithmetic_to_dst(T val, int64_t dst);
+    int64_t write_arithmetic_to_dst(T val, int64_t dst);
 
     template <typename T>
-    std::int64_t write_string_to_dst(T val, int64_t dst);
+    int64_t write_string_to_dst(T val, int64_t dst);
 
     void resize(int64_t new_size);
     void remap();
 
     const std::string path;
-    char* mapped_region_begin;
+    uint8_t* mapped_region_begin;
     int64_t m_pos;
     int64_t m_size;
     int64_t m_capacity;
