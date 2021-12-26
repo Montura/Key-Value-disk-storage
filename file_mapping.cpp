@@ -20,7 +20,7 @@ MappedFile::MappedFile(const std::string &fn, int64_t bytes_num) : path(fn), m_p
 }
 
 MappedFile::~MappedFile() {
-#ifdef _MSC_VER_
+#ifndef _MSC_VER_
     fs::resize_file(path,m_capacity);
 #endif
 }
