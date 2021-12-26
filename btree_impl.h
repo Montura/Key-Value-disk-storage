@@ -4,13 +4,13 @@
 #include "io_manager_impl.h"
 
 template <typename K, typename V>
-BTree<K, V>::BTree(const std::string& path, int order) : t(order), io_manager(path) {
+BTree<K, V>::BTree(const std::string& path, int16_t order) : t(order), io_manager(path) {
 //    pthread_rwlock_init(&(rwLock), NULL);
     if (!io_manager.is_ready())
         return;
 
-    int t_from_file = 0;
-    int root_pos = io_manager.read_header(t_from_file);
+    int16_t t_from_file = 0;
+    auto root_pos = io_manager.read_header(t_from_file);
     assert(t == t_from_file);
 
     if (root_pos == IOManager<K,V>::INVALID_ROOT_POS)
@@ -30,14 +30,14 @@ template <typename K, typename V>
 void BTree<K, V>::insert(const K& key, const V& value) {
     if (root == nullptr) {
         // write header
-        int root_pos = io_manager.write_header(t);
+        auto root_pos = io_manager.write_header(t);
 
         root = new Node(t, true);
         root->m_pos = root_pos;
         root->used_keys++;
 
         // write node root and key|value
-        int pos = io_manager.write_node(*root, root->m_pos);
+        auto pos = io_manager.write_node(*root, root->m_pos);
         io_manager.write_entry({ key, value }, pos);
 
         root->key_pos[0] = pos;
@@ -47,21 +47,21 @@ void BTree<K, V>::insert(const K& key, const V& value) {
             newRoot.child_pos[0] = root->m_pos;
 
             // Write node
-            int posFile = io_manager.get_file_pos_end();
+            auto posFile = io_manager.get_file_pos_end();
             newRoot.m_pos = posFile;
             io_manager.write_node(newRoot, newRoot.m_pos);
 
             newRoot.split_child(io_manager, 0, *root);
 
             // Find the children have new key
-            int i = 0;
+            int32_t i = 0;
             K root_key = newRoot.read_key(io_manager, 0);
             if (root_key < key)
                 i++;
 
             //read node
             Node node(t, false);
-            int pos = newRoot.child_pos[i];
+            auto pos = newRoot.child_pos[i];
             io_manager.read_node(&node, pos);
             node.insert_non_full(io_manager, key, value);
 
@@ -137,7 +137,7 @@ bool BTree<K, V>::remove(const K& key) {
             root = nullptr;
             io_manager.writeUpdatePosRoot(IOManager<K,V>::INVALID_ROOT_POS);
         } else {
-            int pos = root->child_pos[0];
+            auto pos = root->child_pos[0];
             io_manager.writeUpdatePosRoot(pos);
             io_manager.read_node(root, pos);
         }

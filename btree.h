@@ -6,15 +6,41 @@
 
 #include "entry.h"
 
-///** Common Interface */
-//template <typename Key, typename Value, typename Oit>
-//struct IKeyValueStorage {
-//    virtual bool insert(const Key& key, const Value& value) = 0;
-//    virtual Oit get(const Key& key) = 0;
-//    virtual bool remove(const Key& key) = 0;
-//
-//    virtual ~IKeyValueStorage() { };
-//};
+/**
+ * Storage structures:
+ *
+ * - Header (6 bytes):
+ *     - T                        |=> takes 2 bytes -> tree degree
+ *     - KEY_SIZE                 |=> takes 1 byte
+ *     - VALUE_TYPE               |=> takes 1 byte -> |0 0 0 0 0 0 0 0|
+ *                                                    if (0)
+ *                                                        VALUE_TYPE = primitives: (u)int32_t, (u)int64_t, float, double
+ *                                                    else if (1)
+ *                                                        VALUE_TYPE = container of values: (w)string, vectors<T>
+ *                                                    else
+ *                                                        VALUE_TYPE = blob
+ *
+ *     - VALUE_SIZE               |=> takes 1 byte  -> |0 0 0 0 0 0 0 0|
+ *                                                      if (VALUE_SIZE is primitives)
+ *                                                          VALUE_SIZE = sizeof(VALUE_TYPE)
+ *                                                      else
+ *                                                          VALUE_SIZE = mask from the 8 bits (max 256 bytes)
+ *     - ROOT POS                |=> takes 8 bytes -> pos in file]
+ *
+ * - Node (N bytes):
+ *     - FLAG                    |=> takes 1 byte                 -> for "is_deleted" or "is_leaf"
+ *     - USED_KEYS               |=> takes 2 bytes                -> for the number of "active" keys in the node
+ *     - KEY_POS                 |=> takes (2 * t - 1) * KEY_SIZE -> for key positions in file
+ *     - CHILD_POS               |=> takes (2 * t) * KEY_SIZE     -> for key positions in file
+ *
+ * - Entry (M bytes):
+ *     - KEY                         |=> takes KEY_SIZE bytes ] -> 4 bytes is enough for 10^8 different keys
+ *     if (VALUE_TYPE is primitive)
+ *         - VALUE                   |=> takes VALUE_SIZE
+ *     else (VALUE_TYPE is container)
+ *         - NUMBER_OF_ELEMENTS      |=> takes 4 bytes
+ *         - VALUES                  |=> takes VALUE_SIZE * NUMBER_OF_ELEMENTS bytes
+*/
 
 template <typename K, typename V>
 struct IOManager;
@@ -27,7 +53,7 @@ public:
     using Node = BTreeNode;
     using EntryT = Entry<K,V>;
 
-    BTree(const std::string& path, int order);
+    BTree(const std::string& path, int16_t order);
     ~BTree();
 
     bool exist(const K &key);
@@ -40,22 +66,22 @@ private:
     void traverse();
 
     BTreeNode* root = nullptr;
-    const int t;
+    const int16_t t;
 
     IOManager<K,V> io_manager;
     using IOManagerT = IOManager<K,V>;
 
     /** Node */
     struct BTreeNode final {
-        int used_keys;
-        int t;
-        char flag;
-        int m_pos;
-        std::vector<int> key_pos;
-        std::vector<int> child_pos;
+        int16_t used_keys;
+        int16_t t;
+        uint8_t flag;
+        int64_t m_pos;
+        std::vector<int64_t> key_pos;
+        std::vector<int64_t> child_pos;
 
     public:
-        BTreeNode(const int& t, bool isLeaf);
+        BTreeNode(const int16_t& t, bool isLeaf);
 
         // todo: ugly code to ensure only move semantics
         BTreeNode(const BTreeNode& other) = delete;
@@ -66,16 +92,16 @@ private:
 
         bool is_leaf() const;
         bool is_full() const;
-        char is_deleted_or_is_leaf() const;
+        uint8_t is_deleted_or_is_leaf() const;
 
-        inline int max_key_num() const { return std::max(2 * t - 1, 0); }
-        inline int max_child_num() const { return 2 * t; }
+        inline int32_t max_key_num() const { return std::max(2 * t - 1, 0); }
+        inline int32_t max_child_num() const { return 2 * t; }
 
-        int find_key_bin_search(IOManagerT& io_manager, const K& key);
-        void split_child(IOManagerT& manager, const int idx, Node& curr_node);
+        int32_t find_key_bin_search(IOManagerT& io_manager, const K& key);
+        void split_child(IOManagerT& manager, const int32_t idx, Node& curr_node);
 
-        K read_key(IOManagerT& io_manager, const int idx);
-        EntryT read_entry(IOManagerT& io_manager, const int idx);
+        K read_key(IOManagerT& io_manager, const int32_t idx);
+        EntryT read_entry(IOManagerT& io_manager, const int32_t idx);
         EntryT find(IOManagerT& io_manager, const K& key);
 
         void insert_non_full(IOManagerT& io_manager, const K& key, const V& value);
@@ -83,18 +109,18 @@ private:
         bool set(IOManagerT& io_manager, const K &key, const V &value);
         bool remove(IOManagerT& io_manager, const K& key);
     private:
-        Node read_node(IOManagerT& io_manager, const int idx);
+        Node read_node(IOManagerT& io_manager, const int32_t idx);
 
-        bool remove_from_leaf(IOManagerT& io_manager, const int idx);
-        bool remove_from_non_leaf(IOManagerT& io_manager, const int idx);
+        bool remove_from_leaf(IOManagerT& io_manager, const int32_t idx);
+        bool remove_from_non_leaf(IOManagerT& io_manager, const int32_t idx);
 
-        int get_prev_entry_pos(IOManagerT& io_manager, const int idx);
-        int get_next_entry_pos(IOManagerT& io_manager, const int idx);
+        int64_t get_prev_entry_pos(IOManagerT& io_manager, const int32_t idx);
+        int64_t get_next_entry_pos(IOManagerT& io_manager, const int32_t idx);
 
-        void merge_node(IOManagerT& io_manager, const int idx);
-        int fill_node(IOManagerT& io_manager, const int idx);
+        void merge_node(IOManagerT& io_manager, const int32_t idx);
+        int32_t fill_node(IOManagerT& io_manager, const int32_t idx);
 
-        void borrow_from_prev_node(IOManagerT& io_manager, const int idx);
-        void borrow_from_next_node(IOManagerT& io_manager, const int idx);
+        void borrow_from_prev_node(IOManagerT& io_manager, const int32_t idx);
+        void borrow_from_next_node(IOManagerT& io_manager, const int32_t idx);
     };
 };

@@ -47,12 +47,12 @@ void MappedFile::write_next(T val) {
     }
 }
 
-template <typename T>
-void MappedFile::write(T val, int64_t f_pos) {
-    static_assert(std::is_arithmetic_v<T>);
-    m_pos = write_arithmetic_to_dst(val, f_pos * sizeof(T));
-    m_capacity = std::max(m_pos, m_capacity);
-}
+//template <typename T>
+//void MappedFile::write(T val, int64_t f_pos) {
+//    static_assert(std::is_arithmetic_v<T>);
+//    m_pos = write_arithmetic_to_dst(val, f_pos * sizeof(T));
+//    m_capacity = std::max(m_pos, m_capacity);
+//}
 
 template <typename T>
 void MappedFile::read_vector(std::vector<T>& vec) {

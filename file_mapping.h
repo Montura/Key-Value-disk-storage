@@ -18,8 +18,8 @@ struct MappedFile {
     template <typename T>
     void write_next(T val);
 
-    template <typename T>
-    void write(T val, int64_t f_pos);
+//    template <typename T>
+//    void write(T val, int64_t f_pos);
 
     template <typename T>
     void read_vector(std::vector<T>& vec);
