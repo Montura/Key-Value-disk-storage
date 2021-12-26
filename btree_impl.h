@@ -1,8 +1,5 @@
 #pragma once
 
-#include "btree.h"
-#include "io_manager_impl.h"
-
 template <typename K, typename V>
 BTree<K, V>::BTree(const std::string& path, int16_t order) : t(order), io_manager(path) {
 //    pthread_rwlock_init(&(rwLock), NULL);
@@ -64,7 +61,7 @@ void BTree<K, V>::insert(const K& key, const V& value) {
             node.insert_non_full(io_manager, key, value);
 
             io_manager.read_node(root, newRoot.m_pos);
-            io_manager.writeUpdatePosRoot(newRoot.m_pos);
+            io_manager.write_new_pos_for_root_node(newRoot.m_pos);
         } else {
             root->insert_non_full(io_manager, key, value);
         }
@@ -133,10 +130,10 @@ bool BTree<K, V>::remove(const K& key) {
             io_manager.write_flag(root->is_deleted_or_is_leaf(), root->m_pos);
             delete root;
             root = nullptr;
-            io_manager.writeUpdatePosRoot(IOManager<K,V>::INVALID_ROOT_POS);
+            io_manager.write_new_pos_for_root_node(IOManager<K, V>::INVALID_ROOT_POS);
         } else {
             auto pos = root->child_pos[0];
-            io_manager.writeUpdatePosRoot(pos);
+            io_manager.write_new_pos_for_root_node(pos);
             io_manager.read_node(root, pos);
         }
     }

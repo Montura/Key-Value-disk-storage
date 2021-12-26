@@ -22,6 +22,7 @@ set(SOURCE_FILES
         mem_util.cpp
         file_mapping_impl.h
         file_mapping.h
+        io_manager.h
         io_manager_impl.h
         utils.h
         )
@@ -42,7 +43,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         -Wall
         -Wextra
         -Wno-unused-parameter
-#        -O3
+        -O3
     )
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   target_compile_options(key-value-storage PRIVATE

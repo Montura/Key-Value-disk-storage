@@ -1,7 +1,9 @@
+#pragma once
+
 #include <filesystem>
+#include <fstream>
 
 #include "utils.h"
-#include "file_mapping.h"
 
 namespace fs = std::filesystem;
 

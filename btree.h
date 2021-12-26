@@ -5,9 +5,7 @@
 #include <mutex>
 
 #include "entry.h"
-
-template <typename K, typename V>
-struct IOManager;
+#include "io_manager.h"
 
 /** Tree */
 template <typename K, typename V>
@@ -88,3 +86,6 @@ private:
         void borrow_from_next_node(IOManagerT& io_manager, const int32_t idx);
     };
 };
+
+#include "btree_impl.h"
+#include "btree_node_impl.h"
