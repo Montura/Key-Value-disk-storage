@@ -6,6 +6,8 @@
 #include "boost_include.h"
 
 struct MappedFile {
+    const std::string path;
+
     MappedFile(const std::string& fn, int64_t bytes_num);
     ~MappedFile();
 
@@ -46,7 +48,6 @@ private:
     void resize(int64_t new_size);
     void remap();
 
-    const std::string path;
     uint8_t* mapped_region_begin;
     int64_t m_pos;
     int64_t m_size;

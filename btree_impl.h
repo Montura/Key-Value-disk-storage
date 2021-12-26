@@ -9,9 +9,7 @@ BTree<K, V>::BTree(const std::string& path, int16_t order) : t(order), io_manage
     if (!io_manager.is_ready())
         return;
 
-    int16_t t_from_file = 0;
-    auto root_pos = io_manager.read_header(t_from_file);
-    assert(t == t_from_file);
+    auto root_pos = io_manager.read_header(order);
 
     if (root_pos == IOManager<K,V>::INVALID_ROOT_POS)
         return;

@@ -2,6 +2,36 @@
 #include "entry.h"
 #include "btree.h"
 
+/**
+ * Storage structures:
+ *
+ * - Header (6 bytes):
+ *     - T                        |=> takes 2 bytes -> tree degree
+ *     - KEY_SIZE                 |=> takes 1 byte
+ *     - VALUE_TYPE               |=> takes 1 byte ->  VALUE_TYPE = 0 for primitives: (u)int32_t, (u)int64_t, float, double
+ *                                                     VALUE_TYPE = 1 for container of values: (w)string, vectors<T>
+ *                                                     VALUE_TYPE = 2 for blob
+ *
+ *     - ELEMENT_SIZE             |=> takes 1 byte  -> ELEMENT_SIZE = sizeof(VALUE_TYPE) for primitives
+ *                                                     ELEMENT_SIZE = mask from the 8 bits (max 256 bytes) for non-primitives
+ *     - ROOT POS                 |=> takes 8 bytes -> pos in file
+ *
+ * - Node (N bytes):
+ *     - FLAG                     |=> takes 1 byte                 -> for "is_deleted" or "is_leaf"
+ *     - USED_KEYS                |=> takes 2 bytes                -> for the number of "active" keys in the node
+ *     - KEY_POS                  |=> takes (2 * t - 1) * KEY_SIZE -> for key positions in file
+ *     - CHILD_POS                |=> takes (2 * t) * KEY_SIZE     -> for key positions in file
+ *
+ * - Entry (M bytes):
+ *     - KEY                      |=> takes KEY_SIZE bytes (4 bytes is enough for 10^8 different keys)
+ *     ----------–-----
+ *        - VALUE                 |=> takes ELEMENT_SIZE bytes for primitive VALUE_TYPE
+ *     or
+ *        - NUMBER_OF_ELEMENTS    |=> takes 4 bytes
+ *        - VALUES                |=> takes (ELEMENT_SIZE * NUMBER_OF_ELEMENTS) bytes
+ *     ----------–-----
+*/
+
 template <typename K, typename V>
 struct IOManager {
     static constexpr int64_t INVALID_ROOT_POS = -1;
@@ -48,34 +78,41 @@ struct IOManager {
         file.write_next(flag);
     }
 
-    int64_t read_header(int16_t& t) {
+    int64_t read_header(const int16_t& user_t) {
         file.set_pos(0);
 
-        t = file.read_next<int16_t>();
-//        auto key_size = file.read_next<uint8_t>();
-//        auto curr_value_type = file.read_next<uint8_t>();
-//        auto cur_value_type_size = file.read_next<uint8_t>();
+        auto t = file.read_next<int16_t>();
+        validate(t == user_t,
+                 "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
 //
-//        assert(key_size == sizeof(K));
-//        assert(curr_value_type == value_type<V>());
-//        assert(cur_value_type_size == value_type_size<V>());
+//        auto key_size = file.read_next<uint8_t>();
+//        validate(key_size == sizeof(K),
+//                 "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
+//
+//        auto element_size = file.read_next<uint8_t>();
+//        validate(element_size == get_element_size<V>(),
+//            "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
+//
+//        auto value_type_code = file.read_next<uint8_t>();
+//        validate(value_type_code == get_value_type_code<V>(),
+//            "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
 
-        auto posRoot = file.template read_next<int64_t>();
+        auto posRoot = file.read_next<int64_t>();
         return posRoot;
     }
 
     int64_t write_header(const int16_t t) {
         file.set_pos(0);
-//        uint8_t val = value_type_size<V>();
-//        uint8_t i = value_type<V>();
-//        assert((sizeof(t) + 1 + i + val) == 5);
-//        const int root_pos = 6;
+
+//        uint8_t element_size = get_element_size<V>();
+//        assert(element_size > 0);
+//        uint8_t value_type_code = get_value_type_code<V>();
 
         file.write_next(t);                             // 2 bytes
 //        file.write_next<uint8_t>(sizeof(K));            // 1 byte
-//        file.write_next<uint8_t>(i);                    // 1 byte
-//        file.write_next<uint8_t>(val);                      // 1 byte
-        file.write_next<int64_t>(10);                      // 8 byte -> write root pos
+//        file.write_next<uint8_t>(element_size);         // 1 byte
+//        file.write_next<uint8_t>(value_type_code);      // 1 byte
+        file.write_next<int64_t>(10);                   // 8 byte -> write root pos
         return file.get_pos();
     }
 
@@ -108,5 +145,12 @@ struct IOManager {
     int64_t get_file_pos_end() {
         file.set_file_pos_to_end();
         return file.get_pos();
+    }
+
+private:
+    void validate(bool expression, const std::string& msg) {
+        if (!expression) {
+            throw std::logic_error(msg + " in " + file.path);
+        }
     }
 };

@@ -6,42 +6,6 @@
 
 #include "entry.h"
 
-/**
- * Storage structures:
- *
- * - Header (6 bytes):
- *     - T                        |=> takes 2 bytes -> tree degree
- *     - KEY_SIZE                 |=> takes 1 byte
- *     - VALUE_TYPE               |=> takes 1 byte -> |0 0 0 0 0 0 0 0|
- *                                                    if (0)
- *                                                        VALUE_TYPE = primitives: (u)int32_t, (u)int64_t, float, double
- *                                                    else if (1)
- *                                                        VALUE_TYPE = container of values: (w)string, vectors<T>
- *                                                    else
- *                                                        VALUE_TYPE = blob
- *
- *     - VALUE_SIZE               |=> takes 1 byte  -> |0 0 0 0 0 0 0 0|
- *                                                      if (VALUE_SIZE is primitives)
- *                                                          VALUE_SIZE = sizeof(VALUE_TYPE)
- *                                                      else
- *                                                          VALUE_SIZE = mask from the 8 bits (max 256 bytes)
- *     - ROOT POS                |=> takes 8 bytes -> pos in file]
- *
- * - Node (N bytes):
- *     - FLAG                    |=> takes 1 byte                 -> for "is_deleted" or "is_leaf"
- *     - USED_KEYS               |=> takes 2 bytes                -> for the number of "active" keys in the node
- *     - KEY_POS                 |=> takes (2 * t - 1) * KEY_SIZE -> for key positions in file
- *     - CHILD_POS               |=> takes (2 * t) * KEY_SIZE     -> for key positions in file
- *
- * - Entry (M bytes):
- *     - KEY                         |=> takes KEY_SIZE bytes ] -> 4 bytes is enough for 10^8 different keys
- *     if (VALUE_TYPE is primitive)
- *         - VALUE                   |=> takes VALUE_SIZE
- *     else (VALUE_TYPE is container)
- *         - NUMBER_OF_ELEMENTS      |=> takes 4 bytes
- *         - VALUES                  |=> takes VALUE_SIZE * NUMBER_OF_ELEMENTS bytes
-*/
-
 template <typename K, typename V>
 struct IOManager;
 
