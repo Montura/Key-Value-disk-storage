@@ -84,18 +84,18 @@ struct IOManager {
         auto t = file.read_next<int16_t>();
         validate(t == user_t,
                  "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
+
+        auto key_size = file.read_next<uint8_t>();
+        validate(key_size == sizeof(K),
+                 "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
+
+        auto element_size = file.read_next<uint8_t>();
+        validate(element_size == get_element_size<V>(),
+            "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
 //
-//        auto key_size = file.read_next<uint8_t>();
-//        validate(key_size == sizeof(K),
-//                 "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
-//
-//        auto element_size = file.read_next<uint8_t>();
-//        validate(element_size == get_element_size<V>(),
-//            "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
-//
-//        auto value_type_code = file.read_next<uint8_t>();
-//        validate(value_type_code == get_value_type_code<V>(),
-//            "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
+        auto value_type_code = file.read_next<uint8_t>();
+        validate(value_type_code == get_value_type_code<V>(),
+            "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
 
         auto posRoot = file.read_next<int64_t>();
         return posRoot;
@@ -104,20 +104,20 @@ struct IOManager {
     int64_t write_header(const int16_t t) {
         file.set_pos(0);
 
-//        uint8_t element_size = get_element_size<V>();
-//        assert(element_size > 0);
-//        uint8_t value_type_code = get_value_type_code<V>();
+        uint8_t element_size = get_element_size<V>();
+        assert(element_size > 0);
+        uint8_t value_type_code = get_value_type_code<V>();
 
         file.write_next(t);                             // 2 bytes
-//        file.write_next<uint8_t>(sizeof(K));            // 1 byte
-//        file.write_next<uint8_t>(element_size);         // 1 byte
-//        file.write_next<uint8_t>(value_type_code);      // 1 byte
-        file.write_next<int64_t>(10);                   // 8 byte -> write root pos
+        file.write_next<uint8_t>(sizeof(K));            // 1 byte
+        file.write_next<uint8_t>(element_size);         // 1 byte
+        file.write_next<uint8_t>(value_type_code);      // 1 byte
+        file.write_next<int64_t>(12);                   // 8 byte -> write root pos
         return file.get_pos();
     }
 
     void writeUpdatePosRoot(const int64_t posRoot) {
-        file.set_pos(2);
+        file.set_pos(5);
 
         file.write_next(posRoot);
     }
