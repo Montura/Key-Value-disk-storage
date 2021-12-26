@@ -114,7 +114,7 @@ bool MappedFile::isEmpty() {
 constexpr int ITERATIONS = 1000;
 
 template <typename T>
-void test_arithmetics(T val_to_add) {
+void test_arithmetic_types(T val_to_add) {
     std::string fmap = std::string("../file_mapping_text") + std::string(".txt");
     if (fs::exists(fmap)) {
         fs::remove(fmap);
@@ -205,12 +205,12 @@ void test_array() {
 //namespace {
 //    BOOST_AUTO_TEST_CASE(file_mapping_test) {
 int main() {
-    test_arithmetics<int32_t>(1);
-    test_arithmetics<uint32_t>(1);
-    test_arithmetics<int64_t>(1);
-    test_arithmetics<uint64_t>(1);
-    test_arithmetics<float>(1);
-    test_arithmetics<double>(1);
+    test_arithmetic_types<int32_t>(1);
+    test_arithmetic_types<uint32_t>(1);
+    test_arithmetic_types<int64_t>(1);
+    test_arithmetic_types<uint64_t>(1);
+    test_arithmetic_types<float>(1);
+    test_arithmetic_types<double>(1);
 
 
     to_string<char> conv_to_str = std::to_string;
