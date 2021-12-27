@@ -52,12 +52,12 @@ public:
     void writeFlag(char flag, const int pos);
 
     void readHeader(int& t, int& posRoot);
-    void readNode(BTreeNodeStore<K,V>* node, const int pos);
+    void readNode(BTreeNodeStore<K,V>& node, const int pos);
 
     int getPosFileWrite() const;
     void setPosEndFileWrite();
 
-    void writeNode(BTreeNodeStore<K,V>* node, const int pos);
+    void writeNode(const BTreeNodeStore<K,V>& node, const int pos);
     void writeHeader(const int t, const int posRoot);
     void writeUpdatePosRoot(const int posRoot);
 
