@@ -13,8 +13,7 @@ using std::endl;
 #include <boost/test/included/unit_test.hpp>
 #endif
 
-#include <boost/test/data/test_case.hpp>
-#include <boost/range/iterator_range.hpp>
+
 
 
 namespace {
@@ -40,7 +39,7 @@ namespace {
                 assert(total_found == n);
 
                 int total_not_found = 0;
-                const int key_shift = 1000;
+                const int key_shift = n;
                 for (int i = 0; i < n; ++i) {
                     total_not_found += !btree.exist(key_shift + i);
                 }
