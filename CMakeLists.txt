@@ -14,7 +14,6 @@ endif()
 
 set(SOURCE_FILES
 #        boost_mapped_file.cpp
-#        serialization.cpp
         btree.cpp
         btree.h
         btree_impl.h
@@ -22,12 +21,6 @@ set(SOURCE_FILES
         btree_node_impl.h
         entry.h
 #        mem_util.cpp
-        manage_file.h
-        manage_file.cpp
-        data_writer.cpp
-        data_writer.h
-        byte_data.cpp
-        byte_data.h
         file_mapping.cpp
         file_mapping.h
         )
@@ -38,7 +31,7 @@ target_compile_definitions(key-value-storage PRIVATE
     BOOST_ALL_NO_LIB
     BOOST_TEST_MODULE=unit-cpp
     USE_BOOST_PREBUILT_STATIC_LIBRARY=false
-    UNIT_TESTS
+#    UNIT_TESTS
 )
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")

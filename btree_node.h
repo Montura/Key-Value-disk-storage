@@ -7,46 +7,17 @@ template<class K, class V>
 class BTreeStore;
 
 template<class K, class V>
-class BTreeNodeStore {
-private:
+struct BTreeNodeStore {
     int nCurrentEntry;
     int t;
     char flag;
     int* arrayPosKey;
     int* arrayPosChild;
-    int pos;
+    int m_pos;
 
 public:
     BTreeNodeStore(const int& t, bool isLeaf);
-
-//    BTreeNodeStore(const int &t);
-
     ~BTreeNodeStore();
-
-    void addPosEntry(const int &i, const int &pos);
-    void addPosChild(const int &i, const int &pos);
-
-    void increaseNCurrentEntry();
-
-    int* getArrayPosKey() const;
-    void setArrayPosKey(int* arrPosKey);
-    int* getArrayPosChild() const;
-    void setArrayPosChild(int* arrPosChild);
-
-    int getPos() const;
-    void setPost(const int& pos);
-
-    char getFlag() const;
-    void setFlag(char flag);
-
-    int getNCurrentEntry() const;
-    void setNCurrentEntry(const int& nCurrentEntry);
-
-    int getPosChild(const int &i);
-    int getPosEntry(const int &i) const;
-
-    void setMinimumDegre(const int& t);
-    int getMinimumDegre() const;
 
     bool checkIsLeaf() const;
 
@@ -80,5 +51,6 @@ public:
     void borrowFromNodePrev(BTreeStore<K, V>* bTree, const int &index);
     void borrowFromNodeNext(BTreeStore<K, V>* bTree, const int &index);
 
-
+    inline int max_key_num() { return 2 * t - 1; }
+    inline int max_child_num() { return 2 * t; }
 };
