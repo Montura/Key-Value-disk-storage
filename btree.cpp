@@ -106,7 +106,7 @@ struct TestStat {
 };
 
 void test() {
-    const int n = 1000;
+    const int n = 10000;
     using BTreeIntInt = BTreeStore<int, int>;
     std::string db_name = "../db_";
     std::string end = ".txt";

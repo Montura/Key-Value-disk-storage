@@ -23,13 +23,11 @@ struct IKeyValueStorage {
 template <typename K, typename V>
 class BTreeStore final {
 //    struct BTreeNode;
-    const int MAXLEN = 1024;
-    const std::string PATH;
 
     BTreeNodeStore<K,V>* root = nullptr;
     const int t;
 
-    MappedFile* file;
+    MappedFile file;
 public:
 //    using Node = BTreeNode;
 
@@ -46,15 +44,15 @@ public:
 
 //private:
 
-    void writeEntry(const Entry<K, V>& entry, const int& pos);
-    void readEntry(Entry<K, V>& entry, const int& pos);
+    void writeEntry(const Entry<K, V>& entry, const int pos);
+    void readEntry(Entry<K, V>& entry, const int pos);
 
     void writeFlag(char flag, const int pos);
 
     void readHeader(int& t, int& posRoot);
-    void readNode(BTreeNodeStore<K,V>& node, const int pos);
+    void readNode(BTreeNodeStore<K,V>* node, const int pos);
 
-    int getPosFileWrite() const;
+    int getPosFileWrite();
     void setPosEndFileWrite();
 
     void writeNode(const BTreeNodeStore<K,V>& node, const int pos);

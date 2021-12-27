@@ -11,13 +11,21 @@ struct BTreeNodeStore {
     int nCurrentEntry;
     int t;
     char flag;
+    int m_pos;
     std::vector<int> arrayPosKey;
     std::vector<int> arrayPosChild;
-    int m_pos;
 
 public:
     BTreeNodeStore(const int& t, bool isLeaf);
+
+    BTreeNodeStore(const BTreeNodeStore& other) = delete;
+    BTreeNodeStore operator=(const BTreeNodeStore& other) = delete;
+
+    BTreeNodeStore(BTreeNodeStore && other) noexcept = default;
+    BTreeNodeStore& operator=(BTreeNodeStore && other) noexcept = default;
+
     ~BTreeNodeStore();
+
 
     bool checkIsLeaf() const;
 
