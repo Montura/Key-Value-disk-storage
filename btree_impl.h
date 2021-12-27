@@ -69,7 +69,7 @@ void BTree<K, V>::insert(const K& key, const V& value) {
 }
 
 template <typename K, typename V>
-const V BTree<K, V>::get(const K& key) {
+V BTree<K, V>::get(const K& key) {
 //    pthread_rwlock_wrlock(&(this->rwLock));
 
     auto entry = root ? root->find(io_manager, key) : EntryT { EntryT::INVALID_KEY, V() };
@@ -79,7 +79,7 @@ const V BTree<K, V>::get(const K& key) {
 }
 
 template <typename K, typename V>
-void BTree<K, V>::set(const K& key, const V& value) {
+void BTree<K, V>::set(const K& key, const V &  value) {
 //    pthread_rwlock_wrlock(&(rwLock));
     //    int secs;
     //    timestamp_t timeFinish;

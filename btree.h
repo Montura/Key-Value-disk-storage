@@ -20,7 +20,7 @@ public:
 
     bool exist(const K &key);
     void set(const K &key, const V& value);
-    const V get(const K& key);
+    V get(const K& key);
     bool remove(const K& key);
 
 private:

@@ -12,8 +12,7 @@ using std::chrono::duration_cast;
 using std::chrono::duration;
 using std::chrono::milliseconds;
 
-#include "btree_impl.h"
-#include "btree_node_impl.h"
+#include "btree.h"
 
 #ifdef UNIT_TESTS
 #if USE_BOOST_PREBUILT_STATIC_LIBRARY
@@ -47,7 +46,7 @@ namespace {
             {
                 BTreeIntInt btree(db_name, order);
                 for (int i = 0; i < n; ++i) {
-                    int value = btree.getValue(i);
+                    int value = btree.get(i);
                     assert(value == i + 65);
                 }
             }
@@ -62,7 +61,7 @@ namespace {
             {
                 BTreeIntInt btree(db_name, order);
                 for (int i = 0; i < n; ++i) {
-                    int value = btree.getValue(i);
+                    int value = btree.get(i);
                     assert(value == i + 1);
                 }
             }

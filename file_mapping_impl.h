@@ -111,11 +111,13 @@ std::int64_t MappedFile::write_string_to_dst(T val, int64_t dst) {
 MappedFile::MappedFile(const std::string &fn, int64_t bytes_num) : path(fn), m_pos(0) {
     bool file_exists = fs::exists(fn);
     if (!file_exists) {
-        std::filebuf fbuf;
-        fbuf.open(path, std::ios_base::out | std::ios_base::trunc);
-        fbuf.pubseekoff(bytes_num, std::ios_base::beg);
-        fbuf.sputc(0);
-        fbuf.close();
+        std::filebuf file_buffer;
+        auto p_fbuf = file_buffer.open(path, std::ios_base::out | std::ios_base::trunc);
+        if (!p_fbuf)
+            throw std::logic_error("file path is wrong, path = " + fn);
+        file_buffer.pubseekoff(bytes_num, std::ios_base::beg);
+        file_buffer.sputc(0);
+        file_buffer.close();
         m_size = m_capacity = bytes_num;
     } else {
         m_size = m_capacity = static_cast<int64_t>(fs::file_size(fn));
@@ -132,11 +134,11 @@ MappedFile::~MappedFile() {
 void MappedFile::resize(int64_t new_size) {
     m_size = new_size;
 
-    std::filebuf fbuf;
-    fbuf.open(path, std::ios_base::in | std::ios_base::out);
-    fbuf.pubseekoff(m_size, std::ios_base::beg);
-    fbuf.sputc(0);
-    fbuf.close();
+    std::filebuf file_buffer;
+    file_buffer.open(path, std::ios_base::in | std::ios_base::out);
+    file_buffer.pubseekoff(m_size, std::ios_base::beg);
+    file_buffer.sputc(0);
+    file_buffer.close();
 
     remap();
 }
