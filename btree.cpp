@@ -52,6 +52,12 @@ namespace {
                 }
                 remove_all = (total_deleted == cycles);
 
+                for (int i = 0; i < n; i += 31) {
+                    ++cycles;
+                    total_deleted += btree.remove(i);
+                }
+                remove_all = (total_deleted == cycles);
+
 
                 total_found = 0;
                 for (int i = 0; i < n; ++i) {
@@ -107,7 +113,7 @@ struct TestStat {
 
 void test() {
     const int n = 10000;
-    using BTreeIntInt = BTreeStore<int, int>;
+    using BTreeIntInt = BTree<int, int>;
     std::string db_name = "../db_";
     std::string end = ".txt";
 
@@ -115,7 +121,7 @@ void test() {
         TestStat stat;
         {
             BTreeIntInt btree(db_name + std::to_string(order) + end, order);
-            for (int i = n - 1; i >= 0; --i) {
+            for (int i = 0; i < n; ++i) {
                 btree.set(i, 65 + i);
                 ++stat.total_added;
             }
@@ -131,9 +137,28 @@ void test() {
             }
             assert(stat.any_not_found());
 
-            for (int i = n - 1; i >= 0; i -= 4) {
-                stat.total_removed += btree.remove(i);
+            for (int i = 0; i < n; i += 3) {
+                bool b = btree.remove(i);
+                if (b) {
+                    stat.total_removed += 1;
+//                    cout << "removed: " << i << endl;
+                } else {
+//                    cout << "can't remove: " << i << endl;
+                }
             }
+
+            for (int i = 0; i < n; i += 7) {
+                bool b = btree.remove(i);
+                if (b) {
+                    stat.total_removed += 1;
+//                    cout << "removed: " << i << endl;
+                }
+            }
+
+            stat.total_removed += btree.remove(0);
+            stat.total_removed += btree.remove(0);
+            stat.total_removed += btree.remove(1);
+            stat.total_removed += btree.remove(1);
 
             for (int i = 0; i < n; ++i) {
                 stat.total_after_remove += btree.exist(i);
@@ -161,6 +186,32 @@ void at_exit_handler();
 
 int main() {
     test();
+//    using BTreeIntInt = BTree<int, int>;
+//    std::string db_name = "../db_";
+//    std::string end = ".txt";
+//    BTreeIntInt btree(db_name + std::to_string(2) + end, 2);
+//
+//    int n = 100;
+//    for (int i = 0; i < n; ++i) {
+//        btree.set(i, 1);
+//    }
+//
+//    int existed = 0;
+//    for (int i = 0; i < n; ++i) {
+//        existed += btree.exist(i);
+//    }
+//    assert(existed == n);
+//
+//
+//    int removed = 0;
+//    removed += btree.remove(0);
+//    removed += btree.remove(0);
+//    removed += btree.remove(0);
+//    assert(removed == 1);
+
+
+//    btree.set(0, 1)
+
     return 0;
 }
 #endif // UNIT_TESTS

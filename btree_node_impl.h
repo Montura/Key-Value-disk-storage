@@ -243,32 +243,19 @@ bool BTree<K,V>::BTreeNode::remove(BTree* bTree, const K& key) {
             return false;
         }
 
-        bool flag = (idx == used_keys);
         auto child = get_node(bTree, idx);
 
         if (child.used_keys < t) {
             fill_node(bTree, idx);
         }
 
-        if (flag && idx > used_keys) {
-            auto childPrev = get_node(bTree, idx - 1);
-            childPrev.remove(bTree, key);
+        int child_idx = (idx > used_keys) ? (idx - 1) : idx;
+        auto m_child  = get_node(bTree, child_idx);
 
-            childPrev = get_node(bTree, idx - 1);
-            if (childPrev.t != 1) {
-                bTree->write_node(childPrev, childPrev.m_pos);
-            }
-        } else {
-            auto m_child = get_node(bTree, idx);
-            m_child.remove(bTree, key);
+        if (m_child.t != 1) {
+            res =  m_child.remove(bTree, key);
+            bTree->write_node(m_child, m_child.m_pos);
         }
-
-        // write node
-        auto child_2 = get_node(bTree, idx);
-        if (child_2.t != 1) {
-            bTree->write_node(child_2, child_2.m_pos);
-        }
-        res = true;
     }
 
     return res;
