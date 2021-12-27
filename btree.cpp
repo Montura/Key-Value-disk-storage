@@ -155,10 +155,11 @@ void test() {
                 }
             }
 
-            stat.total_removed += btree.remove(0);
-            stat.total_removed += btree.remove(0);
-            stat.total_removed += btree.remove(1);
-            stat.total_removed += btree.remove(1);
+            for (int i = 0; i < 50; ++i) {
+                stat.total_removed += btree.remove(0);
+                stat.total_removed += btree.remove(3 * i);
+                stat.total_removed += btree.remove(7 * i);
+            }
 
             for (int i = 0; i < n; ++i) {
                 stat.total_after_remove += btree.exist(i);
