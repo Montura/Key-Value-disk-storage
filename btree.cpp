@@ -22,101 +22,158 @@ namespace {
         const int n = 1000;
         using BTreeIntInt = BTreeStore<int, int>;
         bool found_all = false, any_not_found = false, remove_all = false;
-        std::string db_prefix = "../db_";
+        std::string db_name = "../db_";
         std::string end = ".txt";
 
         for (int order = 2; order < 101; ++order) {
-            auto db_name = db_prefix + std::to_string(order) + end;
+            int total_deleted = 0;
             {
-                BTreeIntInt btree(db_name, order);
-                for (int i = 0; i < n; ++i) {
+                BTreeIntInt btree(db_name + std::to_string(order) + end, order);
+                for (int i = n - 1; i >= 0; --i) {
                     btree.set(i, 65 + i);
                 }
-            }
 
-            {
-                BTreeIntInt btree(db_name, order);
                 int total_found = 0;
                 for (int i = 0; i < n; ++i) {
                     total_found += btree.exist(i);
                 }
-                found_all = (total_found == n);
-            }
+                assert(total_found == n);
 
-            {
-                BTreeIntInt btree(db_name, order);
                 int total_not_found = 0;
                 const int key_shift = 1000;
                 for (int i = 0; i < n; ++i) {
                     total_not_found += !btree.exist(key_shift + i);
                 }
                 any_not_found = (total_not_found == n);
-            }
 
-            {
-                BTreeIntInt btree(db_name, order);
-                int total_deleted = 0;
-                for (int i = 0; i < n * 2; ++i) {
+                int cycles = 0;
+                for (int i = n - 1; i >= 0; i -= 7) {
+                    ++cycles;
                     total_deleted += btree.remove(i);
                 }
-                remove_all = (total_deleted == n);
-            }
+                remove_all = (total_deleted == cycles);
 
+
+                total_found = 0;
+                for (int i = 0; i < n; ++i) {
+                    total_found += btree.exist(i);
+                }
+                found_all = (total_found == (n -  total_deleted));
+            }
             std::string msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
             BOOST_REQUIRE_MESSAGE(found_all && any_not_found && remove_all, msg);
+
+            {
+                BTreeIntInt btree(db_name + std::to_string(order) + end, order);
+                int total_found = 0;
+                for (int i = 0; i < n; ++i) {
+                    total_found += btree.exist(i);
+                }
+                found_all = (total_found == (n - total_deleted));
+            }
+            msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
+            BOOST_REQUIRE_MESSAGE(found_all, msg);
+
         }
     }
 }
 #else
 
-void testBuildBTreeStore() {
-    BTreeStore<int, int> bTree5("../a.txt", 2);
-
-    for (int i = 0; i < 1000; i++) {
-        bTree5.set(i, 65 + i);
-    }
-    //
-    //    cout << "Traversal of the constucted tree is " << endl;
-    //    cout << "\n----------------" << endl;
-    //    bTreeStore->traverse();
-    //    cout << "\n----------------" << endl;
-    bTree5;
-}
-
-
-void testFunctionExist() {
-    auto bTreeStore = new BTreeStore<int, int>("../a.txt", 2);
-    cout << "---------------Test Exist-------------------" << endl;
-
-    int key;
-    int value;
-    int count = 0;
-    int n = 1000;
-    for (int i = 0; i < n; ++i) {
-        key = i;
-        if (bTreeStore->exist(key)) {
-            ++count;
+//void testBuildBTreeStore() {
+//    BTreeStore<int, int> bTree5;
+//
+//    for (int i = 0; i < 50; i++) {
+//        bTree5.set(i,65 + i);
+//    }
+//    //
+//    //    cout << "Traversal of the constucted tree is " << endl;
+//    //    cout << "\n----------------" << endl;
+//    //    bTreeStore->traverse();
+//    //    cout << "\n----------------" << endl;
+//    bTree5;
+//}
+//
+//
+//void testFunctionExist() {
+//    auto bTreeStore = new BTreeStore<int, int>();
+//    cout << "---------------Test Exist-------------------" << endl;
+//
+//    int key;
+//    int value;
+//    for (int i = 0; i < 50; ++i) {
+//        key = i;
+//        if (bTreeStore->exist(key)) {
 //            cout << "Key is exist: " << key << ", ";
-//            bTreeStore->get(key, value);
-//            cout << "[value]: " << value << endl;
-        } else {
-            cout << "Key " << key << " is not exist" << endl;
-        }
-    }
-    assert(n == count);
-    cout << "---------------------------------------------" << endl;
+////            bTreeStore->get(key, value);
+////            cout << "[value]: " << value << endl;
+//        } else {
+//            cout << "Key is not exist" << endl;
+//        }
+//    }
+//    cout << "---------------------------------------------" << endl;
+//
+//}
 
-}
-
-//void at_exit_handler();
+void at_exit_handler();
 
 int main() {
-//    const int handler = std::atexit(at_exit_handler);
+    std::string db_name = "../db_";
+    std::string end = ".txt";
 
+    int n = 10000;
+    bool found_all = false, any_not_found = false, remove_all = false;
 
-//    testBuildBTreeStore();
-    testFunctionExist();
+    BTreeStore<int, int> btree(db_name + end, 2);
+    for (int i = 0; i < n; ++i) {
+        btree.set(i, 65 + i);
+    }
 
+    int total_found = 0;
+    for (int i = 0; i < n; ++i) {
+        total_found += btree.exist(i);
+    }
+    found_all = (total_found == n);
+
+    int total_not_found = 0;
+    const int key_shift =  n;
+    for (int i = 0; i < n; ++i) {
+        total_not_found += !btree.exist(key_shift + i);
+    }
+    any_not_found = (total_not_found == n);
+
+    int total_deleted = 0;
+    int cycles = 0;
+    for (int i = 0; i < n; i += 2) {
+        ++cycles;
+        total_deleted += btree.remove(i);
+    }
+    remove_all = (total_deleted == cycles);
+
+    total_found = 0;
+    for (int i = 0; i < n; ++i) {
+        if (btree.exist(i)) {
+//            cout << "found key:" << i << endl;
+            ++total_found;
+        }
+    }
+    found_all = (total_found == total_deleted);
+
+    std::string msg = "BTreeStore<int, int, >";
+    assert(found_all && any_not_found && remove_all);
+
+    {
+        BTreeStore<int, int> btree(db_name + end, 2);
+//        for (int i = 0; i < n; ++i) {
+//            btree.set(i, 65 + i);
+//        }
+        total_found = 0;
+        for (int i = 0; i < n; ++i) {
+            total_found += btree.exist(i);
+        }
+        found_all = (total_found == total_deleted);
+    }
+    assert(found_all);
+    msg = "BTreeStore<int, int, >";
     return 0;
 }
 #endif // UNIT_TESTS

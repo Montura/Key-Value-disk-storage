@@ -161,10 +161,10 @@ void BTreeStore<K, V>::readNode(BTreeNodeStore<K, V>* node, const int pos) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::writeEntry(const Entry<K, V>& entry, const int pos) {
+void BTreeStore<K, V>::writeEntry(const Entry<K, V>* entry, const int& pos) {
     char flag = 1;
-    int strKey = entry.key;
-    int strValue = entry.value;
+    int strKey = entry->getKey();
+    int strValue = entry->getValue();
 
 //    assert(manageFileWrite->getPosFile() == file->getPosFile());
 //    manageFileWrite->setPosFile(pos);
@@ -182,7 +182,7 @@ void BTreeStore<K, V>::writeEntry(const Entry<K, V>& entry, const int pos) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::readEntry(Entry<K, V>& entry, const int pos) {
+void BTreeStore<K, V>::readEntry(Entry<K, V>* entry, const int& pos) {
     int key;
     int value;
     char flag;
@@ -202,7 +202,7 @@ void BTreeStore<K, V>::readEntry(Entry<K, V>& entry, const int pos) {
 //    value.resize(lenValue);
 //    readDisk->readBytes((uint8_t*) &value, 0, 4);
 
-    
+
     flag = file->read_byte();
     key = file->read_next<K>();
     value = file->read_next<V>();
@@ -210,7 +210,7 @@ void BTreeStore<K, V>::readEntry(Entry<K, V>& entry, const int pos) {
     assert(key > -1);
     assert(value >= 65);
 
-    entry.setKeyValue(key, value);
+    entry->setKeyValue(key, value);
 }
 
 template<class K, class V>
@@ -227,7 +227,7 @@ void BTreeStore<K, V> ::writeFlag(char flag, const int pos) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
+void BTreeStore<K, V> ::insert(const Entry<K, V>* entry) {
     if (root == NULL) {
         root = new BTreeNodeStore<K, V>(t, true);
         writeHeader(t, 8);
@@ -260,19 +260,18 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
 //            manageFileWrite->setPosEndFile();
             file->setPosEndFile();
 
-            int posFile = file->getPosFile();
-//            assert(posFile == actual);
-            newRoot->setPost(posFile);
+            newRoot->setPost(file->getPosFile());
             //write node
             writeNode(newRoot, newRoot->getPos());
 
             newRoot->splitChild(this, 0, root);
             //find child have new key
             int i = 0;
-            Entry<K, V> entryOfRoot = newRoot->getEntry(this, 0).value();
-            if (entryOfRoot.key < entry.key) {
+            Entry<K, V>* entryOfRoot = newRoot->getEntry(this, 0);
+            if (entryOfRoot->getKey() < entry->getKey()) {
                 i++;
             }
+            delete entryOfRoot;
 
             BTreeNodeStore<K, V>* node = new BTreeNodeStore<K, V>(t, false);
             int pos = newRoot->getPosChild(i);
@@ -303,12 +302,12 @@ void BTreeStore<K, V> ::set(const K& key, const V& value) {
     //    timestamp_t timeFinish;
     //    timestamp_t timeStart = get_timestamp();
 
-    if (root == NULL) {
-        Entry<K, V> entry(key, value);
-        insert(entry);
-    } else if (!root->set(this, key, value)) {
-        Entry<K, V> entry(key, value);
-        insert(entry);
+    if (this->root == NULL) {
+        Entry<K, V>* entry = new Entry<K, V>(key, value);
+        this->insert(entry);
+    } else if (!this->root->set(this, key, value)) {
+        Entry<K, V>* entry = new Entry<K, V>(key, value);
+        this->insert(entry);
         //        timeFinish = get_timestamp();
     }
 
@@ -339,9 +338,14 @@ bool BTreeStore<K, V> ::exist(const K& key) {
 
     bool res;
 
-    auto opt = root->search(this, key);
+    Entry<K, V>* entry = this->root->search(this, key);
 
-    res = opt.has_value();
+    if (entry == NULL) {
+        res = false;
+    } else {
+        delete entry;
+        res = true;
+    }
 
 //    timeFinish = get_timestamp();
 //    secs = (timeFinish - timeStart);

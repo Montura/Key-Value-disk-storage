@@ -38,7 +38,7 @@ target_compile_definitions(key-value-storage PRIVATE
     BOOST_ALL_NO_LIB
     BOOST_TEST_MODULE=unit-cpp
     USE_BOOST_PREBUILT_STATIC_LIBRARY=false
-#    UNIT_TESTS
+    UNIT_TESTS
 )
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
@@ -48,6 +48,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         -Wall
         -Wextra
         -Wno-unused-parameter
+        -O3
     )
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   target_compile_options(key-value-storage PRIVATE
