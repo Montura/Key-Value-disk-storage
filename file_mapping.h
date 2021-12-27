@@ -15,20 +15,11 @@ struct MappedFile {
     }
 
     template <typename T>
-    void write(T val, int64_t f_pos) {
-        static_assert(std::is_arithmetic_v<T>);
-        m_pos = write_to_dst(val, f_pos * sizeof(T));
-        m_capacity = std::max(m_pos, m_capacity);
-    }
-
-    template <typename T>
     void write_next(T val) {
         static_assert(std::is_arithmetic_v<T>);
         m_pos = write_to_dst(val, m_pos);
         m_capacity = std::max(m_pos, m_capacity);
     }
-
-//    void write_string(const std::string& s);
 
     template <typename T>
     void write_vector(const std::vector<T>& vec) {

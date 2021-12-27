@@ -1,12 +1,10 @@
 #pragma once
 
 #include <vector>
-#include <iterator>
 #include <cassert>
-#include <optional>
 #include <mutex>
 
-#include "file_mapping.h"
+//#include "file_mapping.h"
 #include "entry.h"
 
 ///** Common Interface */
@@ -19,15 +17,13 @@
 //    virtual ~IKeyValueStorage() { };
 //};
 
+template <typename K, typename V>
+struct IOManager;
+
 /** Tree */
 template <typename K, typename V>
 class BTree final {
     struct BTreeNode;
-
-    BTreeNode* root = nullptr;
-    const int t;
-
-    MappedFile file;
 public:
     using Node = BTreeNode;
     using EntryT = Entry<K,V>;
@@ -43,25 +39,13 @@ public:
     const V get(const K& key);
     bool remove(const K& key);
 
-// todo: extract to reader|writer
 private:
-    void write_entry(const EntryT& entry, const int pos);
-    void read_entry(EntryT& entry, const int pos);
+    BTreeNode* root = nullptr;
+    const int t;
 
-    void write_flag(char flag, const int pos);
+    IOManager<K,V> io_manager;
+    using IOManagerT = IOManager<K,V>;
 
-    void write_header(const int t, const int posRoot);
-    void read_header(int& t, int& posRoot);
-
-    void read_node(Node* node, const int pos);
-    void write_node(const Node& node, const int pos);
-
-    int getPosFileWrite();
-    void setPosEndFileWrite();
-    void writeUpdatePosRoot(const int posRoot);
-
-    int calc_node_writable_node_size();
-private:
     /** Node */
     struct BTreeNode final {
         int used_keys;
@@ -86,27 +70,27 @@ private:
         inline int max_key_num() const { return 2 * t - 1; }
         inline int max_child_num() const { return 2 * t; }
 
-        int find_key_bin_search(BTree* bTree, const K& key);
-        void split_child(BTree* bTree, const int index, Node& curr_node);
-        EntryT read_entry(BTree* bTree, const int i);
-        void insert_non_full(BTree* bTree, const Entry<K, V>& entry);
-        void traverse(BTree* bTree);
-        bool set(BTree *bTree, const K &key, const V &value);
-        bool remove(BTree* bTree, const K& key);
-        EntryT find(BTree* bTree, const K& key);
+        int find_key_bin_search(IOManagerT& io_manager, const K& key);
+        void split_child(IOManagerT& io_manager, const int index, Node& curr_node);
+        EntryT read_entry(IOManagerT& io_manager, const int i);
+        void insert_non_full(IOManagerT& io_manager, const Entry<K, V>& entry);
+        void traverse(IOManagerT& io_manager);
+        bool set(IOManagerT& io_manager, const K &key, const V &value);
+        bool remove(IOManagerT& io_manager, const K& key);
+        EntryT find(IOManagerT& io_manager, const K& key);
     private:
-        Node get_node(BTree* bTree, const int i);
+        Node get_node(IOManagerT& io_manager, const int i);
 
-        bool remove_from_leaf(BTree* bTree, const int index);
-        bool remove_from_non_leaf(BTree* bTree, const int index);
+        bool remove_from_leaf(IOManagerT& io_manager, const int index);
+        bool remove_from_non_leaf(IOManagerT& io_manager, const int index);
 
-        int get_prev_entry_pos(BTree* bTree, const int index);
-        int get_next_entry_pos(BTree* bTree, const int index);
+        int get_prev_entry_pos(IOManagerT& io_manager, const int index);
+        int get_next_entry_pos(IOManagerT& io_manager, const int index);
 
-        void merge_node(BTree* bTree, const int index);
-        void fill_node(BTree* bTree, const int index);
+        void merge_node(IOManagerT& io_manager, const int index);
+        void fill_node(IOManagerT& io_manager, const int index);
 
-        void borrow_from_node_prev(BTree* bTree, const int index);
-        void borrow_from_node_next(BTree* bTree, const int index);
+        void borrow_from_node_prev(IOManagerT& io_manager, const int index);
+        void borrow_from_node_next(IOManagerT& io_manager, const int index);
     };
 };

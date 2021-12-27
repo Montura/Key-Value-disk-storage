@@ -22,6 +22,7 @@ set(SOURCE_FILES
         mem_util.cpp
         file_mapping.cpp
         file_mapping.h
+        io_manager_impl.h
         )
 include_directories(${Boost_INCLUDE_DIRS})
 

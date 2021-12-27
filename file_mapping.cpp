@@ -20,8 +20,11 @@ MappedFile::MappedFile(const std::string &fn, int64_t bytes_num) : path(fn), m_p
 }
 
 MappedFile::~MappedFile() {
+#ifdef _MSC_VER_
     fs::resize_file(path,m_capacity);
+#endif
 }
+
 
 void MappedFile::resize(int64_t new_size) {
     m_size = new_size;
@@ -112,7 +115,7 @@ void test_modify_and_save() {
     {
         MappedFile file(fmap, 32);
         for (int i = 0; i < 1000000; i += 1000) {
-            file.write(-1, i);
+//            file.write(-1, i);
         }
     }
     {
@@ -159,6 +162,7 @@ int main1() {
 
     std::string msg = "File mapping test";
 //        BOOST_REQUIRE_MESSAGE(success, msg);
+return 1;
 }
 //    }
 //}
