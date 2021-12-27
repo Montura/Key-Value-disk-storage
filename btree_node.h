@@ -11,8 +11,8 @@ struct BTreeNodeStore {
     int nCurrentEntry;
     int t;
     char flag;
-    int* arrayPosKey;
-    int* arrayPosChild;
+    std::vector<int> arrayPosKey;
+    std::vector<int> arrayPosChild;
     int m_pos;
 
 public:

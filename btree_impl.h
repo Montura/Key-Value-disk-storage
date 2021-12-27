@@ -60,30 +60,21 @@ template<class K, class V>
 void BTreeStore<K, V> ::writeNode(BTreeNodeStore<K, V>* node, const int pos) {
     file->setPosFile(pos);
 
-    int* arrPosKey = node->arrayPosKey;
-    int* arrPosChild = node->arrayPosChild;
-    char flag = node->flag;
-    int nCurrentEntry = node->nCurrentEntry;
-    int size = 2 * t;
-
-    file->write_byte(flag);
-    file->write_int(nCurrentEntry);
-    file->write_int_array(arrPosKey, size - 1);
-    file->write_int_array(arrPosChild, size);
+    file->write_byte(node->flag);
+    file->write_int(node->nCurrentEntry);
+    file->write_vector(node->arrayPosKey);
+    file->write_vector(node->arrayPosChild);
 }
 
 template<class K, class V>
 void BTreeStore<K, V>::readNode(BTreeNodeStore<K, V>* node, const int pos) {
-    int size = 2 * t;
-
     file->setPosFile(pos);
 
-    node->flag = file->read_byte();
     node->m_pos = pos;
-    node->t = t;
+    node->flag = file->read_byte();
     node->nCurrentEntry = file->read_int();
-    file->read_int_array(node->arrayPosKey, size - 1);
-    file->read_int_array(node->arrayPosChild, size);
+    file->read_vector(node->arrayPosKey);
+    file->read_vector(node->arrayPosChild);
 }
 
 template<class K, class V>
@@ -145,13 +136,11 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>* entry) {
         if (root->nCurrentEntry == 2 * t - 1) {
             BTreeNodeStore<K, V>* newRoot = new BTreeNodeStore<K, V>(t, false);
 
-            const int &pos1 = root->m_pos;
-            newRoot->arrayPosChild[0] = pos1;
+            newRoot->arrayPosChild[0] = root->m_pos;
 
             file->setPosEndFile();
 
-            const int &pos2 = file->getPosFile();
-            newRoot->m_pos = pos2;
+            newRoot->m_pos = file->getPosFile();
             //write node
             writeNode(newRoot, newRoot->m_pos);
 

@@ -43,28 +43,6 @@ void MappedFile::remap() {
     mapped_region_begin = reinterpret_cast<char *>(mapped_region.get_address());
 }
 
-void MappedFile::write_int_array(int* vec, const std::int32_t used) {
-    int64_t total_size = static_cast<int64_t>(sizeof(int32_t)) * used;
-    if (m_pos + total_size > m_size) {
-        resize(std::max(2 * m_size, total_size));
-    }
-    const char* data = reinterpret_cast<const char *>(vec);
-    std::copy(data, data + total_size, mapped_region_begin + m_pos);
-    m_pos += total_size;
-    m_capacity = std::max(m_pos, m_capacity);
-}
-
-void MappedFile::read_int_array(int* vec, int32_t used){
-    uint32_t total_size = sizeof(int32_t) * used;
-//    assert(used <= static_cast<int32_t>(vec.size()));
-
-    char* data = reinterpret_cast<char *>(vec);
-    char* start = mapped_region_begin + m_pos;
-    char* end = start + total_size;
-    std::copy(start, end, data);
-    m_pos += total_size;
-}
-
 void MappedFile::setPosFile(int64_t pos) {
     m_pos = pos > 0 ? pos : 0;
 }

@@ -7,31 +7,13 @@ template<class K, class V>
 BTreeNodeStore<K, V> ::BTreeNodeStore(const int& t, bool isLeaf) :
     nCurrentEntry(0),
     t(t),
-    flag(isLeaf ? 1 : 0)
-{
-    int size = max_child_num();
-    this->arrayPosKey = new int[size - 1];
-    this->arrayPosChild = new int [size];
-    for (int i = 0; i < size - 1; ++i) {
-        this->arrayPosKey[i] = -1;
-        this->arrayPosChild[i] = -1;
-    }
-    this->arrayPosChild[size - 1] = -1;
-}
+    flag(isLeaf ? 1 : 0),
+    arrayPosKey(max_key_num(), -1),
+    arrayPosChild(max_child_num(), -1)
+{}
 
 template<class K, class V>
-BTreeNodeStore<K, V> ::~BTreeNodeStore() {
-    if (this->arrayPosKey != NULL) {
-        delete[] this->arrayPosKey;
-        this->arrayPosKey = NULL;
-    }
-
-    if (this->arrayPosChild != NULL) {
-        delete[] this->arrayPosChild;
-        this->arrayPosChild = NULL;
-    }
-
-}
+BTreeNodeStore<K, V> ::~BTreeNodeStore() {}
 
 template<class K, class V>
 bool BTreeNodeStore<K, V>::checkIsLeaf() const {
@@ -54,8 +36,7 @@ void BTreeNodeStore<K, V> ::splitChild(BTreeStore<K, V>* bTree, const int &index
     }
 
     bTree->setPosEndFileWrite();
-    const int &pos = bTree->getPosFileWrite();
-    newNode->m_pos = pos;
+    newNode->m_pos = bTree->getPosFileWrite();
     //write new node
     bTree->writeNode(newNode, newNode->m_pos);
 
