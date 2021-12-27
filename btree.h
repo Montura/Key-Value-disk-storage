@@ -40,14 +40,14 @@ public:
     void set(const K &key, const V& value);
     void traverse();
 
-    void insert(const Entry<K, V>* entry);
+    void insert(const Entry<K, V>& entry);
 //    Oit get(const K& key);
     bool remove(const K& key);
 
 //private:
 
-    void writeEntry(const Entry<K, V>* entry, const int& pos);
-    void readEntry(Entry<K, V>* entry, const int& pos);
+    void writeEntry(const Entry<K, V>& entry, const int& pos);
+    void readEntry(Entry<K, V>& entry, const int& pos);
 
     void writeFlag(char flag, const int pos);
 

@@ -6,10 +6,10 @@
 template<class K, class V>
 BTreeStore<K, V> ::BTreeStore(const std::string& path, int order) : PATH(path), t(order) {
     file = new MappedFile(path, 0);
-//    pthread_rwlock_init(&(rwLock), NULL);
+//    pthread_rwlock_init(&(rwLock), nullptr);
 
     if (file->isEmpty()) {
-        root = NULL;
+        root = nullptr;
         return;
     }
     int root_pos;
@@ -18,7 +18,7 @@ BTreeStore<K, V> ::BTreeStore(const std::string& path, int order) : PATH(path), 
     assert(t == t_2);
 
     if (root_pos == -1) {
-        root = NULL;
+        root = nullptr;
         return;
     }
 
@@ -78,10 +78,10 @@ void BTreeStore<K, V>::readNode(BTreeNodeStore<K, V>& node, const int pos) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::writeEntry(const Entry<K, V>* entry, const int& pos) {
+void BTreeStore<K, V>::writeEntry(const Entry<K, V>& entry, const int& pos) {
     char flag = 1;
-    int strKey = entry->key;
-    int strValue = entry->value;
+    int strKey = entry.key;
+    int strValue = entry.value;
 
     file->setPosFile(pos);
 
@@ -91,18 +91,13 @@ void BTreeStore<K, V>::writeEntry(const Entry<K, V>* entry, const int& pos) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V>::readEntry(Entry<K, V>* entry, const int& pos) {
-    int key;
-    int value;
+void BTreeStore<K, V>::readEntry(Entry<K, V>& entry, const int& pos) {
 
     file->setPosFile(pos);
 
     char flag = file->read_byte();
-    key = file->read_next<K>();
-    value = file->read_next<V>();
-
-    entry->key = key;
-    entry->value = value;
+    entry.key = file->read_next<K>();
+    entry.value = file->read_next<V>();
 }
 
 template<class K, class V>
@@ -113,8 +108,8 @@ void BTreeStore<K, V> ::writeFlag(char flag, const int pos) {
 }
 
 template<class K, class V>
-void BTreeStore<K, V> ::insert(const Entry<K, V>* entry) {
-    if (root == NULL) {
+void BTreeStore<K, V> ::insert(const Entry<K, V>& entry) {
+    if (root == nullptr) {
         root = new BTreeNodeStore<K, V>(t, true);
         writeHeader(t, 8);
         root->m_pos = 8;
@@ -148,11 +143,10 @@ void BTreeStore<K, V> ::insert(const Entry<K, V>* entry) {
             newRoot.splitChild(this, 0, *root);
             //find child have new key
             int i = 0;
-            Entry<K, V>* entryOfRoot = newRoot.getEntry(this, 0);
-            if (entryOfRoot->key < entry->key) {
+            Entry<K, V> entryOfRoot = newRoot.getEntry(this, 0);
+            if (entryOfRoot.key < entry.key) {
                 i++;
             }
-            delete entryOfRoot;
 
             BTreeNodeStore<K, V> node(t, false);
             int pos = newRoot.arrayPosChild[i];
@@ -180,11 +174,11 @@ void BTreeStore<K, V> ::set(const K& key, const V& value) {
     //    timestamp_t timeFinish;
     //    timestamp_t timeStart = get_timestamp();
 
-    if (root == NULL) {
-        Entry<K, V>* entry = new Entry<K, V>(key, value);
+    if (root == nullptr) {
+        Entry<K, V> entry(key, value);
         insert(entry);
     } else if (!root->set(this, key, value)) {
-        Entry<K, V>* entry = new Entry<K, V>(key, value);
+        Entry<K, V> entry(key, value);
         insert(entry);
         //        timeFinish = get_timestamp();
     }
@@ -205,7 +199,7 @@ bool BTreeStore<K, V> ::exist(const K& key) {
 //    timestamp_t timeFinish;
 //    timestamp_t timeStart = get_timestamp();
 
-    if (root == NULL) {
+    if (root == nullptr) {
 //        timeFinish = get_timestamp();
 //        secs = (timeFinish - timeStart);
 
@@ -216,12 +210,11 @@ bool BTreeStore<K, V> ::exist(const K& key) {
 
     bool res;
 
-    Entry<K, V>* entry = root->search(this, key);
+    Entry<K, V> entry = root->search(this, key);
 
-    if (entry == NULL) {
+    if (entry.key == 0 && entry.value == 0) {
         res = false;
     } else {
-        delete entry;
         res = true;
     }
 
@@ -259,7 +252,7 @@ bool BTreeStore<K, V> ::remove(const K& key) {
             flag = flag | (1 << 1);
             writeFlag(flag, root->m_pos);
             delete root;
-            root = NULL;
+            root = nullptr;
             writeUpdatePosRoot(-1);
         } else {
             int pos = root->arrayPosChild[0];
@@ -279,7 +272,7 @@ bool BTreeStore<K, V> ::remove(const K& key) {
 
 template<class K, class V>
 void BTreeStore<K, V> ::traverse() {
-    if (root != NULL) {
+    if (root != nullptr) {
         root->traverse(this);
     }
 }

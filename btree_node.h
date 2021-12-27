@@ -25,15 +25,15 @@ public:
 
     void splitChild(BTreeStore<K, V>* bTree, const int &index, BTreeNodeStore<K, V>& node);
 
-    Entry<K, V>* getEntry(BTreeStore<K, V>* bTree, const int &i);
+    Entry<K, V> getEntry(BTreeStore<K, V>* bTree, const int &i);
 
     BTreeNodeStore<K, V> getBTreeNodeStore(BTreeStore<K, V>* bTree, const int &i);
 
-    void insertNotFull(BTreeStore<K, V>* bTree, const Entry<K, V>* entry);
+    void insertNotFull(BTreeStore<K, V>* bTree, const Entry<K, V>& entry);
 
     void traverse(BTreeStore<K, V>* bTree);
 
-    Entry<K, V>* search(BTreeStore<K, V>* bTree, const K& key);
+    Entry<K, V> search(BTreeStore<K, V>* bTree, const K& key);
 
     bool set(BTreeStore<K, V> *bTree, const K &key, const V &value);
 
