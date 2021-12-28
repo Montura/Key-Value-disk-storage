@@ -36,7 +36,7 @@ public:
     void traverse();
 
     void insert(const Entry<K, V>& entry);
-    const V get(const K& key);
+    V get(const K& key);
     bool remove(const K& key);
 
 private:
@@ -94,3 +94,6 @@ private:
         void borrow_from_node_next(IOManagerT& io_manager, const int index);
     };
 };
+
+#include "btree_impl.h"
+#include "btree_node_impl.h"

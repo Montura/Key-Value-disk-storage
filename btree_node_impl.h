@@ -1,7 +1,5 @@
 #pragma once
 
-#include "btree.h"
-
 template<class K, class V>
 BTree<K,V>::BTreeNode::BTreeNode(const int& t, bool isLeaf) :
     used_keys(0),
@@ -452,17 +450,17 @@ void BTree<K,V>::BTreeNode::traverse(IOManagerT& io) {
     for (i = 0; i < used_keys; ++i) {
         if (!is_leaf()) {
             node = get_node(io, i);
-            cout << endl;
+//            cout << endl;
             node.traverse(io);
-            cout << endl;
+//            cout << endl;
         }
         entry = read_entry(io, i);
-        cout << "[key]: " << entry->key << " - [value]: " << entry->value << " ";
+//        cout << "[key]: " << entry->key << " - [value]: " << entry->value << " ";
     }
     if (!is_leaf()) {
         node = get_node(io, i);
-        cout << endl;
+//        cout << endl;
         node.traverse(io);
-        cout << endl;
+//        cout << endl;
     }
 }

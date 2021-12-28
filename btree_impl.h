@@ -1,6 +1,5 @@
 #pragma once
 
-#include "btree.h"
 #include "io_manager_impl.h"
 
 template <typename K, typename V>
@@ -87,41 +86,26 @@ void BTree<K, V>::insert(const EntryT& entry) {
 template <typename K, typename V>
 void BTree<K, V>::set(const K& key, const V& value) {
 //    pthread_rwlock_wrlock(&(rwLock));
-    //    int secs;
-    //    timestamp_t timeFinish;
-    //    timestamp_t timeStart = get_timestamp();
 
-    if (!root) {
+    if (!root || !root->set(io_manager, key, value)) {
         EntryT entry { key, value };
         insert(entry);
-    } else if (!root->set(io_manager, key, value)) {
-        EntryT entry { key, value };
-        insert(entry);
-        //        timeFinish = get_timestamp();
     }
 
-    //    timeFinish = get_timestamp();
-    //    secs = (timeFinish - timeStart);
-    //
-    //    cout << " time API set: " << secs << " microsecond" << endl;
-
 //    pthread_rwlock_unlock(&(rwLock));
+}
+
+template <typename K, typename V>
+V BTree<K, V>::get(const K& key) {
+    EntryT res = root ? root->find(io_manager, key) : EntryT {};
+    return res.value;
 }
 
 template <typename K, typename V>
 bool BTree<K, V>::exist(const K& key) {
 //    pthread_rwlock_wrlock(&(rwLock));
 
-//    int secs;
-//    timestamp_t timeFinish;
-//    timestamp_t timeStart = get_timestamp();
-
     bool success = root && !root->find(io_manager, key).is_dummy();
-
-//    timeFinish = get_timestamp();
-//    secs = (timeFinish - timeStart);
-
-//    cout << "time API exist: " << secs << " microsecond" << endl;
 
 //    pthread_rwlock_unlock(&(rwLock));
     return success;
@@ -130,9 +114,6 @@ bool BTree<K, V>::exist(const K& key) {
 template <typename K, typename V>
 bool BTree<K, V>::remove(const K& key) {
 //    pthread_rwlock_wrlock(&(rwLock));
-//    int secs;
-//    timestamp_t timeFinish;
-//    timestamp_t timeStart = get_timestamp();
 
     bool success = root && root->remove(io_manager, key);
 
@@ -150,11 +131,6 @@ bool BTree<K, V>::remove(const K& key) {
             io_manager.read_node(root, pos);
         }
     }
-
-//    timeFinish = get_timestamp();
-//    secs = (timeFinish - timeStart);
-
-//    cout << "time API remove : " << secs << " microsecond" << endl;
 
 //    pthread_rwlock_unlock(&(rwLock));
     return success;
