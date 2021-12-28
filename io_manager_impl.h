@@ -3,13 +3,16 @@
 #include "btree.h"
 
 template <typename K, typename V>
-struct IOManager {
+class IOManager {
     using EntryT = Entry<K,V>;
     using Node = typename BTree<K,V>::Node;
 
     MappedFile file;
+    const int t = 0;
+public:
+    static constexpr int INVALID_ROOT_POS = -1;
 
-    explicit IOManager(const std::string& path) : file(path, 0) {}
+    explicit IOManager(const std::string& path, const int user_t) : file(path, 0), t(user_t) {}
 
     bool is_ready() {
         return !file.isEmpty();
@@ -19,11 +22,11 @@ struct IOManager {
         return
             sizeof (node.used_keys) +           // 4/8 bytes
             sizeof (node.used_keys) +            //  1 byte
-            node.arrayPosKey.size() * sizeof(K) +
-            node.arrayPosChild.size() * sizeof(K);
+            node.key_pos.size() * sizeof(K) +
+            node.child_pos.size() * sizeof(K);
     }
 
-    void write_entry(const EntryT& entry, const int pos)    {
+    void write_entry(EntryT && entry, const int pos)    {
         file.set_pos(pos);
 
         char flag = 1;
@@ -32,12 +35,13 @@ struct IOManager {
         file.write_next(entry.value);
     }
 
-    void read_entry(EntryT& entry, const int pos) {
+    EntryT read_entry(const int pos) {
         file.set_pos(pos);
 
         char flag = file.read_byte();
-        entry.key = file.read_next<K>();
-        entry.value = file.read_next<V>();
+        K key = file.read_next<K>();
+        V value = file.read_next<V>();
+        return { key, value };
     }
 
 
@@ -47,18 +51,36 @@ struct IOManager {
         file.write_next(flag);
     }
 
-    void read_header(int& t, int& posRoot) {
+    int read_header() {
         file.set_pos(0);
 
-        t = file.read_int();
-        posRoot = file.read_int();
+        auto t_from_file = file.read_int();
+        if (t != t_from_file)
+            throw std::logic_error("Wrong tree order is used for file: PATH");
+//        auto key_size = file.read_next<uint8_t>();
+//        auto curr_value_type = file.read_next<uint8_t>();
+//        auto cur_value_type_size = file.read_next<uint8_t>();
+//
+//        assert(key_size == sizeof(K));
+//        assert(curr_value_type == value_type<V>());
+//        assert(cur_value_type_size == value_type_size<V>());
+
+        int posRoot = file.read_int();
+        return posRoot;
     }
 
-    int write_header(const int t, const int posRoot) {
+    int write_header() {
         file.set_pos(0);
+//        uint8_t val = value_type_size<V>();
+//        uint8_t i = value_type<V>();
+//        assert((sizeof(t) + 1 + i + val) == 5);
+//        const int root_pos = 6;
 
-        file.write_next(t);
-        file.write_next(posRoot);
+        file.write_next(t);                               // 2 bytes
+//        file.write_next<uint8_t>(sizeof(K));            // 1 byte
+//        file.write_next<uint8_t>(i);                    // 1 byte
+//        file.write_next<uint8_t>(val);                      // 1 byte
+        file.write_next(8);                      // 4 byte -> write root pos
         return file.get_pos();
     }
 
@@ -73,9 +95,15 @@ struct IOManager {
 
         file.write_next(node.flag);
         file.write_next(node.used_keys);
-        file.write_node_vector(node.arrayPosKey);
-        file.write_node_vector(node.arrayPosChild);
+        file.write_node_vector(node.key_pos);
+        file.write_node_vector(node.child_pos);
         return file.get_pos();
+    }
+
+    Node read_node(const int pos) {
+        Node node(t, false);
+        read_node(&node, pos);
+        return node;
     }
 
     void read_node(Node* node, const int pos) {
@@ -84,8 +112,8 @@ struct IOManager {
         node->m_pos = pos;
         node->flag = file.read_byte();
         node->used_keys = file.read_int();
-        file.read_node_vector(node->arrayPosKey);
-        file.read_node_vector(node->arrayPosChild);
+        file.read_node_vector(node->key_pos);
+        file.read_node_vector(node->child_pos);
     }
 
     int get_file_pos_end() {
