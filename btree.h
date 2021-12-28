@@ -47,28 +47,28 @@ private:
 
     /** Node */
     struct BTreeNode final {
-        int used_keys;
+        int16_t used_keys;
         int16_t t;
-        char flag;
-        int m_pos;
-        std::vector<int> key_pos;
-        std::vector<int> child_pos;
+        uint8_t flag;
+        int32_t m_pos;
+        std::vector<int32_t> key_pos;
+        std::vector<int32_t> child_pos;
 
     public:
         BTreeNode(const int16_t& t, bool isLeaf);
 
         bool is_leaf() const;
         bool is_full() const;
-        char is_deleted_or_is_leaf() const;
+        uint8_t is_deleted_or_is_leaf() const;
 
-        inline int max_key_num() const { return 2 * t - 1; }
-        inline int max_child_num() const { return 2 * t; }
+        inline int32_t max_key_num() const { return 2 * t - 1; }
+        inline int32_t max_child_num() const { return 2 * t; }
 
-        int find_key_bin_search(IOManagerT& io_manager, const K& key);
-        void split_child(IOManagerT& manager, const int idx, Node& curr_node);
+        int32_t find_key_bin_search(IOManagerT& io_manager, const K& key);
+        void split_child(IOManagerT& manager, const int32_t idx, Node& curr_node);
 
-        K get_key(IOManagerT& io_manager, const int idx);
-        EntryT get_entry(IOManagerT& io_manager, const int idx);
+        K get_key(IOManagerT& io_manager, const int32_t idx);
+        EntryT get_entry(IOManagerT& io_manager, const int32_t idx);
         EntryT find(IOManagerT& io_manager, const K& key);
 
         void insert_non_full(IOManagerT& io_manager, const K& key, const V& value);
@@ -76,19 +76,19 @@ private:
         bool set(IOManagerT& io_manager, const K &key, const V &value);
         bool remove(IOManagerT& io_manager, const K& key);
     private:
-        Node get_child(IOManagerT& io_manager, const int idx);
+        Node get_child(IOManagerT& io_manager, const int32_t idx);
 
-        bool remove_from_leaf(IOManagerT& io_manager, const int idx);
-        bool remove_from_non_leaf(IOManagerT& io_manager, const int idx);
+        bool remove_from_leaf(IOManagerT& io_manager, const int32_t idx);
+        bool remove_from_non_leaf(IOManagerT& io_manager, const int32_t idx);
 
-        int get_prev_entry_pos(IOManagerT& io_manager, const int idx);
-        int get_next_entry_pos(IOManagerT& io_manager, const int idx);
+        int32_t get_prev_entry_pos(IOManagerT& io_manager, const int32_t idx);
+        int32_t get_next_entry_pos(IOManagerT& io_manager, const int32_t idx);
 
-        void merge_node(IOManagerT& io_manager, const int idx);
-        int fill_node(IOManagerT& io_manager, const int idx);
+        void merge_node(IOManagerT& io_manager, const int32_t idx);
+        int32_t fill_node(IOManagerT& io_manager, const int32_t idx);
 
-        void borrow_from_prev_node(IOManagerT& io_manager, const int idx);
-        void borrow_from_next_node(IOManagerT& io_manager, const int idx);
+        void borrow_from_prev_node(IOManagerT& io_manager, const int32_t idx);
+        void borrow_from_next_node(IOManagerT& io_manager, const int32_t idx);
     };
 };
 

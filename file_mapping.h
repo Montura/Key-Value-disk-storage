@@ -49,7 +49,7 @@ private:
     void remap();
 
     const std::string path;
-    char* mapped_region_begin;
+    uint8_t* mapped_region_begin;
     int64_t m_pos;
     int64_t m_size;
     int64_t m_capacity;

@@ -31,7 +31,7 @@ template <typename T>
 T MappedFile::read_next() {
     if constexpr(std::is_arithmetic_v<T>) {
         static_assert(std::is_arithmetic_v<T>);
-        char *value_begin = mapped_region_begin + m_pos;
+        auto *value_begin = mapped_region_begin + m_pos;
         m_pos += sizeof(T);
         return *(reinterpret_cast<T *>(value_begin));
     } else {
@@ -42,14 +42,14 @@ T MappedFile::read_next() {
 
 template <typename T>
 T MappedFile::read_container() {
-    int32_t elem_count = read_next<typename T::size_type>();
+    int64_t elem_count = read_next<typename T::size_type>();
     T str(elem_count, '\0');
 
-    uint32_t total_size = sizeof(typename T::value_type) * elem_count;
+    int64_t total_size = sizeof(typename T::value_type) * elem_count;
 
-    char* data = reinterpret_cast<char *>(str.data());
-    char* start = mapped_region_begin + m_pos;
-    char* end = start + total_size;
+    auto* data = cast_to_uint8_t_data(str.data());
+    auto* start = mapped_region_begin + m_pos;
+    auto* end = start + total_size;
     std::copy(start, end, data);
     m_pos += total_size;
     return str;
@@ -66,11 +66,11 @@ void MappedFile::write_next(T val) {
 
 template <typename T>
 void MappedFile::write_node_vector(const std::vector<T>& vec) {
-    int64_t total_size = static_cast<int64_t>(sizeof(T)) * vec.size();
+    int64_t total_size = sizeof(T) * vec.size();
     if (m_pos + total_size > m_size)
         resize(std::max(2 * m_size, total_size));
 
-    const char* data = reinterpret_cast<const char *>(vec.data());
+    auto* data = cast_to_const_uint8_t_data(vec.data());
     std::copy(data, data + total_size, mapped_region_begin + m_pos);
     m_pos += total_size;
     m_capacity = std::max(m_pos, m_capacity);
@@ -78,11 +78,11 @@ void MappedFile::write_node_vector(const std::vector<T>& vec) {
 
 template <typename T>
 void MappedFile::read_node_vector(std::vector<T>& vec) {
-    uint32_t total_size = sizeof(T) * vec.size();
+    int64_t total_size = sizeof(T) * vec.size();
 
-    char* data = reinterpret_cast<char *>(vec.data());
-    char* start = mapped_region_begin + m_pos;
-    char* end = start + total_size;
+    auto* data = cast_to_uint8_t_data(vec.data());
+    auto* start = mapped_region_begin + m_pos;
+    auto* end = start + total_size;
     std::copy(start, end, data);
     m_pos += total_size;
 }
@@ -93,7 +93,7 @@ std::int64_t MappedFile::write_arithmetic_to_dst(T val, int64_t dst) {
     if (m_pos + total_size > m_size)
         resize(std::max(2 * m_size, total_size));
 
-    char* data = reinterpret_cast<char *>(&val);
+    auto* data = cast_to_const_uint8_t_data(&val);
     std::copy(data, data + total_size, mapped_region_begin + dst);
     return dst + total_size;
 }
@@ -103,7 +103,7 @@ std::int64_t MappedFile::write_container_to_dst(T val, int64_t dst) {
     static_assert(is_string_v<T> || is_vector_v<T>);
 
     // write size
-    size_t elem_count = val.size();
+    int64_t elem_count = val.size();
     dst = write_arithmetic_to_dst(elem_count, dst);
 
     // write values
@@ -111,7 +111,7 @@ std::int64_t MappedFile::write_container_to_dst(T val, int64_t dst) {
     if (m_pos + total_bytes_size > m_size)
         resize(std::max(2 * m_size, total_bytes_size));
 
-    char* data = reinterpret_cast<char *>(val.data());
+    auto* data = cast_to_uint8_t_data(val.data());
     std::copy(data, data + total_bytes_size, mapped_region_begin + dst);
     return dst + total_bytes_size;
 }
@@ -133,7 +133,7 @@ void MappedFile::remap() {
     auto new_region = bip::mapped_region(new_mapping, bip::read_write);
     file_mapping.swap(new_mapping);
     mapped_region.swap(new_region);
-    mapped_region_begin = reinterpret_cast<char *>(mapped_region.get_address());
+    mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
 }
 
 void MappedFile::set_pos(int64_t pos) {

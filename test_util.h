@@ -3,7 +3,7 @@
 
 #include "btree.h"
 
-using BTreeIntInt = BTree<int, int>;
+using BTreeIntInt = BTree<int32_t, int32_t>;
 
 
 class TestStat {
@@ -25,7 +25,7 @@ public:
         return total_not_found == 0;
     }
 
-    bool check_deleted(int expected) const {
+    bool check_deleted(int32_t expected) const {
         return total_removed == expected;
     }
 
