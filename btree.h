@@ -92,7 +92,7 @@ private:
         int get_next_entry_pos(IOManagerT& io_manager, const int idx);
 
         void merge_node(IOManagerT& io_manager, const int idx);
-        void fill_node(IOManagerT& io_manager, const int idx);
+        int fill_node(IOManagerT& io_manager, const int idx);
 
         void borrow_from_prev_node(IOManagerT& io_manager, const int idx);
         void borrow_from_next_node(IOManagerT& io_manager, const int idx);

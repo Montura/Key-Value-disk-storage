@@ -194,31 +194,33 @@ bool BTree<K,V>::BTreeNode::set(IOManagerT& io, const K& key, const V& value) {
 
 template<class K, class V>
 bool BTree<K,V>::BTreeNode::remove(IOManagerT& io, const K& key) {
+    auto writeOnExit = [&io](const Node& node, const int pos, bool success) -> bool {
+        io.write_node(node, pos);
+        return success;
+    };
+
     int idx = find_key_bin_search(io, key);
     K curr_key = get_entry(io, idx).key;
-
-    bool success;
     if (idx < used_keys && curr_key == key) {
-        success = is_leaf() ? remove_from_leaf(io, idx) : remove_from_non_leaf(io, idx);
-        io.write_node(*this, m_pos);
-    } else {
-        if (is_leaf())
-            return false;
-
-        // If the child where the key is supposed to exist has less that t keys, we fill that child
-        auto child = get_child(io, idx);
-        if (child.used_keys < t)
-            fill_node(io, idx);
-
-        int child_idx = (idx > used_keys) ? (idx - 1) : idx;
-        auto m_child  = get_child(io, child_idx);
-
-        if (m_child.t != 1) {
-            success =  m_child.remove(io, key);
-            io.write_node(m_child, m_child.m_pos);
-        }
+        bool success = is_leaf() ? remove_from_leaf(io, idx) : remove_from_non_leaf(io, idx);
+        return writeOnExit(*this, m_pos, success);
     }
-    return success;
+
+    if (is_leaf())
+        return false;
+
+    // If the child where the key is supposed to exist has less that t keys, we fill that child
+    // And wwe have to find the child again after "fill_node"
+    auto child = get_child(io, idx);
+    int new_child_idx = (child.used_keys < t) ? fill_node(io, idx) : idx;
+    child = get_child(io, new_child_idx);
+
+    if (child.t != 1) {
+        bool success = child.remove(io, key);
+        return writeOnExit(child, child.m_pos, success);
+    }
+
+    return false;
 }
 
 template<class K, class V>
@@ -233,44 +235,41 @@ bool BTree<K,V>::BTreeNode::remove_from_leaf(IOManagerT& io, const int idx) {
 
 template<class K, class V>
 bool BTree<K,V>::BTreeNode::remove_from_non_leaf(IOManagerT& io, const int idx) {
-    Node curr = get_child(io, idx);
-    Node next = get_child(io, idx + 1);
-
-    int curr_pos;
-    bool res;
+    auto onExit = [&io](Node& curr, const K key) -> bool {
+        bool success = curr.remove(io, key);
+        io.write_node(curr, curr.m_pos);
+        return success;
+    };
 
     // 1. If the child[pos] has >= T keys, find the PREVIOUS in the subtree rooted at child[pos].
     // 2. Replace keys[pos], values[pos] by the PREVIOUS[key|value].
     // 3. Recursively delete PREVIOUS in child[pos].
-    if (curr.used_keys >= t) {
-        curr_pos = get_prev_entry_pos(io, idx);
+    if (Node child = get_child(io, idx); child.used_keys >= t) {
+        auto curr_pos = get_prev_entry_pos(io, idx);
         key_pos[idx] = curr_pos;
         K key = io.read_entry(curr_pos).key;
-        res = curr.remove(io, key);
+        return onExit(child, key);
+    }
+
     // If the child[pos] has <= T keys, check the child[pos + 1].
     // 1. If child[pos + 1] has >= T keys, find the NEXT in the subtree rooted at child[pos + 1].
     // 2. Replace keys[pos], values[pos] by the NEXT[key|value].
     // 3. Recursively delete NEXT in child[pos + 1].
-    } else if (next.used_keys >= t) {
-        curr_pos = get_next_entry_pos(io, idx);
+    if (Node child = get_child(io, idx + 1); child.used_keys >= t) {
+        auto curr_pos = get_next_entry_pos(io, idx);
         key_pos[idx] = curr_pos;
         K key = io.read_entry(curr_pos).key;
-        res = next.remove(io, key);
+        return onExit(child, key);
+    }
+
     // 1. Now child[pos] and child[pos + 1] has < T keys.
     // 2. Merge key and child[pos + 1] into child[pos].
     // 3. Now child[pos] has (2 * t - 1) keys
     // 4. Recursively delete KEY from child[pos]
-    } else {
-        K key = get_entry(io, idx).key;
-        merge_node(io, idx);
-
-        curr = get_child(io, idx);
-        res = curr.remove(io, key);
-    }
-
-    io.write_node(curr, curr.m_pos);
-
-    return res;
+    K key = get_entry(io, idx).key;
+    merge_node(io, idx);
+    Node curr = get_child(io, idx);
+    return onExit(curr, key);
 }
 
 template<class K, class V>
@@ -334,17 +333,19 @@ void BTree<K,V>::BTreeNode::merge_node(IOManagerT& io, const int idx) {
 }
 
 template<class K, class V>
-void BTree<K,V>::BTreeNode::fill_node(IOManagerT& io, const int idx) {
+int BTree<K,V>::BTreeNode::fill_node(IOManagerT& io, const int idx) {
     Node left_child = get_child(io, idx - 1);
     Node right_child = get_child(io, idx + 1);
 
     // If the left child has >= (T - 1) keys, borrow a key from it
     if (idx != 0 && left_child.used_keys >= t) {
         borrow_from_prev_node(io, idx);
+        return idx;
 
     // If the right child has >= (T - 1) keys, borrow a key from it
     } else if (idx != used_keys && right_child.used_keys >= t) {
         borrow_from_next_node(io, idx);
+        return idx;
 
     // Merge child[idx] with its sibling
     // - if (child[idx] isn't the last child) {
@@ -355,6 +356,7 @@ void BTree<K,V>::BTreeNode::fill_node(IOManagerT& io, const int idx) {
     } else {
         int merge_index = (idx != used_keys) ? idx : idx - 1;
         merge_node(io, merge_index);
+        return merge_index;
     }
 }
 
