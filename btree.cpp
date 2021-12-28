@@ -1,4 +1,5 @@
 #include <iostream>
+#include <ctime>
 
 using std::cout;
 using std::endl;
@@ -118,6 +119,9 @@ void test() {
     std::string end = ".txt";
 
     for (int order = 2; order < 101; ++order) {
+        int r1 = std::rand() % 13 + 1;
+        int r2 = std::rand() % 31 + 1;
+        int r3 = std::rand() % 73 + 1;
         TestStat stat;
         {
             BTreeIntInt btree(db_name + std::to_string(order) + end, order);
@@ -137,7 +141,7 @@ void test() {
             }
             assert(stat.any_not_found());
 
-            for (int i = 0; i < n; i += 3) {
+            for (int i = 0; i < n; i += r1) {
                 bool b = btree.remove(i);
                 if (b) {
                     stat.total_removed += 1;
@@ -147,7 +151,7 @@ void test() {
                 }
             }
 
-            for (int i = 0; i < n; i += 7) {
+            for (int i = 0; i < n; i += r2) {
                 bool b = btree.remove(i);
                 if (b) {
                     stat.total_removed += 1;
@@ -157,8 +161,8 @@ void test() {
 
             for (int i = 0; i < 50; ++i) {
                 stat.total_removed += btree.remove(0);
-                stat.total_removed += btree.remove(3 * i);
-                stat.total_removed += btree.remove(7 * i);
+                stat.total_removed += btree.remove(3 * r3);
+                stat.total_removed += btree.remove(7 * r3);
             }
 
             for (int i = 0; i < n; ++i) {
@@ -186,6 +190,7 @@ void test() {
 void at_exit_handler();
 
 int main() {
+    std::srand(std::time(nullptr)); // use current time as seed for random generator
     test();
 //    using BTreeIntInt = BTree<int, int>;
 //    std::string db_name = "../db_";
