@@ -21,7 +21,7 @@ public:
     int get_node_size_in_bytes(Node& node) {
         return
             sizeof (node.used_keys) +           // 4/8 bytes
-            sizeof (node.used_keys) +            //  1 byte
+            sizeof (node.flag) +            //  1 byte
             node.key_pos.size() * sizeof(K) +
             node.child_pos.size() * sizeof(K);
     }
