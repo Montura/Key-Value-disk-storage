@@ -40,8 +40,7 @@ void BTree<K,V>::BTreeNode::split_child(IOManagerT& manager, const int idx, Node
         }
     }
 
-    manager.setPosEndFile();
-    const int pos = manager.getPosFile();
+    const int pos = manager.get_file_pos_end(); // + setPosEnd
     new_node.m_pos = pos;
     // write new node
     manager.write_node(new_node, new_node.m_pos);
@@ -108,8 +107,7 @@ void BTree<K,V>::BTreeNode::insert_non_full(IOManagerT& io, const EntryT& entry)
             entryTmp = read_entry(io, idx);
         }
 
-        io.setPosEndFile();
-        int pos = io.getPosFile();
+        int pos = io.get_file_pos_end(); // + setPosEnd
 
         //write entry
         io.write_entry(entry, pos);
@@ -193,8 +191,7 @@ bool BTree<K,V>::BTreeNode::set(IOManagerT& io, const K& key, const V& value) {
         if (entry.key == key) {
             io.write_flag('0', arrayPosKey[idx]);
 
-            io.setPosEndFile();
-            int curr_pos = io.getPosFile();
+            int curr_pos = io.get_file_pos_end(); // + setPosEnd
 
             arrayPosKey[idx] = curr_pos;
             entry.value = value;

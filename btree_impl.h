@@ -32,36 +32,29 @@ BTree<K, V>::~BTree() {
 //    pthread_rwlock_destroy(&(rwLock));
 }
 
-
 template <typename K, typename V>
 void BTree<K, V>::insert(const EntryT& entry) {
     if (root == nullptr) {
         root = new Node(t, true);
-        io_manager.write_header(t, 8);
-        root->m_pos = 8;
+        root->m_pos = io_manager.write_header(t, 8);
 
-        io_manager.setPosEndFile();
+        int node_pos = root->m_pos + io_manager.get_node_size_in_bytes(*root);
 
-        int pos = io_manager.getPosFile();
-        pos += sizeof (int) * (2 * t - 1) + sizeof (int) * (2 * t) + 5; // 1 byte flag + 4 byte nCurrentKey
-
-        root->arrayPosKey[0] = pos;
+        root->arrayPosKey[0] = node_pos;
         root->used_keys++;
 
         // write node root
         io_manager.write_node(*root, root->m_pos);
 
         //write key value
-        io_manager.write_entry(entry, pos);
+        io_manager.write_entry(entry, node_pos);
     } else {
         if (root->is_full()) {
             Node newRoot(t, false);
 
             newRoot.arrayPosChild[0] = root->m_pos;
 
-            io_manager.setPosEndFile();
-
-            int posFile = io_manager.getPosFile();
+            int posFile = io_manager.get_file_pos_end();
             newRoot.m_pos = posFile;
             //write node
             io_manager.write_node(newRoot, newRoot.m_pos);

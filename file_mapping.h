@@ -45,9 +45,9 @@ struct MappedFile {
         m_pos += total_size;
     };
 
-    void setPosFile(int64_t pos);
+    void set_pos(int64_t pos);
 
-    int64_t getPosFile();
+    int64_t get_pos();
 
     int32_t read_int();
 
@@ -57,7 +57,7 @@ struct MappedFile {
 
     uint8_t read_byte();
 
-    void setPosEndFile();
+    void set_file_pos_to_end();
 
     bool isEmpty();
 
