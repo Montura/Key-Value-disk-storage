@@ -97,14 +97,15 @@ typename BTree<K,V>::BTreeNode BTree<K,V>::BTreeNode::get_node(IOManagerT& io, c
 
 template<class K, class V>
 void BTree<K,V>::BTreeNode::insert_non_full(IOManagerT& io, const EntryT& entry) {
-    int i = used_keys - 1;
-    Entry<K, V> entryTmp = read_entry(io, i);
 
     if (is_leaf()) {
-        while (i >= 0 && entryTmp.key > entry.key) {
-            arrayPosKey[i + 1] = arrayPosKey[i];
-            i--;
-            entryTmp = read_entry(io, i);
+        int idx = used_keys - 1;
+        EntryT entryTmp = read_entry(io, idx);
+
+        while (idx >= 0 && entryTmp.key > entry.key) {
+            arrayPosKey[idx + 1] = arrayPosKey[idx];
+            idx--;
+            entryTmp = read_entry(io, idx);
         }
 
         io.setPosEndFile();
@@ -113,27 +114,27 @@ void BTree<K,V>::BTreeNode::insert_non_full(IOManagerT& io, const EntryT& entry)
         //write entry
         io.write_entry(entry, pos);
 
-        arrayPosKey[i + 1] = pos;
+        arrayPosKey[idx + 1] = pos;
         ++used_keys;
 
         //write node
         io.write_node(*this, m_pos);
     } else {
-        i = find_key_bin_search(io, entry.key);
+        int idx = find_key_bin_search(io, entry.key);
 
-        Node node = get_node(io, i);
+        Node node = get_node(io, idx);
 
         if (node.is_full()) {
-            split_child(io, i, node);
+            split_child(io, idx, node);
 
-            entryTmp = read_entry(io, i);
+            Entry entryTmp = read_entry(io, idx);
 
             if (entryTmp.key < entry.key) {
-                i++;
+                idx++;
             }
         }
 
-        node = get_node(io, i);
+        node = get_node(io, idx);
         node.insert_non_full(io, entry);
     }
 }
@@ -215,13 +216,12 @@ bool BTree<K,V>::BTreeNode::set(IOManagerT& io, const K& key, const V& value) {
 
 template<class K, class V>
 bool BTree<K,V>::BTreeNode::remove(IOManagerT& io, const K& key) {
-    bool res;
-
     int idx = find_key_bin_search(io, key);
     EntryT entry = read_entry(io, idx);
 
+    bool success;
     if (idx < used_keys && entry.key == key) {
-        res = is_leaf() ? remove_from_leaf(io, idx) : remove_from_non_leaf(io, idx);
+        success = is_leaf() ? remove_from_leaf(io, idx) : remove_from_non_leaf(io, idx);
         io.write_node(*this, m_pos);
     } else {
         if (is_leaf()) {
@@ -238,12 +238,11 @@ bool BTree<K,V>::BTreeNode::remove(IOManagerT& io, const K& key) {
         auto m_child  = get_node(io, child_idx);
 
         if (m_child.t != 1) {
-            res =  m_child.remove(io, key);
+            success =  m_child.remove(io, key);
             io.write_node(m_child, m_child.m_pos);
         }
     }
-
-    return res;
+    return success;
 }
 
 template<class K, class V>
