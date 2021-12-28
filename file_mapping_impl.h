@@ -140,8 +140,16 @@ void MappedFile::set_pos(int64_t pos) {
     m_pos = pos > 0 ? pos : 0;
 }
 
-int32_t MappedFile::read_int() {
+int16_t MappedFile::read_int16() {
+    return read_next<int16_t>();
+}
+
+int32_t MappedFile::read_int32() {
     return read_next<int32_t>();
+}
+
+int64_t MappedFile::read_int64() {
+    return read_next<int64_t>();
 }
 
 int64_t MappedFile::get_pos() {

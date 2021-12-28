@@ -27,7 +27,7 @@ public:
     using Node = BTreeNode;
     using EntryT = Entry<K,V>;
 
-    BTree(const std::string& path, int order);
+    BTree(const std::string& path, int16_t order);
     ~BTree();
 
     bool exist(const K &key);
@@ -40,7 +40,7 @@ private:
     void traverse();
 
     BTreeNode* root = nullptr;
-    const int t;
+    const int16_t t;
 
     IOManager<K,V> io_manager;
     using IOManagerT = IOManager<K,V>;
@@ -48,14 +48,14 @@ private:
     /** Node */
     struct BTreeNode final {
         int used_keys;
-        int t;
+        int16_t t;
         char flag;
         int m_pos;
         std::vector<int> key_pos;
         std::vector<int> child_pos;
 
     public:
-        BTreeNode(const int& t, bool isLeaf);
+        BTreeNode(const int16_t& t, bool isLeaf);
 
         bool is_leaf() const;
         bool is_full() const;

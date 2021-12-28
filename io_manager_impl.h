@@ -7,12 +7,12 @@ class IOManager {
     using EntryT = Entry<K,V>;
     using Node = typename BTree<K,V>::Node;
 
+    const int16_t t = 0;
     MappedFile file;
-    const int t = 0;
 public:
-    static constexpr int INVALID_ROOT_POS = -1;
+    static constexpr int32_t INVALID_ROOT_POS = -1;
 
-    explicit IOManager(const std::string& path, const int user_t) : file(path, 0), t(user_t) {}
+    explicit IOManager(const std::string& path, const int16_t user_t) : t(user_t), file(path, 0)  {}
 
     bool is_ready() {
         return !file.isEmpty();
@@ -54,7 +54,7 @@ public:
     int read_header() {
         file.set_pos(0);
 
-        auto t_from_file = file.read_int();
+        auto t_from_file = file.read_int16();
         if (t != t_from_file)
             throw std::logic_error("Wrong tree order is used for file: PATH");
 //        auto key_size = file.read_next<uint8_t>();
@@ -65,7 +65,7 @@ public:
 //        assert(curr_value_type == value_type<V>());
 //        assert(cur_value_type_size == value_type_size<V>());
 
-        int posRoot = file.read_int();
+        int posRoot = file.read_int32();
         return posRoot;
     }
 
@@ -80,12 +80,12 @@ public:
 //        file.write_next<uint8_t>(sizeof(K));            // 1 byte
 //        file.write_next<uint8_t>(i);                    // 1 byte
 //        file.write_next<uint8_t>(val);                      // 1 byte
-        file.write_next(8);                      // 4 byte -> write root pos
+        file.write_next(6);                      // 4 byte -> write root pos
         return file.get_pos();
     }
 
     void writeUpdatePosRoot(const int posRoot) {
-        file.set_pos(4);
+        file.set_pos(2);
 
         file.write_next(posRoot);
     }
@@ -111,7 +111,7 @@ public:
 
         node->m_pos = pos;
         node->flag = file.read_byte();
-        node->used_keys = file.read_int();
+        node->used_keys = file.read_int32();
         file.read_node_vector(node->key_pos);
         file.read_node_vector(node->child_pos);
     }

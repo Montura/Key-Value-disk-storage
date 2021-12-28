@@ -30,7 +30,9 @@ struct MappedFile {
     void set_pos(int64_t pos);
     int64_t get_pos();
 
-    int32_t read_int();
+    int16_t read_int16();
+    int32_t read_int32();
+    int64_t read_int64();
     uint8_t read_byte();
 
     void set_file_pos_to_end();

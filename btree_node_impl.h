@@ -1,7 +1,7 @@
 #pragma once
 
 template<class K, class V>
-BTree<K,V>::BTreeNode::BTreeNode(const int& t, bool isLeaf) :
+BTree<K,V>::BTreeNode::BTreeNode(const int16_t& t, bool isLeaf) :
     used_keys(0),
     t(t),
     flag(isLeaf ? 1 : 0),

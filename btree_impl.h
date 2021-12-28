@@ -1,7 +1,7 @@
 #pragma once
 
 template <typename K, typename V>
-BTree<K, V>::BTree(const std::string& path, int order) : t(order), io_manager(path, t) {
+BTree<K, V>::BTree(const std::string& path, const int16_t order) : t(order), io_manager(path, t) {
 //    pthread_rwlock_init(&(rwLock), NULL);
     if (!io_manager.is_ready())
         return;
