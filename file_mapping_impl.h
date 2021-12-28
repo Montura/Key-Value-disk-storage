@@ -1,6 +1,6 @@
 #include <filesystem>
 
-#include "file_mapping.h"
+#include "utils.h"
 
 namespace fs = std::filesystem;
 
@@ -8,7 +8,9 @@ MappedFile::MappedFile(const std::string &fn, int64_t bytes_num) : path(fn), m_p
     bool file_exists = fs::exists(fn);
     if (!file_exists) {
         std::filebuf fbuf;
-        fbuf.open(path, std::ios_base::out | std::ios_base::trunc);
+        auto *pFilebuf = fbuf.open(path, std::ios_base::out | std::ios_base::trunc);
+        if (!pFilebuf)
+            throw std::runtime_error("Wrong path is provided for mapped file, path = " + path);
         fbuf.pubseekoff(bytes_num, std::ios_base::beg);
         fbuf.sputc(0);
         fbuf.close();
@@ -25,6 +27,94 @@ MappedFile::~MappedFile() {
 #endif
 }
 
+template <typename T>
+T MappedFile::read_next() {
+    if constexpr(std::is_arithmetic_v<T>) {
+        static_assert(std::is_arithmetic_v<T>);
+        char *value_begin = mapped_region_begin + m_pos;
+        m_pos += sizeof(T);
+        return *(reinterpret_cast<T *>(value_begin));
+    } else {
+        static_assert(is_string_v<T> || is_vector_v<T>);
+        return read_container<T>();
+    }
+}
+
+template <typename T>
+T MappedFile::read_container() {
+    int32_t elem_count = read_next<typename T::size_type>();
+    T str(elem_count, '\0');
+
+    uint32_t total_size = sizeof(typename T::value_type) * elem_count;
+
+    char* data = reinterpret_cast<char *>(str.data());
+    char* start = mapped_region_begin + m_pos;
+    char* end = start + total_size;
+    std::copy(start, end, data);
+    m_pos += total_size;
+    return str;
+}
+
+template <typename T>
+void MappedFile::write_next(T val) {
+    if constexpr(std::is_arithmetic_v<T>)
+        m_pos = write_arithmetic_to_dst(val, m_pos);
+    else
+        m_pos = write_container_to_dst(val, m_pos);
+    m_capacity = std::max(m_pos, m_capacity);
+}
+
+template <typename T>
+void MappedFile::write_node_vector(const std::vector<T>& vec) {
+    int64_t total_size = static_cast<int64_t>(sizeof(T)) * vec.size();
+    if (m_pos + total_size > m_size)
+        resize(std::max(2 * m_size, total_size));
+
+    const char* data = reinterpret_cast<const char *>(vec.data());
+    std::copy(data, data + total_size, mapped_region_begin + m_pos);
+    m_pos += total_size;
+    m_capacity = std::max(m_pos, m_capacity);
+}
+
+template <typename T>
+void MappedFile::read_node_vector(std::vector<T>& vec) {
+    uint32_t total_size = sizeof(T) * vec.size();
+
+    char* data = reinterpret_cast<char *>(vec.data());
+    char* start = mapped_region_begin + m_pos;
+    char* end = start + total_size;
+    std::copy(start, end, data);
+    m_pos += total_size;
+}
+
+template <typename T>
+std::int64_t MappedFile::write_arithmetic_to_dst(T val, int64_t dst) {
+    int64_t total_size = sizeof(T);
+    if (m_pos + total_size > m_size)
+        resize(std::max(2 * m_size, total_size));
+
+    char* data = reinterpret_cast<char *>(&val);
+    std::copy(data, data + total_size, mapped_region_begin + dst);
+    return dst + total_size;
+}
+
+template <typename T>
+std::int64_t MappedFile::write_container_to_dst(T val, int64_t dst) {
+    static_assert(is_string_v<T> || is_vector_v<T>);
+
+    // write size
+    size_t elem_count = val.size();
+    dst = write_arithmetic_to_dst(elem_count, dst);
+
+    // write values
+    int64_t total_bytes_size = sizeof(typename T::value_type) * elem_count;
+    if (m_pos + total_bytes_size > m_size)
+        resize(std::max(2 * m_size, total_bytes_size));
+
+    char* data = reinterpret_cast<char *>(val.data());
+    std::copy(data, data + total_bytes_size, mapped_region_begin + dst);
+    return dst + total_bytes_size;
+}
 
 void MappedFile::resize(int64_t new_size) {
     m_size = new_size;

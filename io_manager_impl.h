@@ -76,7 +76,7 @@ public:
 //        assert((sizeof(t) + 1 + i + val) == 5);
 //        const int root_pos = 6;
 
-        file.write_next(t);                               // 2 bytes
+        file.write_next(t);                             // 2 bytes
 //        file.write_next<uint8_t>(sizeof(K));            // 1 byte
 //        file.write_next<uint8_t>(i);                    // 1 byte
 //        file.write_next<uint8_t>(val);                      // 1 byte
