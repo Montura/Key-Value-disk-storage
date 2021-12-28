@@ -57,13 +57,6 @@ private:
     public:
         BTreeNode(const int& t, bool isLeaf);
 
-        // todo: ugly code to ensure only move semantics
-        BTreeNode(const BTreeNode& other) = delete;
-        BTreeNode operator=(const BTreeNode& other) = delete;
-
-        BTreeNode(BTreeNode && other) noexcept = default;
-        BTreeNode& operator=(BTreeNode && other) noexcept = default;
-
         bool is_leaf() const;
         bool is_full() const;
         char is_deleted_or_is_leaf() const;
