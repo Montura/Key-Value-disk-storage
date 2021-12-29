@@ -4,8 +4,8 @@ template<class K, class V>
 BTree<K,V>::BTreeNode::BTreeNode(const int16_t& t, bool isLeaf) :
     used_keys(0),
     t(t),
-    m_pos(-1),
     flag(isLeaf ? 1 : 0),
+    m_pos(-1),
     key_pos(max_key_num(), -1),
     child_pos(max_child_num(), -1)
 {}
@@ -97,7 +97,7 @@ typename BTree<K,V>::BTreeNode BTree<K,V>::BTreeNode::get_child(IOManagerT& io, 
 template<class K, class V>
 void BTree<K,V>::BTreeNode::insert_non_full(IOManagerT& io, const K& key, const V& value) {
     if (is_leaf()) {
-        int32_t idx = used_keys - 1;
+        auto idx = used_keys - 1;
         K curr_key = get_entry(io, idx).key;
 
         while (idx >= 0 && curr_key > key) {
@@ -106,7 +106,7 @@ void BTree<K,V>::BTreeNode::insert_non_full(IOManagerT& io, const K& key, const 
             curr_key = get_entry(io, idx).key;
         }
 
-        int32_t pos = io.get_file_pos_end(); // go to the end after reading entries
+        auto pos = io.get_file_pos_end(); // go to the end after reading entries
         key_pos[idx + 1] = pos;
         ++used_keys;
 
@@ -114,7 +114,7 @@ void BTree<K,V>::BTreeNode::insert_non_full(IOManagerT& io, const K& key, const 
         io.write_node(*this, m_pos);
         io.write_entry({key, value}, pos);
     } else {
-        int32_t idx = find_key_bin_search(io, key);
+        auto idx = find_key_bin_search(io, key);
         Node node = get_child(io, idx);
 
         if (node.is_full()) {
@@ -285,7 +285,7 @@ bool BTree<K,V>::BTreeNode::remove_from_non_leaf(IOManagerT& io, const int32_t i
 }
 
 template<class K, class V>
-int32_t BTree<K,V>::BTreeNode::get_prev_entry_pos(IOManagerT& io, const int32_t idx) {
+int64_t BTree<K,V>::BTreeNode::get_prev_entry_pos(IOManagerT& io, const int32_t idx) {
     Node curr = io.read_node(child_pos[idx]);
     // Keep moving to the right most node until CURR becomes a leaf
     while (!curr.is_leaf())
@@ -295,7 +295,7 @@ int32_t BTree<K,V>::BTreeNode::get_prev_entry_pos(IOManagerT& io, const int32_t 
 }
 
 template<class K, class V>
-int32_t BTree<K,V>::BTreeNode::get_next_entry_pos(IOManagerT& io, const int32_t idx) {
+int64_t BTree<K,V>::BTreeNode::get_next_entry_pos(IOManagerT& io, const int32_t idx) {
     Node curr = io.read_node(child_pos[idx + 1]);
     // Keep moving the left most node until CURR becomes a leaf
     while (!curr.is_leaf())

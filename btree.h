@@ -40,9 +40,9 @@ private:
         int16_t used_keys;
         int16_t t;
         uint8_t flag;
-        int32_t m_pos;
-        std::vector<int32_t> key_pos;
-        std::vector<int32_t> child_pos;
+        int64_t m_pos;
+        std::vector<int64_t> key_pos;
+        std::vector<int64_t> child_pos;
 
     public:
         BTreeNode(const int16_t& t, bool isLeaf);
@@ -71,8 +71,8 @@ private:
         bool remove_from_leaf(IOManagerT& io_manager, const int32_t idx);
         bool remove_from_non_leaf(IOManagerT& io_manager, const int32_t idx);
 
-        int32_t get_prev_entry_pos(IOManagerT& io_manager, const int32_t idx);
-        int32_t get_next_entry_pos(IOManagerT& io_manager, const int32_t idx);
+        int64_t get_prev_entry_pos(IOManagerT& io_manager, const int32_t idx);
+        int64_t get_next_entry_pos(IOManagerT& io_manager, const int32_t idx);
 
         void merge_node(IOManagerT& io_manager, const int32_t idx);
         void fill_node(IOManagerT& io_manager, const int32_t idx);

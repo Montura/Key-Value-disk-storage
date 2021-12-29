@@ -29,12 +29,13 @@ void BTree<K, V>::insert(const K& key, const V& value) {
         root = new Node(t, true);
         root->m_pos = root_pos;
         root->used_keys++;
-        int32_t node_pos = root->m_pos + io_manager.get_node_size_in_bytes(*root);
-        root->key_pos[0] = node_pos;
+
+        auto entry_pos = root->m_pos + io_manager.get_node_size_in_bytes(*root);
+        root->key_pos[0] = entry_pos;
 
         // write node root and key|value
         io_manager.write_node(*root, root->m_pos);
-        io_manager.write_entry( { key, value }, node_pos);
+        io_manager.write_entry({ key, value }, entry_pos);
     } else {
         if (root->is_full()) {
             Node newRoot(t, false);
@@ -104,7 +105,7 @@ bool BTree<K, V>::remove(const K& key) {
             root = nullptr;
             io_manager.write_invalidated_root();
         } else {
-            int32_t pos = root->child_pos[0];
+            auto pos = root->child_pos[0];
             io_manager.write_new_pos_for_root_node(pos);
             io_manager.read_node(root, pos);
         }

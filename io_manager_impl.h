@@ -10,15 +10,17 @@ bool IOManager<K,V>:: is_ready() {
 
 template <typename K, typename V>
 int32_t IOManager<K,V>::get_node_size_in_bytes(Node& node) {
+    static_assert(std::is_same_v<decltype(node.m_pos), typename decltype(node.key_pos)::value_type>);
+    static_assert(std::is_same_v<decltype(node.m_pos), typename decltype(node.child_pos)::value_type>);
     return
-        sizeof (node.used_keys) +           // 2 bytes
-        sizeof (node.flag) +            //  1 byte
-        node.key_pos.size() * sizeof(K) +
-        node.child_pos.size() * sizeof(K);
+                                sizeof (node.used_keys) +
+                                sizeof (node.flag)  +
+        node.key_pos.size() *   sizeof (node.m_pos) +
+        node.child_pos.size() * sizeof (node.m_pos);
 }
 
 template <typename K, typename V>
-void IOManager<K,V>::write_entry(EntryT && entry, const int32_t pos)    {
+void IOManager<K,V>::write_entry(EntryT && entry, const int64_t pos)    {
     file.set_pos(pos);
 
     file.write_next(entry.key);
@@ -26,7 +28,7 @@ void IOManager<K,V>::write_entry(EntryT && entry, const int32_t pos)    {
 }
 
 template <typename K, typename V>
-Entry<K, V> IOManager<K,V>::read_entry(const int32_t pos) {
+Entry<K, V> IOManager<K,V>::read_entry(const int64_t pos) {
         file.set_pos(pos);
 
         K key = file.read_next<K>();
@@ -35,14 +37,14 @@ Entry<K, V> IOManager<K,V>::read_entry(const int32_t pos) {
     }
 
 template <typename K, typename V>
-void IOManager<K,V>::write_flag(uint8_t flag, const int32_t pos) {
+void IOManager<K,V>::write_flag(uint8_t flag, const int64_t pos) {
     file.set_pos(pos);
 
     file.write_next(flag);
 }
 
 template <typename K, typename V>
-int32_t IOManager<K,V>::read_header() {
+int64_t IOManager<K,V>::read_header() {
     file.set_pos(0);
 
     auto t_from_file = file.read_int16();
@@ -56,12 +58,12 @@ int32_t IOManager<K,V>::read_header() {
 //        assert(curr_value_type == value_type<V>());
 //        assert(cur_value_type_size == value_type_size<V>());
 
-    int32_t posRoot = file.read_int32();
+    auto posRoot = file.read_int32();
     return posRoot;
 }
 
 template <typename K, typename V>
-int32_t IOManager<K,V>::write_header() {
+int64_t IOManager<K,V>::write_header() {
     file.set_pos(0);
 //        uint8_t val = value_type_size<V>();
 //        uint8_t i = value_type<V>();
@@ -72,12 +74,12 @@ int32_t IOManager<K,V>::write_header() {
 //        file.write_next<uint8_t>(sizeof(K));            // 1 byte
 //        file.write_next<uint8_t>(i);                    // 1 byte
 //        file.write_next<uint8_t>(val);                      // 1 byte
-    file.write_next(6);                      // 4 byte -> write root pos
+    file.write_next(INITIAL_ROOT_POS_IN_HEADER);                      // 4 byte -> write root pos
     return file.get_pos();
 }
 
 template <typename K, typename V>
-void IOManager<K,V>::write_new_pos_for_root_node(const int32_t posRoot) {
+void IOManager<K,V>::write_new_pos_for_root_node(const int64_t posRoot) {
     file.set_pos(ROOT_POS_IN_HEADER);
 
     file.write_next(posRoot);
@@ -92,7 +94,7 @@ void IOManager<K,V>::write_invalidated_root() {
 }
 
 template <typename K, typename V>
-int32_t IOManager<K,V>::write_node(const Node& node, const int32_t pos) {
+int64_t IOManager<K,V>::write_node(const Node& node, const int64_t pos) {
     file.set_pos(pos);
 
     file.write_next(node.flag);
@@ -103,14 +105,14 @@ int32_t IOManager<K,V>::write_node(const Node& node, const int32_t pos) {
 }
 
 template <typename K, typename V>
-typename BTree<K,V>::Node IOManager<K,V>::read_node(const int32_t pos) {
+typename BTree<K,V>::Node IOManager<K,V>::read_node(const int64_t pos) {
     Node node(t, false);
     read_node(&node, pos);
     return node;
 }
 
 template <typename K, typename V>
-void IOManager<K,V>::read_node(Node* node, const int32_t pos) {
+void IOManager<K,V>::read_node(Node* node, const int64_t pos) {
     file.set_pos(pos);
 
     node->m_pos = pos;
@@ -121,7 +123,7 @@ void IOManager<K,V>::read_node(Node* node, const int32_t pos) {
 }
 
 template <typename K, typename V>
-int32_t IOManager<K,V>::get_file_pos_end() {
+int64_t IOManager<K,V>::get_file_pos_end() {
     file.set_file_pos_to_end();
     return file.get_pos();
 }
