@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.12)
 project(key-value-storage)
 enable_language(CXX)
 
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "valid configurations" FORCE)
+
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(Boost_USE_STATIC_LIBS ON)
 endif()
@@ -49,6 +52,11 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   target_compile_options(key-value-storage PRIVATE
        /std:c++17
        /W3
+       /GL
+#       /Ox
+       /Ob2
+       /Oi
+       /Oy-
     )
 endif()
 
