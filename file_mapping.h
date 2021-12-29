@@ -34,6 +34,7 @@ struct MappedFile {
     uint8_t read_byte();
 
     void set_file_pos_to_end();
+    void shrink_to_fit();
     bool isEmpty();
 
 private:

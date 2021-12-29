@@ -90,6 +90,10 @@ public:
         file.write_next(posRoot);
     }
 
+    void shrink_to_fit() {
+        file.shrink_to_fit();
+    }
+
     int write_node(const Node& node, const int pos) {
         file.set_pos(pos);
 

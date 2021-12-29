@@ -103,7 +103,8 @@ bool BTree<K, V>::remove(const K& key) {
             io_manager.write_flag(root->is_deleted_or_is_leaf(), root->m_pos);
             delete root;
             root = nullptr;
-//            io_manager.writeUpdatePosRoot(-1);
+            io_manager.writeUpdatePosRoot(-1);
+            io_manager.shrink_to_fit();
         } else {
             int pos = root->child_pos[0];
             io_manager.writeUpdatePosRoot(pos);

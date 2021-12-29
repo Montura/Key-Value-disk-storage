@@ -159,6 +159,12 @@ void MappedFile::set_file_pos_to_end() {
     m_pos = m_capacity;
 }
 
+void MappedFile::shrink_to_fit() {
+    m_capacity = m_size = m_pos;
+    resize(m_size);
+    remap();
+}
+
 bool MappedFile::isEmpty() {
     return m_size == 0;
 }
