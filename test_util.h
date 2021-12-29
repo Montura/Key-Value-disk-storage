@@ -3,7 +3,7 @@
 
 #include "btree.h"
 
-using BTreeIntInt = BTree<int, int>;
+using BTreeIntInt = BTree<int32_t, int32_t>;
 
 
 class TestStat {
@@ -25,7 +25,7 @@ public:
         return total_not_found == 0;
     }
 
-    bool check_deleted(int expected) const {
+    bool check_deleted(int32_t expected) const {
         return total_removed == expected;
     }
 
@@ -105,11 +105,13 @@ std::pair<int64_t, int64_t> test_values_remove(const std::string& path, int orde
         verify_map.erase(r1);
         stat.total_removed += btree.remove(r1);
 
-        verify_map.erase(r2);
-        stat.total_removed += btree.remove(r2);
+        int v2 = 3 * r2;
+        verify_map.erase(v2);
+        stat.total_removed += btree.remove(v2);
 
-        verify_map.erase(r3);
-        stat.total_removed += btree.remove(r3);
+        int v3 = 7 * r3;
+        verify_map.erase(v3);
+        stat.total_removed += btree.remove(v3);
     }
 
     for (int i = 0; i < total_elements; ++i) {

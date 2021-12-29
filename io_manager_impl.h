@@ -7,54 +7,53 @@ class IOManager {
     using EntryT = Entry<K,V>;
     using Node = typename BTree<K,V>::Node;
 
+    const int16_t t = 0;
     MappedFile file;
-    const int t = 0;
 public:
-    static constexpr int INVALID_ROOT_POS = -1;
+    static constexpr int32_t INVALID_ROOT_POS = -1;
 
-    explicit IOManager(const std::string& path, const int user_t) : file(path, 0), t(user_t) {}
+    explicit IOManager(const std::string& path, const int16_t user_t) : t(user_t), file(path, 0)  {}
 
     bool is_ready() {
         return !file.isEmpty();
     }
 
-    int get_node_size_in_bytes(Node& node) {
+    int32_t get_node_size_in_bytes(Node& node) {
         return
-            sizeof (node.used_keys) +           // 4/8 bytes
+            sizeof (node.used_keys) +           // 2 bytes
             sizeof (node.flag) +            //  1 byte
             node.key_pos.size() * sizeof(K) +
             node.child_pos.size() * sizeof(K);
     }
 
-    void write_entry(EntryT && entry, const int pos)    {
+    void write_entry(EntryT && entry, const int32_t pos)    {
         file.set_pos(pos);
 
-        char flag = 1;
+        uint8_t flag = 1;
         file.write_next(flag);
         file.write_next(entry.key);
         file.write_next(entry.value);
     }
 
-    EntryT read_entry(const int pos) {
+    EntryT read_entry(const int32_t pos) {
         file.set_pos(pos);
 
-        char flag = file.read_byte();
+        uint8_t flag = file.read_byte();
         K key = file.read_next<K>();
         V value = file.read_next<V>();
         return { key, value };
     }
 
-
-    void write_flag(char flag, const int pos) {
+    void write_flag(uint8_t flag, const int32_t pos) {
         file.set_pos(pos);
 
         file.write_next(flag);
     }
 
-    int read_header() {
+    int32_t read_header() {
         file.set_pos(0);
 
-        auto t_from_file = file.read_int();
+        auto t_from_file = file.read_int16();
         if (t != t_from_file)
             throw std::logic_error("Wrong tree order is used for file: PATH");
 //        auto key_size = file.read_next<uint8_t>();
@@ -65,27 +64,27 @@ public:
 //        assert(curr_value_type == value_type<V>());
 //        assert(cur_value_type_size == value_type_size<V>());
 
-        int posRoot = file.read_int();
+        int32_t posRoot = file.read_int32();
         return posRoot;
     }
 
-    int write_header() {
+    int32_t write_header() {
         file.set_pos(0);
 //        uint8_t val = value_type_size<V>();
 //        uint8_t i = value_type<V>();
 //        assert((sizeof(t) + 1 + i + val) == 5);
 //        const int root_pos = 6;
 
-        file.write_next(t);                               // 2 bytes
+        file.write_next(t);                             // 2 bytes
 //        file.write_next<uint8_t>(sizeof(K));            // 1 byte
 //        file.write_next<uint8_t>(i);                    // 1 byte
 //        file.write_next<uint8_t>(val);                      // 1 byte
-        file.write_next(8);                      // 4 byte -> write root pos
+        file.write_next(6);                      // 4 byte -> write root pos
         return file.get_pos();
     }
 
-    void writeUpdatePosRoot(const int posRoot) {
-        file.set_pos(4);
+    void writeUpdatePosRoot(const int32_t posRoot) {
+        file.set_pos(2);
 
         file.write_next(posRoot);
     }
@@ -94,7 +93,7 @@ public:
         file.shrink_to_fit();
     }
 
-    int write_node(const Node& node, const int pos) {
+    int32_t write_node(const Node& node, const int32_t pos) {
         file.set_pos(pos);
 
         file.write_next(node.flag);
@@ -104,23 +103,23 @@ public:
         return file.get_pos();
     }
 
-    Node read_node(const int pos) {
+    Node read_node(const int32_t pos) {
         Node node(t, false);
         read_node(&node, pos);
         return node;
     }
 
-    void read_node(Node* node, const int pos) {
+    void read_node(Node* node, const int32_t pos) {
         file.set_pos(pos);
 
         node->m_pos = pos;
         node->flag = file.read_byte();
-        node->used_keys = file.read_int();
+        node->used_keys = file.read_int16();
         file.read_node_vector(node->key_pos);
         file.read_node_vector(node->child_pos);
     }
 
-    int get_file_pos_end() {
+    int32_t get_file_pos_end() {
         file.set_file_pos_to_end();
         return file.get_pos();
     }

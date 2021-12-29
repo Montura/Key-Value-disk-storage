@@ -2,6 +2,8 @@
 
 #include <string>
 
+static_assert(sizeof(int64_t) == sizeof(size_t));
+
 template <typename T>
 struct is_string {
     static constexpr bool value = false;
@@ -54,4 +56,15 @@ constexpr uint8_t value_type() {
     } else {
         return -1;
     }
+}
+
+
+template <typename PtrT>
+constexpr uint8_t* cast_to_uint8_t_data(PtrT t) {
+    return reinterpret_cast<uint8_t *>(t);
+}
+
+template <typename PtrT>
+constexpr const uint8_t* cast_to_const_uint8_t_data(PtrT t) {
+    return reinterpret_cast<const uint8_t *>(t);
 }
