@@ -185,8 +185,6 @@ bool BTree<K,V>::BTreeNode::set(IOManagerT& io, const K& key, const V& value) {
         EntryT entry = get_entry(io, idx);
         if (entry.key == key) {
             if (entry.value != value) {
-                io.write_flag('0', key_pos[idx]);
-
                 auto curr_pos = io.get_file_pos_end();
                 key_pos[idx] = curr_pos;
                 entry.value = value;
@@ -241,8 +239,6 @@ bool BTree<K,V>::BTreeNode::remove(IOManagerT& io, const K& key) {
 
 template<class K, class V>
 bool BTree<K,V>::BTreeNode::remove_from_leaf(IOManagerT& io, const int32_t idx) {
-    io.write_flag('0', key_pos[idx]);
-
     // shift to the left by 1 all the keys after the pos
     shift_left_by_one(key_pos, idx + 1, used_keys);
     --used_keys;

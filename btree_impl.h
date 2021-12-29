@@ -100,7 +100,6 @@ bool BTree<K, V>::remove(const K& key) {
 
     if (success && root->used_keys == 0) {
         if (root->is_leaf()) {
-            io_manager.write_flag(root->is_deleted_or_is_leaf(), root->m_pos);
             delete root;
             root = nullptr;
             io_manager.write_invalidated_root();
