@@ -24,9 +24,26 @@ MappedFile::MappedFile(const std::string &fn, int64_t bytes_num) : path(fn), m_p
 }
 
 MappedFile::~MappedFile() {
-#ifndef _MSC_VER
+#ifdef _MSC_VER
 //    std::cout << "RESIZE to " << m_capacity << std::endl;
-    fs::resize_file(path, m_capacity);
+    bip::file_mapping new_mapping;
+    bip::mapped_region new_region;
+    file_mapping.swap(new_mapping);
+    mapped_region.swap(new_region);
+    try {
+        fs::resize_file(path, m_capacity);
+    }
+    catch(std::filesystem::filesystem_error const& ex) {
+        std::cout
+                << "what():  " << ex.what() << '\n'
+                << "path1(): " << ex.path1() << '\n'
+                << "path2(): " << ex.path2() << '\n'
+                << "code().value():    " << ex.code().value() << '\n'
+                << "code().message():  " << ex.code().message() << '\n'
+                << "code().category(): " << ex.code().category().name() << '\n';
+    }
+#else
+    resize(m_capacity);
 #endif
 }
 
