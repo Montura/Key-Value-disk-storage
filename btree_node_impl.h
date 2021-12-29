@@ -1,19 +1,14 @@
 #pragma once
 
 template<class K, class V>
-BTree<K,V>::BTreeNode::BTreeNode(const int16_t& t, bool isLeaf) :
+BTree<K,V>::BTreeNode::BTreeNode(const int16_t& t, bool is_leaf) :
     used_keys(0),
     t(t),
-    flag(isLeaf ? 1 : 0),
+    is_leaf(is_leaf),
     m_pos(-1),
     key_pos(max_key_num(), -1),
     child_pos(max_child_num(), -1)
 {}
-
-template<class K, class V>
-bool BTree<K,V>::BTreeNode::is_leaf() const {
-    return (flag & 1) == 1;
-}
 
 template<class K, class V>
 bool BTree<K,V>::BTreeNode::is_full() const {
@@ -39,7 +34,7 @@ inline void shift_left_by_one(std::vector<T>& v, const int32_t from, const int32
 template<class K, class V>
 void BTree<K,V>::BTreeNode::split_child(IOManagerT& manager, const int32_t idx, Node& curr_node) {
     // Create a new node to store (t-1) keys of divided node
-    Node new_node(curr_node.t, curr_node.is_leaf());
+    Node new_node(curr_node.t, curr_node.is_leaf);
     new_node.used_keys = t - 1;
 
     // Copy the last (t-1) keys of divided node to new_node
@@ -48,7 +43,7 @@ void BTree<K,V>::BTreeNode::split_child(IOManagerT& manager, const int32_t idx, 
         curr_node.key_pos[i + t] = -1;
     }
     // Copy the last (t-1) children of divided node to new_node
-    if (!curr_node.is_leaf()) {
+    if (!curr_node.is_leaf) {
         for (auto i = 0; i < t; ++i) {
             new_node.child_pos[i] = curr_node.child_pos[i + t];
             curr_node.child_pos[i + t] = -1;
@@ -155,7 +150,7 @@ template<class K, class V>
 Entry<K, V> BTree<K,V>::BTreeNode::find(IOManagerT& io, const K& key) {
     Node curr = *this;
 
-    while (!curr.is_leaf()) {
+    while (!curr.is_leaf) {
         auto idx = curr.find_key_bin_search(io, key);
 
         if (idx < curr.used_keys) {
@@ -196,7 +191,7 @@ bool BTree<K,V>::BTreeNode::set(IOManagerT& io, const K& key, const V& value) {
             return true;
         }
     }
-    if (is_leaf())
+    if (is_leaf)
         return false;
 
     Node child = get_child(io, idx);
@@ -213,11 +208,11 @@ bool BTree<K,V>::BTreeNode::remove(IOManagerT& io, const K& key) {
     auto idx = find_key_bin_search(io, key);
     K curr_key = get_entry(io, idx).key;
     if (idx < used_keys && curr_key == key) {
-        bool success = is_leaf() ? remove_from_leaf(io, idx) : remove_from_non_leaf(io, idx);
+        bool success = is_leaf ? remove_from_leaf(io, idx) : remove_from_non_leaf(io, idx);
         return writeOnExit(*this, m_pos, success);
     }
 
-    if (is_leaf())
+    if (is_leaf)
         return false;
 
     // If the child where the key is supposed to exist has less that t keys, we fill that child
@@ -288,7 +283,7 @@ template<class K, class V>
 int64_t BTree<K,V>::BTreeNode::get_prev_entry_pos(IOManagerT& io, const int32_t idx) {
     Node curr = io.read_node(child_pos[idx]);
     // Keep moving to the right most node until CURR becomes a leaf
-    while (!curr.is_leaf())
+    while (!curr.is_leaf)
         curr = io.read_node(curr.child_pos[curr.used_keys]);
 
     return curr.key_pos[curr.used_keys - 1];
@@ -298,15 +293,10 @@ template<class K, class V>
 int64_t BTree<K,V>::BTreeNode::get_next_entry_pos(IOManagerT& io, const int32_t idx) {
     Node curr = io.read_node(child_pos[idx + 1]);
     // Keep moving the left most node until CURR becomes a leaf
-    while (!curr.is_leaf())
+    while (!curr.is_leaf)
         curr = io.read_node(curr.child_pos[0]);
 
     return curr.key_pos[0];
-}
-
-template<class K, class V>
-uint8_t BTree<K,V>::BTreeNode::is_deleted_or_is_leaf() const {
-    return flag | (1 << 1);
 }
 
 template<class K, class V>
@@ -322,7 +312,7 @@ void BTree<K,V>::BTreeNode::merge_node(IOManagerT& io, const int32_t idx) {
         child.key_pos[i + t] = next_child.key_pos[i];
 
     // Copy all children from NEXT to CHILD
-    if (!child.is_leaf()) {
+    if (!child.is_leaf) {
         for (auto i = 0; i <= next_child.used_keys; ++i)
             child.child_pos[i + t] = next_child.child_pos[i];
     }
@@ -333,7 +323,6 @@ void BTree<K,V>::BTreeNode::merge_node(IOManagerT& io, const int32_t idx) {
     // write node
     io.write_node(child, child_pos[idx]);
 
-    next_child.flag = next_child.flag | (1 << 1);
     // write node
     io.write_node(next_child, child_pos[idx + 1]);
 
@@ -378,14 +367,14 @@ void BTree<K,V>::BTreeNode::borrow_from_prev_node(IOManagerT& io, const int32_t 
 
     // Move keys and children
     shift_right_by_one(child.key_pos, child.used_keys, 0);
-    if (!child.is_leaf())
+    if (!child.is_leaf)
         shift_right_by_one(child.child_pos, child.used_keys + 1, 0);
 
     // Set CURR's key_pos to the first CHILD's key_pos
     child.key_pos[0] = key_pos[idx - 1];
 
     // Set PREV's last child_pos to the first CHILD's child_pos
-    if (!child.is_leaf())
+    if (!child.is_leaf)
         child.child_pos[0] = prev.child_pos[prev.used_keys];
 
     // Set PREV's key_pos to CURR's key_pos
@@ -408,7 +397,7 @@ void BTree<K,V>::BTreeNode::borrow_from_next_node(IOManagerT& io, const int32_t 
     child.key_pos[child.used_keys] = key_pos[idx];
 
     //  Set NEXT's first child to the last CHILD's child_pos
-    if (!child.is_leaf())
+    if (!child.is_leaf)
         child.child_pos[child.used_keys + 1] = next.child_pos[0];
 
     // Set the first NEXT's key to CURR's key_pos
@@ -416,7 +405,7 @@ void BTree<K,V>::BTreeNode::borrow_from_next_node(IOManagerT& io, const int32_t 
 
     // Move keys and children
     shift_left_by_one(next.key_pos, 1, next.used_keys);
-    if (!next.is_leaf())
+    if (!next.is_leaf)
         shift_left_by_one(next.child_pos, 1, next.used_keys + 1);
 
     child.used_keys++;
@@ -433,7 +422,7 @@ void BTree<K,V>::BTreeNode::traverse(IOManagerT& io) {
     Node node;
 
     for (i = 0; i < used_keys; ++i) {
-        if (!is_leaf()) {
+        if (!is_leaf) {
             node = get_child(io, i);
 //            cout << endl;
             node.traverse(io);
@@ -442,7 +431,7 @@ void BTree<K,V>::BTreeNode::traverse(IOManagerT& io) {
 //        entry = read_entry(io, i);
 //        cout << "[key]: " << entry->key << " - [value]: " << entry->value << " ";
     }
-    if (!is_leaf()) {
+    if (!is_leaf) {
         node = get_child(io, i);
 //        cout << endl;
         node.traverse(io);

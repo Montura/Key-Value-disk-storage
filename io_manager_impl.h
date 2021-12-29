@@ -8,7 +8,7 @@ int32_t IOManager<K,V>::get_node_size_in_bytes(Node& node) {
     static_assert(std::is_same_v<decltype(node.m_pos), typename decltype(node.child_pos)::value_type>);
     return
         sizeof (node.used_keys) +
-        sizeof (node.flag)  +
+        sizeof (node.is_leaf)  +
         node.key_pos.size() *   sizeof (node.m_pos) +
         node.child_pos.size() * sizeof (node.m_pos);
 }
@@ -106,7 +106,7 @@ template <typename K, typename V>
 int64_t IOManager<K,V>::write_node(const Node& node, const int64_t pos) {
     file.set_pos(pos);
 
-    file.write_next(node.flag);
+    file.write_next(node.is_leaf);
     file.write_next(node.used_keys);
     file.write_node_vector(node.key_pos);
     file.write_node_vector(node.child_pos);
@@ -125,7 +125,7 @@ void IOManager<K,V>::read_node(Node* node, const int64_t pos) {
     file.set_pos(pos);
 
     node->m_pos = pos;
-    node->flag = file.read_byte();
+    node->is_leaf = file.read_byte();
     node->used_keys = file.read_int16();
     file.read_node_vector(node->key_pos);
     file.read_node_vector(node->child_pos);

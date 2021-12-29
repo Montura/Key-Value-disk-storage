@@ -39,7 +39,7 @@ private:
     struct BTreeNode final {
         int16_t used_keys;
         int16_t t;
-        uint8_t flag;
+        uint8_t is_leaf;
         int64_t m_pos;
         std::vector<int64_t> key_pos;
         std::vector<int64_t> child_pos;
@@ -47,9 +47,7 @@ private:
     public:
         BTreeNode(const int16_t& t, bool isLeaf);
 
-        bool is_leaf() const;
         bool is_full() const;
-        uint8_t is_deleted_or_is_leaf() const;
 
         inline int32_t max_key_num() const { return std::max(2 * t - 1, 0); }
         inline int32_t max_child_num() const { return 2 * t; }
