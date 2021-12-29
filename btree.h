@@ -92,6 +92,6 @@ private:
     };
 };
 
-#include "io_manager_impl.h"
+#include "io_manager.h"
 #include "btree_impl.h"
 #include "btree_node_impl.h"
