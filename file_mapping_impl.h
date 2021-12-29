@@ -43,7 +43,7 @@ MappedFile::~MappedFile() {
                 << "code().category(): " << ex.code().category().name() << '\n';
     }
 #else
-    resize(m_capacity);
+    fs::resize_file(path, m_capacity);
 #endif
 }
 
