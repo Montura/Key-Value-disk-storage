@@ -18,7 +18,7 @@ struct IOManager {
     int get_node_size_in_bytes(Node& node) {
         return
             sizeof (node.used_keys) +           // 4/8 bytes
-            sizeof (node.used_keys) +            //  1 byte
+            sizeof (node.flag) +            //  1 byte
             node.arrayPosKey.size() * sizeof(K) +
             node.arrayPosChild.size() * sizeof(K);
     }
@@ -98,6 +98,11 @@ struct IOManager {
 
     int get_file_pos_end() {
         file.set_file_pos_to_end();
+        return file.get_pos();
+    }
+
+    int get_file_pos() {
+//        file.set_file_pos_to_end();
         return file.get_pos();
     }
 };

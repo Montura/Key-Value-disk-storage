@@ -34,6 +34,12 @@ public:
     }
 };
 
+std::tuple<int, int, int> generate_rand_keys() {
+    int r1 = std::rand() % 7 + 1;
+    int r2 = std::rand() % 13 + 1;
+    int r3 = std::rand() % 17 + 1;
+    return std::make_tuple(r1, r2, r3);
+}
 
 template <typename K, typename V>
 std::map <K, V> test_keys_create_exist(const std::string& path, int order, int total_elements) {
@@ -77,13 +83,12 @@ int64_t test_values_get(const std::string& path, int order, int total_elements, 
 
 template <typename K, typename V>
 std::pair<int64_t, int64_t> test_values_remove(const std::string& path, int order,
-                                               int total_elements, std::map <K, V>& verify_map)
+                                               int total_elements, std::map <K, V>& verify_map,
+                                               std::tuple<int, int, int>& keys_to_remove)
 {
     BTree<K,V> btree(path, order);
 
-    int r1 = std::rand() % 13 + 1;
-    int r2 = std::rand() % 31 + 1;
-    int r3 = std::rand() % 73 + 1;
+    auto [r1, r2, r3] = keys_to_remove;
 
     TestStat stat(total_elements);
     for (int i = 0; i < total_elements; i += r1) {
@@ -97,17 +102,14 @@ std::pair<int64_t, int64_t> test_values_remove(const std::string& path, int orde
     }
 
     for (int i = 0; i < 50; ++i) {
-        int v1 = 0;
-        verify_map.erase(v1);
-        stat.total_removed += btree.remove(v1);
+        verify_map.erase(r1);
+        stat.total_removed += btree.remove(r1);
 
-        int v2 = 3 * r2;
-        verify_map.erase(v2);
-        stat.total_removed += btree.remove(v2);
+        verify_map.erase(r2);
+        stat.total_removed += btree.remove(r2);
 
-        int v3 = 7 * r3;
-        verify_map.erase(v3);
-        stat.total_removed += btree.remove(v3);
+        verify_map.erase(r3);
+        stat.total_removed += btree.remove(r3);
     }
 
     for (int i = 0; i < total_elements; ++i) {

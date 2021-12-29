@@ -28,13 +28,11 @@ void BTree<K,V>::BTreeNode::split_child(IOManagerT& manager, const int idx, Node
     // Copy the last (t-1) keys of divided node to new_node
     for (int i = 0; i < t - 1; ++i) {
         new_node.arrayPosKey[i] = curr_node.arrayPosKey[i + t];
-        curr_node.arrayPosKey[i + t] = -1;
     }
     // Copy the last (t-1) children of divided node to new_node
     if (!curr_node.is_leaf()) {
         for (int i = 0; i < t; ++i) {
             new_node.arrayPosChild[i] = curr_node.arrayPosChild[i + t];
-            curr_node.arrayPosChild[i + t] = -1;
         }
     }
 
@@ -187,15 +185,17 @@ bool BTree<K,V>::BTreeNode::set(IOManagerT& io, const K& key, const V& value) {
     if (idx < used_keys) {
         EntryT entry = read_entry(io, idx);
         if (entry.key == key) {
-            io.write_flag('0', arrayPosKey[idx]);
+            if (entry.value != value) {
+//                int node_start_pos = arrayPosKey[idx] - io.get_node_size_in_bytes(*this);
+                io.write_flag('0', arrayPosKey[idx]);
 
-            int curr_pos = io.get_file_pos_end(); // + setPosEnd
+                int curr_pos = io.get_file_pos_end();
+                arrayPosKey[idx] = curr_pos;
+                entry.value = value;
 
-            arrayPosKey[idx] = curr_pos;
-            entry.value = value;
-
-            io.write_entry(entry, curr_pos);
-            io.write_node(*this, m_pos);
+                io.write_entry(entry, curr_pos);
+                io.write_node(*this, m_pos);
+            }
 
             return true;
         }
