@@ -111,8 +111,8 @@ void BTree<K,V>::BTreeNode::insert_non_full(IOManagerT& io, const K& key, const 
         ++used_keys;
 
         // Write node and entry
-        io.write_entry({key, value}, pos);
         io.write_node(*this, m_pos);
+        io.write_entry({key, value}, pos);
     } else {
         int idx = find_key_bin_search(io, key);
         Node node = get_child(io, idx);
