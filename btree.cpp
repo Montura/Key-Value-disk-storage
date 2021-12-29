@@ -94,7 +94,7 @@ using std::endl;
 
     for (int i = 0; i < 100; ++i) {
         auto keys_to_remove = generate_rand_keys();
-        for (int order = 2; order < 4; ++order) {
+        for (int order = 2; order < 11; ++order) {
             auto db_name = db_prefix + std::to_string(order) + end;
             auto verify_map = test_keys_create_exist<int, int>(db_name, order, n);
             auto total_found = test_values_get(db_name, order, n, verify_map);
