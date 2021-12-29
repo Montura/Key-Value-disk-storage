@@ -124,7 +124,7 @@ bool BTree<K, V>::remove(const K& key) {
             io_manager.write_flag(flag, root->m_pos);
             delete root;
             root = nullptr;
-            io_manager.writeUpdatePosRoot(-1);
+//            io_manager.writeUpdatePosRoot(-1);
         } else {
             int pos = root->arrayPosChild[0];
             io_manager.writeUpdatePosRoot(pos);

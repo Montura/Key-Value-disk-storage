@@ -128,7 +128,7 @@ void test_values_after_remove(const std::string& path, int order, int total_elem
         auto expected_value = verify_map.find(i);
         auto actual_value = btree.get(i);
         if (expected_value == verify_map.end()) {
-            assert(actual_value == 0);
+            assert(actual_value == -1);
         } else {
             assert(expected_value->second == actual_value);
             ++stat.total_after_reopen;

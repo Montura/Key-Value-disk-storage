@@ -5,11 +5,11 @@ struct Entry {
     K key;
     V value;
 
-    Entry(): key(0), value(0) {}
+    Entry(): key(-1), value(-1) {}
 
     Entry(const K &key, const V &value) : key(key), value(value) {}
 
     bool is_dummy() {
-        return (key == 0) && (value ==0);
+        return (key == -1) && (value == -1);
     }
 };

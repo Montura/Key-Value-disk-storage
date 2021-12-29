@@ -88,23 +88,26 @@ using std::endl;
 #include "test_util.h"
 
  void test() {
-    const int n = 10000;
+    const int n = 1000;
     std::string db_prefix = "../db_";
     std::string end = ".txt";
 
-    for (int order = 2; order < 101; ++order) {
-        auto db_name = db_prefix + std::to_string(order) + end;
-        auto verify_map = test_keys_create_exist<int, int>(db_name, order, n);
-        auto total_found = test_values_get(db_name, order, n, verify_map);
-        auto [total_removed, total_after_remove] = test_values_remove(db_name, order, n, verify_map);
-        test_values_after_remove(db_name, order, n, verify_map);
+    for (int i = 0; i < 3; ++i) {
+        for (int order = 2; order < 3; ++order) {
+            auto db_name = db_prefix + std::to_string(order) + end;
+            auto verify_map = test_keys_create_exist<int, int>(db_name, order, n);
+            auto total_found = test_values_get(db_name, order, n, verify_map);
+            auto[total_removed, total_after_remove] = test_values_remove(db_name, order, n, verify_map);
+            test_values_after_remove(db_name, order, n, verify_map);
 
-        std::string msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
-        cout << "Passed " + msg << ": " <<
-             "\t added: " << n <<
-             ", found: " << total_found <<
-             ", removed: " << total_removed <<
-             ", total_after_remove: " << total_after_remove << endl;
+            std::string msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
+            cout << "Passed " + msg << ": " <<
+                 "\t added: " << n <<
+                 ", found: " << total_found <<
+                 ", removed: " << total_removed <<
+                 ", total_after_remove: " << total_after_remove << endl;
+        }
+        std::cout << "iter: " << i << endl;
     }
 }
 

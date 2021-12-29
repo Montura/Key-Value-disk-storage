@@ -17,7 +17,7 @@ struct MappedFile {
     template <typename T>
     void write_next(T val) {
         static_assert(std::is_arithmetic_v<T>);
-        m_pos = write_to_dst(val, m_pos);
+        m_pos = write_to_dst(val);
         m_capacity = std::max(m_pos, m_capacity);
     }
 
@@ -25,7 +25,7 @@ struct MappedFile {
     void write_vector(const std::vector<T>& vec) {
         int64_t total_size = static_cast<int64_t>(sizeof(T)) * vec.size();
         if (m_pos + total_size > m_size) {
-            resize(std::max(2 * m_size, total_size));
+            resize(std::max(2 * m_size, m_pos + total_size));
         }
         const char* data = reinterpret_cast<const char *>(vec.data());
         std::copy(data, data + total_size, mapped_region_begin + m_pos);
@@ -63,14 +63,14 @@ struct MappedFile {
 
 private:
     template <typename T>
-    std::int64_t write_to_dst(T val, int64_t dst) {
+    std::int64_t write_to_dst(T val) {
         int64_t total_size = sizeof(T);
         if (m_pos + total_size > m_size) {
-            resize(std::max(2 * m_size, total_size));
+            resize(std::max(2 * m_size, m_pos + total_size));
         }
         char* data = reinterpret_cast<char *>(&val);
-        std::copy(data, data + total_size, mapped_region_begin + dst);
-        return dst + total_size;
+        std::copy(data, data + total_size, mapped_region_begin + m_pos);
+        return m_pos + total_size;
     }
 
     void resize(int64_t new_size);
