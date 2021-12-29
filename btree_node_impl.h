@@ -91,7 +91,7 @@ typename BTree<K,V>::BTreeNode BTree<K,V>::BTreeNode::get_child(IOManagerT& io, 
 
 template<class K, class V>
 void BTree<K,V>::BTreeNode::insert_non_full(IOManagerT& io, const K& key, const V& value) {
-    if (is_leaf()) {
+    if (is_leaf) {
         auto idx = used_keys - 1;
         K curr_key = get_entry(io, idx).key;
 
@@ -135,15 +135,23 @@ int32_t BTree<K,V>::BTreeNode::find_key_bin_search(IOManagerT& io, const K& key)
         mid = left + (right - left) / 2;
         tmp_key = get_entry(io, mid).key;
 
-        if (tmp_key < key) {
+        if (tmp_key < key)
             left = mid + 1;
-        } else if (tmp_key > key) {
+        else if (tmp_key > key)
             right = mid - 1;
-        } else {
+        else
             return mid;
-        }
     }
+
     return right + 1;
+
+    // todo: to replace bin search with lower_bound ?
+    //    auto begin = key_pos.begin();
+    //    auto pos = std::lower_bound(begin, begin + used_keys, key,
+    //                                [&io](const int64_t& pos, const K & key){
+    //                                    return io.read_entry(pos).key < key;
+    //                                });
+    //    return std::distance(begin, pos);
 }
 
 template<class K, class V>

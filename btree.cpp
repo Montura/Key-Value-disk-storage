@@ -77,13 +77,19 @@ namespace {
 #else
 
 #include <iostream>
-
-using std::cout;
-using std::endl;
-
 #include <ctime>
 #include <map>
 #include <cassert>
+#include <chrono>
+
+
+using std::cout;
+using std::endl;
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+using std::chrono::duration;
+using std::chrono::milliseconds;
+
 
 #include "test_util.h"
 
@@ -92,21 +98,27 @@ using std::endl;
     std::string db_prefix = "../db_";
     std::string end = ".txt";
 
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 25; ++i) {
         auto keys_to_remove = generate_rand_keys();
-        for (int order = 2; order < 11; ++order) {
+        for (int order = 2; order < 51; ++order) {
             auto db_name = db_prefix + std::to_string(order) + end;
+            auto t1 = high_resolution_clock::now();
             auto verify_map = test_keys_create_exist<int, int>(db_name, order, n);
             auto total_found = test_values_get(db_name, order, n, verify_map);
             auto [total_removed, total_after_remove] = test_values_remove(db_name, order, n, verify_map, keys_to_remove);
             test_values_after_remove(db_name, order, n, verify_map);
+            auto t2 = high_resolution_clock::now();
+
+            /* Getting number of milliseconds as a double. */
+            duration<double, std::milli> ms_double = t2 - t1;
 
             std::string msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
             cout << "Passed " + msg << ": " <<
                  "\t added: " << n <<
                  ", found: " << total_found <<
                  ", removed: " << total_removed <<
-                 ", total_after_remove: " << total_after_remove << endl;
+                 ", total_after_remove: " << total_after_remove <<
+                 " in " << ms_double.count() << "ms" << endl;
         }
         std::cout << "iter: " << i << endl;
     }
