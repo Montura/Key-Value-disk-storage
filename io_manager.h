@@ -9,6 +9,8 @@ class IOManager {
 
     const int16_t t = 0;
     MappedFile file;
+
+    static constexpr int32_t ROOT_POS_IN_HEADER = sizeof(t);
 public:
     static constexpr int32_t INVALID_ROOT_POS = -1;
 
@@ -26,7 +28,8 @@ public:
     int32_t read_header();
     int32_t write_header();
 
-    void writeUpdatePosRoot(const int32_t posRoot);
+    void write_invalidated_root();
+    void write_new_pos_for_root_node(const int32_t posRoot);
 
     int32_t write_node(const Node& node, const int32_t pos);
 
@@ -34,7 +37,6 @@ public:
     void read_node(Node* node, const int32_t pos);
 
     int32_t get_file_pos_end();
-    void shrink_to_fit();
 };
 
 #include "io_manager_impl.h"

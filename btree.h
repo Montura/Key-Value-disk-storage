@@ -6,16 +6,6 @@
 
 #include "entry.h"
 
-///** Common Interface */
-//template <typename Key, typename Value, typename Oit>
-//struct IKeyValueStorage {
-//    virtual bool insert(const Key& key, const Value& value) = 0;
-//    virtual Oit get(const Key& key) = 0;
-//    virtual bool remove(const Key& key) = 0;
-//
-//    virtual ~IKeyValueStorage() { };
-//};
-
 template <typename K, typename V>
 class IOManager;
 

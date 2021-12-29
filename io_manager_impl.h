@@ -9,7 +9,7 @@ bool IOManager<K,V>:: is_ready() {
 }
 
 template <typename K, typename V>
-int32_t IOManager<K,V>:: get_node_size_in_bytes(Node& node) {
+int32_t IOManager<K,V>::get_node_size_in_bytes(Node& node) {
     return
         sizeof (node.used_keys) +           // 2 bytes
         sizeof (node.flag) +            //  1 byte
@@ -28,7 +28,7 @@ void IOManager<K,V>::write_entry(EntryT && entry, const int32_t pos)    {
 }
 
 template <typename K, typename V>
-Entry<K, V> IOManager<K,V>:: read_entry(const int32_t pos) {
+Entry<K, V> IOManager<K,V>::read_entry(const int32_t pos) {
         file.set_pos(pos);
 
         uint8_t flag = file.read_byte();
@@ -80,14 +80,17 @@ int32_t IOManager<K,V>::write_header() {
 }
 
 template <typename K, typename V>
-void IOManager<K,V>::writeUpdatePosRoot(const int32_t posRoot) {
-    file.set_pos(2);
+void IOManager<K,V>::write_new_pos_for_root_node(const int32_t posRoot) {
+    file.set_pos(ROOT_POS_IN_HEADER);
 
     file.write_next(posRoot);
 }
 
 template <typename K, typename V>
-void IOManager<K,V>::shrink_to_fit() {
+void IOManager<K,V>::write_invalidated_root() {
+    file.set_pos(ROOT_POS_IN_HEADER);
+
+    file.write_next(INVALID_ROOT_POS);
     file.shrink_to_fit();
 }
 

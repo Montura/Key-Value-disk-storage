@@ -6,7 +6,7 @@ BTree<K, V>::BTree(const std::string& path, const int16_t order) : t(order), io_
     if (!io_manager.is_ready())
         return;
 
-    int32_t root_pos = io_manager.read_header();
+    auto root_pos = io_manager.read_header();
     if (root_pos == IOManager<K,V>::INVALID_ROOT_POS)
         return;
 
@@ -24,7 +24,7 @@ template <typename K, typename V>
 void BTree<K, V>::insert(const K& key, const V& value) {
     if (root == nullptr) {
         // write header
-        int32_t root_pos = io_manager.write_header();
+        auto root_pos = io_manager.write_header();
 
         root = new Node(t, true);
         root->m_pos = root_pos;
@@ -41,7 +41,7 @@ void BTree<K, V>::insert(const K& key, const V& value) {
             newRoot.child_pos[0] = root->m_pos;
 
             // Write node
-            int32_t posFile = io_manager.get_file_pos_end();
+            auto posFile = io_manager.get_file_pos_end();
             newRoot.m_pos = posFile;
             io_manager.write_node(newRoot, newRoot.m_pos);
 
@@ -54,12 +54,12 @@ void BTree<K, V>::insert(const K& key, const V& value) {
                 i++;
 
             // Read node
-            int32_t pos = newRoot.child_pos[i];
+            auto pos = newRoot.child_pos[i];
             Node node = io_manager.read_node(pos);
             node.insert_non_full(io_manager, key, value);
 
             io_manager.read_node(root, newRoot.m_pos);
-            io_manager.writeUpdatePosRoot(newRoot.m_pos);
+            io_manager.write_new_pos_for_root_node(newRoot.m_pos);
         } else {
             root->insert_non_full(io_manager, key, value);
         }
@@ -103,11 +103,10 @@ bool BTree<K, V>::remove(const K& key) {
             io_manager.write_flag(root->is_deleted_or_is_leaf(), root->m_pos);
             delete root;
             root = nullptr;
-            io_manager.writeUpdatePosRoot(IOManager<K,V>::INVALID_ROOT_POS);
-            io_manager.shrink_to_fit();
+            io_manager.write_invalidated_root();
         } else {
             int32_t pos = root->child_pos[0];
-            io_manager.writeUpdatePosRoot(pos);
+            io_manager.write_new_pos_for_root_node(pos);
             io_manager.read_node(root, pos);
         }
     }
