@@ -13,7 +13,6 @@ if(NOT Boost_FOUND)
 endif()
 
 set(SOURCE_FILES
-#        boost_mapped_file.cpp
         btree.cpp
         btree.h
         btree_impl.h
