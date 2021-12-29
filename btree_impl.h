@@ -35,7 +35,7 @@ void BTree<K, V>::insert(const K& key, const V& value) {
 
         // write node root and key|value
         io_manager.write_node(*root, root->m_pos);
-        io_manager.write_entry({ key, value }, entry_pos);
+        io_manager.write_entry(key, value, entry_pos);
     } else {
         if (root->is_full()) {
             Node newRoot(t, false);
@@ -50,7 +50,7 @@ void BTree<K, V>::insert(const K& key, const V& value) {
 
             // Find the child have new key
             int32_t i = 0;
-            K root_key = newRoot.get_entry(io_manager, 0).key;
+            K root_key = newRoot.get_key(io_manager, 0);
             if (root_key < key)
                 i++;
 

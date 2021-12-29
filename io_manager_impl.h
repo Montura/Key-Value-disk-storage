@@ -64,21 +64,28 @@ bool IOManager<K,V>:: is_ready() {
 }
 
 template <typename K, typename V>
-void IOManager<K,V>::write_entry(EntryT && entry, const int64_t pos)    {
+void IOManager<K,V>::write_entry(const K& key, const V& value, const int64_t pos) {
     file.set_pos(pos);
 
-    file.write_next(entry.key);
-    file.write_next(entry.value);
+    file.write_next(key);
+    file.write_next(value);
 }
 
 template <typename K, typename V>
 Entry<K, V> IOManager<K,V>::read_entry(const int64_t pos) {
-        file.set_pos(pos);
+    file.set_pos(pos);
 
-        K key = file.read_next<K>();
-        V value = file.read_next<V>();
-        return { key, value };
-    }
+    K key = file.read_next<K>();
+    V value = file.read_next<V>();
+    return { key, value };
+}
+
+template <typename K, typename V>
+K IOManager<K,V>::read_key(const int64_t pos) {
+    file.set_pos(pos);
+
+    return file.read_next<K>();
+}
 
 template <typename K, typename V>
 void IOManager<K,V>::write_flag(uint8_t flag, const int64_t pos) {

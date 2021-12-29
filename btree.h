@@ -47,23 +47,22 @@ private:
     public:
         BTreeNode(const int16_t& t, bool isLeaf);
 
-        bool is_full() const;
+        EntryT find(IOManagerT& io_manager, const K& key);
+        bool set(IOManagerT& io_manager, const K &key, const V &value);
+        K get_key(IOManagerT& io_manager, const int32_t idx);
+        bool remove(IOManagerT& io_manager, const K& key);
 
-        inline int32_t max_key_num() const { return std::max(2 * t - 1, 0); }
-        inline int32_t max_child_num() const { return 2 * t; }
+        bool is_full() const;
+        void split_child(IOManagerT& manager, const int32_t idx, Node& curr_node);
+        void insert_non_full(IOManagerT& io_manager, const K& key, const V& value);
+//        void traverse(IOManagerT& io_manager);
+    private:
+        int32_t max_key_num() const;
+        int32_t max_child_num() const;
 
         int32_t find_key_bin_search(IOManagerT& io_manager, const K& key);
-        void split_child(IOManagerT& manager, const int32_t idx, Node& curr_node);
 
-        K get_key(IOManagerT& io_manager, const int32_t idx);
-        EntryT get_entry(IOManagerT& io_manager, const int32_t idx);
-        EntryT find(IOManagerT& io_manager, const K& key);
-
-        void insert_non_full(IOManagerT& io_manager, const K& key, const V& value);
-        void traverse(IOManagerT& io_manager);
-        bool set(IOManagerT& io_manager, const K &key, const V &value);
-        bool remove(IOManagerT& io_manager, const K& key);
-    private:
+        Entry<K, V> get_entry(IOManagerT& io_manager, const int32_t idx);
         Node get_child(IOManagerT& io_manager, const int32_t idx);
 
         bool remove_from_leaf(IOManagerT& io_manager, const int32_t idx);

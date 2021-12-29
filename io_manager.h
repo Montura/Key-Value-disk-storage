@@ -51,8 +51,9 @@ public:
 
     int32_t get_node_size_in_bytes(Node& node);
 
-    void write_entry(EntryT && entry, const int64_t pos);
+    void write_entry(const K& key, const V& value, const int64_t pos);
     EntryT read_entry(const int64_t pos);
+    K read_key(const int64_t pos);
 
     void write_flag(uint8_t flag, const int64_t pos);
 
