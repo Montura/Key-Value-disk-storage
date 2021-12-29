@@ -20,9 +20,11 @@ set(SOURCE_FILES
         btree_node_impl.h
         entry.h
 #        mem_util.cpp
-        file_mapping.cpp
         file_mapping.h
+        file_mapping_impl.h
         io_manager_impl.h
+        test_util.h
+        utils.h
         )
 include_directories(${Boost_INCLUDE_DIRS})
 
