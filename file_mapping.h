@@ -39,6 +39,7 @@ struct MappedFile {
     void shrink_to_fit();
     bool isEmpty();
 
+    const std::string path;
 private:
     template <typename T>
     int64_t write_arithmetic(T val);
@@ -49,7 +50,6 @@ private:
     void resize(int64_t new_size);
     void remap();
 
-    const std::string path;
     uint8_t* mapped_region_begin;
     int64_t m_pos;
     int64_t m_size;

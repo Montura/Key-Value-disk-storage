@@ -35,7 +35,7 @@ template <typename T>
 using to_string = std::basic_string<T> (*)(int i);
 
 template <typename V>
-constexpr uint8_t value_type_size() {
+constexpr uint8_t get_element_size() {
     if constexpr (std::is_arithmetic_v<V>) {
         return sizeof(V);
     }
@@ -47,7 +47,7 @@ constexpr uint8_t value_type_size() {
 }
 
 template <typename V>
-constexpr uint8_t value_type() {
+constexpr uint8_t get_value_type_code() {
     if constexpr (std::is_arithmetic_v<V>) {
         return 0;
     }
