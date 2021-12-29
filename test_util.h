@@ -140,3 +140,24 @@ void test_values_after_remove(const std::string& path, int order, int total_elem
     }
     assert(stat.total_after_reopen == static_cast<int64_t>(verify_map.size()));
 }
+
+
+template <typename K, typename V>
+void run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
+    auto t1 = high_resolution_clock::now();
+    auto verify_map = test_keys_create_exist<K, V>(db_name, order, n);
+    auto total_found = test_values_get(db_name, order, n, verify_map);
+    auto [total_removed, total_after_remove] = test_values_remove(db_name, order, n, verify_map, keys_to_remove);
+    test_values_after_remove(db_name, order, n, verify_map);
+    auto t2 = high_resolution_clock::now();
+
+    /* Getting number of milliseconds as a double. */
+    duration<double, std::milli> ms_double = t2 - t1;
+
+    cout << "Passed for " + db_name << ": " <<
+         "\t added: " << n <<
+         ", found: " << total_found <<
+         ", removed: " << total_removed <<
+         ", total_after_remove: " << total_after_remove <<
+         " in " << ms_double.count() << "ms" << endl;
+}

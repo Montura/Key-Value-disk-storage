@@ -101,24 +101,11 @@ using std::chrono::milliseconds;
     for (int i = 0; i < 25; ++i) {
         auto keys_to_remove = generate_rand_keys();
         for (int order = 2; order < 51; ++order) {
-            auto db_name = db_prefix + std::to_string(order) + end;
-            auto t1 = high_resolution_clock::now();
-            auto verify_map = test_keys_create_exist<int, int>(db_name, order, n);
-            auto total_found = test_values_get(db_name, order, n, verify_map);
-            auto [total_removed, total_after_remove] = test_values_remove(db_name, order, n, verify_map, keys_to_remove);
-            test_values_after_remove(db_name, order, n, verify_map);
-            auto t2 = high_resolution_clock::now();
-
-            /* Getting number of milliseconds as a double. */
-            duration<double, std::milli> ms_double = t2 - t1;
-
-            std::string msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
-            cout << "Passed " + msg << ": " <<
-                 "\t added: " << n <<
-                 ", found: " << total_found <<
-                 ", removed: " << total_removed <<
-                 ", total_after_remove: " << total_after_remove <<
-                 " in " << ms_double.count() << "ms" << endl;
+            auto db_name = db_prefix + std::to_string(order);
+            run<int32_t, int32_t>(db_name + "_i32" + end, order, n, keys_to_remove);
+            run<int32_t, int64_t>(db_name + "_i64" + end, order, n, keys_to_remove);
+            run<int32_t, float>(db_name + "_f" + end, order, n, keys_to_remove);
+            run<int32_t, double>(db_name + "_d" + end, order, n, keys_to_remove);
         }
         std::cout << "iter: " << i << endl;
     }
