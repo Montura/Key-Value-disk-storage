@@ -21,8 +21,6 @@ template <typename K, typename V>
 void IOManager<K,V>::write_entry(EntryT && entry, const int32_t pos)    {
     file.set_pos(pos);
 
-    uint8_t flag = 1;
-    file.write_next(flag);
     file.write_next(entry.key);
     file.write_next(entry.value);
 }
@@ -31,7 +29,6 @@ template <typename K, typename V>
 Entry<K, V> IOManager<K,V>::read_entry(const int32_t pos) {
         file.set_pos(pos);
 
-        uint8_t flag = file.read_byte();
         K key = file.read_next<K>();
         V value = file.read_next<V>();
         return { key, value };
