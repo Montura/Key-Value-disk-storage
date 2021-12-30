@@ -6,6 +6,21 @@
 This is the C++17 template based header library under Windows/Linux/MacOs to store KEY|VALUES on disk.
 
 
+### Usage exapmle 
+
+```cpp
+    const int val = 65;
+    {
+        BTree<int, int> b("../a.txt", 2);
+        b.set(0, val);
+    }
+    {
+        BTree<int, int> b("../a.txt", 2);
+        auto value = b.get(0);
+        assert(value == val);
+    }
+```
+
 
 ### Storage structures:
 
