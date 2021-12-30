@@ -13,8 +13,8 @@ struct MappedFile {
     template <typename T>
     T read_next();
 
-    template <typename ValueT>
-    std::pair<const uint8_t*, int32_t> read_next_data();
+    template <typename ValueT, typename ResulT>
+    std::pair<ResulT, int32_t> read_next_data();
 
 
     template <typename T>

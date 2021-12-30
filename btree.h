@@ -22,7 +22,7 @@ public:
 
     bool exist(const K &key);
     void set(const K &key, const V& value);
-    V* get(const K& key);
+    std::optional<V> get(const K& key);
     bool remove(const K& key);
 
 private:

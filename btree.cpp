@@ -102,11 +102,12 @@ using std::chrono::milliseconds;
         auto keys_to_remove = generate_rand_keys();
         for (int order = 2; order < 51; ++order) {
             auto db_name = db_prefix + std::to_string(order);
-//            run<int32_t, int32_t>(db_name + "_i32" + end, order, n, keys_to_remove);
-//            run<int32_t, int64_t>(db_name + "_i64" + end, order, n, keys_to_remove);
-//            run<int32_t, float>(db_name + "_f" + end, order, n, keys_to_remove);
-//            run<int32_t, double>(db_name + "_d" + end, order, n, keys_to_remove);
-            run<int32_t, std::string>(db_name + "_d" + end, order, n, keys_to_remove);
+            run<int32_t, int32_t>(db_name + "_i32" + end, order, n, keys_to_remove);
+            run<int32_t, int64_t>(db_name + "_i64" + end, order, n, keys_to_remove);
+            run<int32_t, float>(db_name + "_f" + end, order, n, keys_to_remove);
+            run<int32_t, double>(db_name + "_d" + end, order, n, keys_to_remove);
+            run<int32_t, std::string>(db_name + "_str" + end, order, n, keys_to_remove);
+            run<int32_t, std::wstring>(db_name + "_wtr" + end, order, n, keys_to_remove);
         }
         std::cout << "iter: " << i << endl;
     }

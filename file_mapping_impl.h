@@ -60,11 +60,13 @@ T MappedFile::read_next() {
     }
 }
 
-template <typename ValueT>
-std::pair<const uint8_t*, int32_t> MappedFile::read_next_data() {
+template <typename ValueT, typename ResulT>
+std::pair<ResulT, int32_t> MappedFile::read_next_data() {
     if constexpr(is_string_v<ValueT> || is_vector_v<ValueT>) {
         int32_t element_count = *(reinterpret_cast<int32_t*>(mapped_region_begin + m_pos));
-        int32_t total_size = sizeof(typename ValueT::value_type) * element_count;
+        // todo: ValueT has to know the size of ValueT::value_type
+        //      so, is obsolete:  sizeof(typename ValueT::value_type) * element_count; ????
+        int32_t total_size = element_count;
         m_pos += sizeof (int32_t);
         auto *value_begin = mapped_region_begin + m_pos;
         m_pos += total_size;
@@ -72,7 +74,7 @@ std::pair<const uint8_t*, int32_t> MappedFile::read_next_data() {
     } else {
         auto *value_begin = mapped_region_begin + m_pos;
         m_pos += sizeof(ValueT);
-        return std::make_pair(cast_to_const_uint8_t_data(value_begin), sizeof(ValueT));
+        return std::make_pair(*(reinterpret_cast<ResulT*>(value_begin)), sizeof(ValueT));
     }
 }
 

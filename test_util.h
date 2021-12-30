@@ -78,7 +78,7 @@ int64_t test_values_get(const std::string& path, int order, int total_elements, 
     for (int i = 0; i < total_elements; ++i) {
         auto expected_value = verify_map.find(i);
         auto actual_value = btree.get(i);
-        assert(expected_value->second == *actual_value);
+        assert(expected_value->second == actual_value.value());
         ++stat.total_found;
     }
     assert(stat.contains_all());
@@ -136,9 +136,9 @@ void test_values_after_remove(const std::string& path, int order, int total_elem
         auto expected_value = verify_map.find(i);
         auto actual_value = btree.get(i);
         if (expected_value == verify_map.end()) {
-            assert(actual_value == nullptr);
+            assert(actual_value == std::nullopt);
         } else {
-            assert(expected_value->second == *actual_value);
+            assert(expected_value->second == actual_value.value());
             ++stat.total_after_reopen;
         }
     }
@@ -152,9 +152,9 @@ void run(const std::string& db_name, const int order, const int n, std::tuple<K,
     generator<V> r;
     if constexpr (is_string_v<V>) {
         if constexpr(std::is_same_v<typename V::value_type, char>) {
-            r = +[](int i) -> V { return std::to_string(i + 65); };
+            r = +[](int i) -> V { return std::to_string(i + 65) + "abacaba"; };
         } else {
-            r = +[](int i) -> V { return std::to_wstring(i + 65); };
+            r = +[](int i) -> V { return std::to_wstring(i + 65) + L"abacaba"; };
         }
     } else {
         r = +[](int i) -> V { return i + 65; };
