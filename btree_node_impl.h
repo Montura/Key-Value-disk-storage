@@ -84,7 +84,7 @@ K BTree<K,V>::BTreeNode::get_key(IOManagerT& io, const int32_t idx) {
 template<class K, class V>
 Entry<K, V> BTree<K,V>::BTreeNode::get_entry(IOManagerT& io, const int32_t idx) {
     if (idx < 0 || idx > used_keys - 1)
-        return {}; // nullptr
+        return EntryT();
 
     return io.read_entry(key_pos[idx]);
 }
@@ -180,7 +180,7 @@ Entry<K, V> BTree<K,V>::BTreeNode::find(IOManagerT& io, const K& key) {
     if (entry.key == key)
         return entry;
 
-    return {}; // nullptr dummy
+    return EntryT();
 }
 
 template<class K, class V>

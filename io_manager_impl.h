@@ -16,10 +16,6 @@ int32_t IOManager<K,V>::get_node_size_in_bytes(Node& node) {
 template <typename K, typename V>
 int64_t IOManager<K,V>::write_header() {
     file.set_pos(0);
-//        uint8_t val = value_type_size<V>();
-//        uint8_t i = value_type<V>();
-//        assert((sizeof(t) + 1 + i + val) == 5);
-//        const int root_pos = 6;
 
     file.write_next(t);
     file.write_next<uint8_t>(sizeof(K));
@@ -48,12 +44,10 @@ int64_t IOManager<K,V>::read_header() {
     auto element_size = file.read_byte();
     validate(element_size == get_element_size<V>(),
              "The sizeof(KEY) for your tree doesn't equal to the KEY used in storage: ");
-//
 
     auto posRoot = file.read_int32();
     return posRoot;
 }
-
 
 template <typename K, typename V>
 IOManager<K, V>::IOManager(const std::string& path, const int16_t user_t) : t(user_t), file(path, 0)  {}

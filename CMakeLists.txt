@@ -24,6 +24,7 @@ set(SOURCE_FILES
 #        mem_util.cpp
         file_mapping.h
         file_mapping_impl.h
+#        file_mapping_tests.cpp
         io_manager.h
         io_manager_impl.h
         test_util.h

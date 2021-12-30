@@ -21,6 +21,32 @@ BTree<K, V>::~BTree() {
 }
 
 template <typename K, typename V>
+void BTree<K, V>::set(const K& key, const V& value) {
+//    pthread_rwlock_wrlock(&(rwLock));
+
+    if (!root || !root->set(io_manager, key, value))
+        insert(key, value);
+
+//    pthread_rwlock_unlock(&(rwLock));
+}
+
+template <typename K, typename V>
+std::optional<V> BTree<K, V>::get(const K& key) {
+    EntryT res = root ? root->find(io_manager, key) : EntryT {};
+    return res.get_value();
+}
+
+template <typename K, typename V>
+bool BTree<K, V>::exist(const K& key) {
+//    pthread_rwlock_wrlock(&(rwLock));
+
+    bool success = root && !root->find(io_manager, key).is_dummy();
+
+//    pthread_rwlock_unlock(&(rwLock));
+    return success;
+}
+
+template <typename K, typename V>
 void BTree<K, V>::insert(const K& key, const V& value) {
     if (root == nullptr) {
         // write header
@@ -65,32 +91,6 @@ void BTree<K, V>::insert(const K& key, const V& value) {
             root->insert_non_full(io_manager, key, value);
         }
     }
-}
-
-template <typename K, typename V>
-void BTree<K, V>::set(const K& key, const V& value) {
-//    pthread_rwlock_wrlock(&(rwLock));
-
-    if (!root || !root->set(io_manager, key, value))
-        insert(key, value);
-
-//    pthread_rwlock_unlock(&(rwLock));
-}
-
-template <typename K, typename V>
-std::optional<V> BTree<K, V>::get(const K& key) {
-    EntryT res = root ? root->find(io_manager, key) : EntryT {};
-    return res.get_value();
-}
-
-template <typename K, typename V>
-bool BTree<K, V>::exist(const K& key) {
-//    pthread_rwlock_wrlock(&(rwLock));
-
-    bool success = root && !root->find(io_manager, key).is_dummy();
-
-//    pthread_rwlock_unlock(&(rwLock));
-    return success;
 }
 
 template <typename K, typename V>
