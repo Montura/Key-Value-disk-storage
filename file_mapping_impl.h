@@ -61,6 +61,14 @@ T MappedFile::read_next() {
 }
 
 template <typename T>
+const T* MappedFile::read_next_data() {
+//    static_assert(std::is_pointer_v<T>);
+    auto *value_begin = mapped_region_begin + m_pos;
+    m_pos += sizeof(T);
+    return reinterpret_cast<const T *>(value_begin);
+}
+
+template <typename T>
 T MappedFile::read_container() {
     int64_t elem_count = read_next<typename T::size_type>();
     T str(elem_count, '\0');
@@ -247,56 +255,56 @@ void test_basic_strings(const V* val, to_string<V> converter) {
     }
 }
 
-void test_modify_and_save() {
-    std::string fmap = std::string("../file_mapping_text") + std::string(".txt");
-    {
-        MappedFile file(fmap, 32);
-        for (int i = 0; i < 1000000; i += 1000) {
-//            file.write(-1, i);
-        }
-    }
-    {
-        MappedFile file(fmap, 32);
-        for (int i = 0; i < 1000000; ++i) {
-            auto anInt = file.read_int();
-            if (i % 1000 == 0) {
-                assert(anInt == -1);
-            } else {
-                assert(i == anInt);
-            }
-        }
-    }
-}
-
-void test_array() {
-    std::string fmap = std::string("../file_mapping_array") + std::string(".txt");
-    if (fs::exists(fmap)) {
-        fs::remove(fmap);
-    }
-
-    int n = 1000000;
-//    std::vector<int> out(n, 1);
-//    std::vector<int> in(n, 0);
-    {
-        MappedFile file(fmap, 32);
-//        file.write_int_array(out, n);
-    }
-
-    {
-        MappedFile file(fmap, 32);
-//        file.read_int_array(in, n);
-    }
-//    assert(in == out);
-}
+//void test_modify_and_save() {
+//    std::string fmap = std::string("../file_mapping_text") + std::string(".txt");
+//    {
+//        MappedFile file(fmap, 32);
+//        for (int i = 0; i < 1000000; i += 1000) {
+////            file.write(-1, i);
+//        }
+//    }
+//    {
+//        MappedFile file(fmap, 32);
+//        for (int i = 0; i < 1000000; ++i) {
+////            auto anInt = file.read_int();
+//            if (i % 1000 == 0) {
+//                assert(anInt == -1);
+//            } else {
+//                assert(i == anInt);
+//            }
+//        }
+//    }
+//}
+//
+//void test_array() {
+//    std::string fmap = std::string("../file_mapping_array") + std::string(".txt");
+//    if (fs::exists(fmap)) {
+//        fs::remove(fmap);
+//    }
+//
+//    int n = 1000000;
+////    std::vector<int> out(n, 1);
+////    std::vector<int> in(n, 0);
+//    {
+//        MappedFile file(fmap, 32);
+////        file.write_int_array(out, n);
+//    }
+//
+//    {
+//        MappedFile file(fmap, 32);
+////        file.read_int_array(in, n);
+//    }
+////    assert(in == out);
+//}
 
 
 int main1() {
-    test_arithmetics<int32_t>(1);
-    test_arithmetics<uint32_t>(1);
-    test_arithmetics<int64_t>(1);
-    test_arithmetics<uint64_t>(1);
-    test_arithmetics<float>(1);
-    test_arithmetics<double>(1);
+//    test_arithmetics<int32_t>(1);
+//    test_arithmetics<uint32_t>(1);
+//    test_arithmetics<int64_t>(1);
+//    test_arithmetics<uint64_t>(1);
+//    test_arithmetics<float>(1);
+//    test_arithmetics<double>(1);
 
 
     to_string<char> conv_to_str = std::to_string;

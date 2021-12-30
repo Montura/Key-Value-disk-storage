@@ -14,6 +14,9 @@ struct MappedFile {
     T read_next();
 
     template <typename T>
+    const T* read_next_data();
+
+    template <typename T>
     T read_container();
 
     template <typename T>

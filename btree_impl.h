@@ -78,7 +78,7 @@ void BTree<K, V>::set(const K& key, const V& value) {
 }
 
 template <typename K, typename V>
-V BTree<K, V>::get(const K& key) {
+const V* BTree<K, V>::get(const K& key) {
     EntryT res = root ? root->find(io_manager, key) : EntryT {};
     return res.value;
 }

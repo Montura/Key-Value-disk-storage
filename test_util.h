@@ -41,15 +41,19 @@ std::tuple<int, int, int> generate_rand_keys() {
     return std::make_tuple(r1, r2, r3);
 }
 
+template <typename T>
+using generator = T (*)(int i);
+
+
 template <typename K, typename V>
-std::map <K, V> test_keys_create_exist(const std::string& path, int order, int total_elements) {
+std::map <K, V> test_keys_create_exist(const std::string& path, int order, int total_elements, generator<V> gen) {
     BTree<K,V> btree(path, order);
 
     TestStat stat(total_elements);
     std::map <K, V> verify_map;
     for (int i = 0; i < total_elements; ++i) {
         K key = i;
-        V value = i + 65;
+        V value = gen(i);
         btree.set(key, value);
         verify_map[key] = value;
     }
@@ -74,7 +78,7 @@ int64_t test_values_get(const std::string& path, int order, int total_elements, 
     for (int i = 0; i < total_elements; ++i) {
         auto expected_value = verify_map.find(i);
         auto actual_value = btree.get(i);
-        assert(expected_value->second == actual_value);
+        assert(expected_value->second == *actual_value);
         ++stat.total_found;
     }
     assert(stat.contains_all());
@@ -132,9 +136,9 @@ void test_values_after_remove(const std::string& path, int order, int total_elem
         auto expected_value = verify_map.find(i);
         auto actual_value = btree.get(i);
         if (expected_value == verify_map.end()) {
-            assert(actual_value == -1);
+            assert(actual_value == nullptr);
         } else {
-            assert(expected_value->second == actual_value);
+            assert(expected_value->second == *actual_value);
             ++stat.total_after_reopen;
         }
     }
@@ -145,7 +149,17 @@ void test_values_after_remove(const std::string& path, int order, int total_elem
 template <typename K, typename V>
 void run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
     auto t1 = high_resolution_clock::now();
-    auto verify_map = test_keys_create_exist<K, V>(db_name, order, n);
+    generator<V> r;
+    if constexpr (is_string_v<V>) {
+        if constexpr(std::is_same_v<typename V::value_type, char>) {
+            r = +[](int i) -> V { return std::to_string(i + 65); };
+        } else {
+            r = +[](int i) -> V { return std::to_wstring(i + 65); };
+        }
+    } else {
+        r = +[](int i) -> V { return i + 65; };
+    }
+    auto verify_map = test_keys_create_exist<K, V>(db_name, order, n, r);
     auto total_found = test_values_get(db_name, order, n, verify_map);
     auto [total_removed, total_after_remove] = test_values_remove(db_name, order, n, verify_map, keys_to_remove);
     test_values_after_remove(db_name, order, n, verify_map);

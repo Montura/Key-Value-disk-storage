@@ -76,7 +76,7 @@ Entry<K, V> IOManager<K,V>::read_entry(const int64_t pos) {
     file.set_pos(pos);
 
     K key = file.read_next<K>();
-    V value = file.read_next<V>();
+    const V* value = file.read_next_data<V>();
     return { key, value };
 }
 

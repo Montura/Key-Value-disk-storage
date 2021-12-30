@@ -22,7 +22,7 @@ public:
 
     bool exist(const K &key);
     void set(const K &key, const V& value);
-    V get(const K& key);
+    const V* get(const K& key);
     bool remove(const K& key);
 
 private:
@@ -48,7 +48,7 @@ private:
         BTreeNode(const int16_t& t, bool isLeaf);
 
         EntryT find(IOManagerT& io_manager, const K& key);
-        bool set(IOManagerT& io_manager, const K &key, const V &value);
+        bool set(IOManagerT& io_manager, const K &key, const V& value);
         K get_key(IOManagerT& io_manager, const int32_t idx);
         bool remove(IOManagerT& io_manager, const K& key);
 
