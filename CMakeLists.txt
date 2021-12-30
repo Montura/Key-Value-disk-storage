@@ -12,20 +12,22 @@ if(NOT Boost_FOUND)
     message(FATAL_ERROR "Failed to find boost library")
 endif()
 
+include_directories(include/)
+
 set(SOURCE_FILES
-        btree.cpp
-        btree.h
-        btree_impl.h
-        btree_node_impl.h
-        entry.h
+        src/btree.cpp
+        include/btree.h
+        include/btree_impl.h
+        include/btree_node_impl.h
+        include/entry.h
 #        mem_util.cpp
-        file_mapping.h
-        file_mapping_impl.h
+        include/io/file_mapping.h
+        include/io/file_mapping_impl.h
 #        file_mapping_tests.cpp
-        io_manager.h
-        io_manager_impl.h
-        test_util.h
-        utils.h
+        include/io/io_manager.h
+        include/io/io_manager_impl.h
+        include/utils/test_util.h
+        include/utils/utils.h
         )
 include_directories(${Boost_INCLUDE_DIRS})
 
