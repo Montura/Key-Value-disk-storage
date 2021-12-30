@@ -189,7 +189,7 @@ bool BTree<K,V>::BTreeNode::set(IOManagerT& io, const K& key, const V& value) {
     EntryT entry = get_entry(io, idx);
 
     if (entry.key == key) {
-        if (*entry.value != value) {
+        if (entry.has_value(value)) {
             auto curr_pos = io.get_file_pos_end();
             key_pos[idx] = curr_pos;
 

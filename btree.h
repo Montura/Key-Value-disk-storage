@@ -15,14 +15,14 @@ class BTree final {
     struct BTreeNode;
 public:
     using Node = BTreeNode;
-    using EntryT = Entry<K,V>;
+    using EntryT = Entry<K, V>;
 
     BTree(const std::string& path, int16_t order);
     ~BTree();
 
     bool exist(const K &key);
     void set(const K &key, const V& value);
-    const V* get(const K& key);
+    V* get(const K& key);
     bool remove(const K& key);
 
 private:

@@ -56,31 +56,24 @@ T MappedFile::read_next() {
         return *(reinterpret_cast<T *>(value_begin));
     } else {
         static_assert(is_string_v<T> || is_vector_v<T>);
-        return read_container<T>();
+        return read_next_data<T>();
     }
 }
 
-template <typename T>
-const T* MappedFile::read_next_data() {
-//    static_assert(std::is_pointer_v<T>);
-    auto *value_begin = mapped_region_begin + m_pos;
-    m_pos += sizeof(T);
-    return reinterpret_cast<const T *>(value_begin);
-}
-
-template <typename T>
-T MappedFile::read_container() {
-    int64_t elem_count = read_next<typename T::size_type>();
-    T str(elem_count, '\0');
-
-    int64_t total_size = sizeof(typename T::value_type) * elem_count;
-
-    auto* data = cast_to_uint8_t_data(str.data());
-    auto* start = mapped_region_begin + m_pos;
-    auto* end = start + total_size;
-    std::copy(start, end, data);
-    m_pos += total_size;
-    return str;
+template <typename ValueT>
+std::pair<const uint8_t*, int32_t> MappedFile::read_next_data() {
+    if constexpr(is_string_v<ValueT> || is_vector_v<ValueT>) {
+        int32_t element_count = *(reinterpret_cast<int32_t*>(mapped_region_begin + m_pos));
+        int32_t total_size = sizeof(typename ValueT::value_type) * element_count;
+        m_pos += sizeof (int32_t);
+        auto *value_begin = mapped_region_begin + m_pos;
+        m_pos += total_size;
+        return std::make_pair(cast_to_const_uint8_t_data(value_begin), total_size);
+    } else {
+        auto *value_begin = mapped_region_begin + m_pos;
+        m_pos += sizeof(ValueT);
+        return std::make_pair(cast_to_const_uint8_t_data(value_begin), sizeof(ValueT));
+    }
 }
 
 template <typename T>
@@ -133,7 +126,7 @@ int64_t MappedFile::write_container(T val) {
     static_assert(is_string_v<T> || is_vector_v<T>);
 
     // write size
-    int64_t elem_count = val.size();
+    int32_t elem_count = val.size(); // todo: to provide the SIZE of element_count from header
     m_pos = write_arithmetic(elem_count);
 
     // write values

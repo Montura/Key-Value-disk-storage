@@ -13,11 +13,9 @@ struct MappedFile {
     template <typename T>
     T read_next();
 
-    template <typename T>
-    const T* read_next_data();
+    template <typename ValueT>
+    std::pair<const uint8_t*, int32_t> read_next_data();
 
-    template <typename T>
-    T read_container();
 
     template <typename T>
     void write_next(T val);
