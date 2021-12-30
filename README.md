@@ -55,6 +55,13 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
         - VALUES                |=> takes (ELEMENT_SIZE * NUMBER_OF_ELEMENTS) bytes
      ----------–-----
 
+### Build
+
+#### Requirements:
+   - [Boost Iostreams Library](https://www.boost.org/doc/libs/1_76_0/libs/iostreams/doc/index.html)
+```
+cmake . 
+```
 
 ### Usage exapmle 
 
