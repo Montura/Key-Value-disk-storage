@@ -17,11 +17,17 @@ target_compile_definitions(key-value-storage PRIVATE
         USE_BOOST_PREBUILT_STATIC_LIBRARY=false
         )
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     target_compile_options(key-value-storage PRIVATE
-            -std=c++17
-            -stdlib=libc++
-            -Wall
-            -Wextra
-            -Wno-unused-parameter)
+        -std=c++17
+        -stdlib=libc++
+        -Wall
+        -Wextra
+        -Wno-unused-parameter
+    )
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  target_compile_options(key-value-storage PRIVATE
+       /std:c++17
+       /W3
+    )
 endif()
