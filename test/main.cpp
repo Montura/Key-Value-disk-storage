@@ -89,7 +89,7 @@ using std::chrono::duration_cast;
 using std::chrono::duration;
 using std::chrono::milliseconds;
 
-#include "key.h"
+#include "btree.h"
 #include "test_util.h"
 using namespace btree_test;
 

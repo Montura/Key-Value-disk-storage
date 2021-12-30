@@ -15,12 +15,17 @@ include_directories(${Boost_INCLUDE_DIRS})
 message(${Boost_IOSTREAMS_LIBRARY})
 
 add_subdirectory(include)
-include_directories(${HELLO_INCLUDE_DIR})
-message(aa: ${HELLO_INCLUDE_DIR})
+include_directories(${KEY_VALUE_STORAGE_INCLUDE_DIR})
+message(key-value-storage-lib found at: ${KEY_VALUE_STORAGE_INCLUDE_DIR})
 
-add_executable(${PROJECT_NAME} test/main.cpp src/mem_util.cpp)
+set(SOURCE_FILES
+        test/main.cpp
+        #src/mem_util.cpp
+    )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE key   ${Boost_IOSTREAMS_LIBRARY})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE key-value-storage-lib ${Boost_IOSTREAMS_LIBRARY})
 
 target_compile_definitions(key-value-storage PRIVATE
     BOOST_ALL_NO_LIB
@@ -28,6 +33,9 @@ target_compile_definitions(key-value-storage PRIVATE
     USE_BOOST_PREBUILT_STATIC_LIBRARY=false
 #    UNIT_TESTS
 )
+
+message(${CMAKE_CXX_COMPILER})
+message(${CMAKE_CXX_COMPILER_VERSION})
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     target_compile_options(key-value-storage PRIVATE
