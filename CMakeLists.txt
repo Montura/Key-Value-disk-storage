@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.12)
 project(key-value-storage LANGUAGES CXX)
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(Boost_USE_STATIC_LIBS ON)
+endif()
+
 find_package(Boost REQUIRED)
 find_package(Boost COMPONENTS iostreams REQUIRED)
 if(NOT Boost_FOUND)

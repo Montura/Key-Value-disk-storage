@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(key)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    set(Boost_USE_STATIC_LIBS ON)
-endif()
-
 include_directories(${Boost_INCLUDE_DIRS} .)
 
 set(SOURCE_FILES
