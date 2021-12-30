@@ -20,7 +20,8 @@ MappedFile::MappedFile(const std::string &fn, int64_t bytes_num) : path(fn), m_p
     } else {
         m_size = m_capacity = static_cast<int64_t>(fs::file_size(fn));
     }
-    remap();
+    if (m_size > 0)
+        remap();
 }
 
 MappedFile::~MappedFile() {
