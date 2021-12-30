@@ -3,8 +3,11 @@
 #include <string>
 
 namespace btree {
+#if _WIN64 || __amd64__
     static_assert(sizeof(int64_t) == sizeof(size_t));
-
+#else
+    static_assert(sizeof(int32_t) == sizeof(size_t));
+#endif
     template<typename T>
     struct is_string {
         static constexpr bool value = false;

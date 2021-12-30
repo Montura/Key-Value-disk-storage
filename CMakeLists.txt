@@ -18,7 +18,7 @@ add_subdirectory(include)
 include_directories(${HELLO_INCLUDE_DIR})
 message(aa: ${HELLO_INCLUDE_DIR})
 
-add_executable(${PROJECT_NAME} test/main.cpp)
+add_executable(${PROJECT_NAME} test/main.cpp src/mem_util.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE key   ${Boost_IOSTREAMS_LIBRARY})
 
@@ -36,7 +36,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         -Wall
         -Wextra
         -Wno-unused-parameter
-#        -O3
+        -O3
     )
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   target_compile_options(key-value-storage PRIVATE
