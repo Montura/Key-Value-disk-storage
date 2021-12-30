@@ -6,6 +6,7 @@
 
 namespace fs = std::filesystem;
 
+namespace btree {
 MappedFile::MappedFile(const std::string &fn, int64_t bytes_num) : path(fn), m_pos(0) {
     bool file_exists = fs::exists(fn);
     if (!file_exists) {
@@ -198,4 +199,5 @@ void MappedFile::shrink_to_fit() {
 
 bool MappedFile::isEmpty() {
     return m_size == 0;
+}
 }

@@ -82,7 +82,6 @@ namespace {
 #include <cassert>
 #include <chrono>
 
-
 using std::cout;
 using std::endl;
 using std::chrono::high_resolution_clock;
@@ -90,10 +89,11 @@ using std::chrono::duration_cast;
 using std::chrono::duration;
 using std::chrono::milliseconds;
 
+#include "key.h"
+#include "test_util.h"
+using namespace btree_test;
 
-#include "utils/test_util.h"
-
- void test() {
+void test() {
     const int n = 10000;
     std::string db_prefix = "../db_";
     std::string end = ".txt";
