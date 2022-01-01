@@ -4,6 +4,15 @@
 
 namespace btree {
     template<class K, class V>
+    BTree<K, V>::BTreeNode::BTreeNode() :
+        used_keys(0),
+        t(0),
+        is_leaf(false),
+        m_pos(-1),
+        key_pos(0, -1),
+        child_pos(0, -1) {}
+
+    template<class K, class V>
     BTree<K, V>::BTreeNode::BTreeNode(const int16_t &t, bool is_leaf) :
         used_keys(0),
         t(t),
@@ -15,6 +24,11 @@ namespace btree {
     template<class K, class V>
     bool BTree<K, V>::BTreeNode::is_full() const {
         return used_keys == max_key_num();
+    }
+
+    template<class K, class V>
+    bool BTree<K, V>::BTreeNode::is_valid() const {
+        return t != 0;
     }
 
     template<typename K, typename V>
@@ -47,14 +61,12 @@ namespace btree {
             }
         }
 
-        new_node.m_pos = manager.get_file_pos_end();
         // write new node
+        new_node.m_pos = manager.get_file_pos_end();
         manager.write_node(new_node, new_node.m_pos);
 
-        // Reduce the number of keys in the divided node
-        curr_node.used_keys = t - 1;
-
         // write current node
+        curr_node.used_keys = t - 1;
         manager.write_node(curr_node, curr_node.m_pos);
 
         // Shift children, keys and values to right
@@ -89,7 +101,7 @@ namespace btree {
     template<class K, class V>
     typename BTree<K, V>::BTreeNode BTree<K, V>::BTreeNode::get_child(IOManagerT &io, const int32_t idx) const {
         if (idx < 0 || idx > used_keys)
-            return Node(0, false); // dummy
+            return Node();
 
         return io.read_node(child_pos[idx]);
     }
@@ -161,7 +173,7 @@ namespace btree {
 
     template<class K, class V>
     Entry <K, V> BTree<K, V>::BTreeNode::find(IOManagerT &io, const K &key) const {
-        auto [curr, entry, idx] = find_leaf_node_with_key(io, key);
+        const auto& [curr, entry, idx] = find_leaf_node_with_key(io, key);
         if (entry.key == key)
             return entry;
 
@@ -210,7 +222,7 @@ namespace btree {
         int32_t child_idx = (idx > used_keys) ? (idx - 1) : idx;
         child = get_child(io, child_idx);
 
-        if (child.t != 0) {
+        if (child.is_valid()) {
             bool success = child.remove(io, key);
             return writeOnExit(child, child.m_pos, success);
         }
@@ -404,7 +416,7 @@ namespace btree {
 
     template<class K, class V>
     int32_t BTree<K, V>::BTreeNode::max_key_num() const {
-        return std::max(2 * t - 1, 0);
+        return 2 * t - 1;
     }
 
     template<class K, class V>

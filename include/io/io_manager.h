@@ -53,7 +53,7 @@ namespace btree {
 
         bool is_ready() const;
 
-        int64_t write_node(const Node &node, const int64_t pos);
+        int64_t write_node(const Node& node, const int64_t pos);
         void write_entry(const K &key, const V &value, const int64_t pos);
 
         Node read_node(const int64_t pos);

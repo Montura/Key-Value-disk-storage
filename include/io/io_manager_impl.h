@@ -104,7 +104,7 @@ namespace btree {
     }
 
     template<typename K, typename V>
-    int64_t IOManager<K, V>::write_node(const Node &node, const int64_t pos) {
+    int64_t IOManager<K, V>::write_node(const Node& node, const int64_t pos) {
         file.set_pos(pos);
 
         file.write_next(node.is_leaf);

@@ -12,8 +12,6 @@ namespace btree {
 template<typename K, typename V>
 class BTree final {
     struct BTreeNode;
-
-    BTreeNode *root = nullptr;
     const int16_t t;
 public:
     using Node = BTreeNode;
@@ -43,6 +41,7 @@ private:
         std::vector<int64_t> child_pos;
 
     public:
+        explicit BTreeNode();
         BTreeNode(const int16_t &t, bool isLeaf);
 
         bool set(IOManagerT& io_manager, const K &key, const V &value);
@@ -53,6 +52,7 @@ private:
 
         int32_t get_node_size_in_bytes() const;
         bool is_full() const;
+        bool is_valid() const;
 
         void split_child(IOManagerT &manager, const int32_t idx, Node &curr_node);
         void insert_non_full(IOManagerT &io_manager, const K &key, const V &value);
@@ -78,6 +78,8 @@ private:
         void borrow_from_prev_node(IOManagerT &io_manager, const int32_t idx);
         void borrow_from_next_node(IOManagerT &io_manager, const int32_t idx);
     };
+
+    BTreeNode root;
 };
 }
 
