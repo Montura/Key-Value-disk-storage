@@ -38,7 +38,7 @@ namespace btree {
             return io.read_value(value, size);
         }
 
-        bool has_value(IOManager<K,V>& io, const V &other) const {
+        bool is_equal(IOManager<K,V>& io, const V &other) const {
             if constexpr (is_string_v<V>) {
                 auto v = get_value(io).value();
                 return (size == static_cast<decltype(size)>(other.size())) && (v == other);

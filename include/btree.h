@@ -60,6 +60,8 @@ private:
 
         void insert_non_full(IOManagerT &io_manager, const K &key, const V &value);
     private:
+        std::tuple<Node, EntryT, int32_t> find_leaf_node_with_key(IOManagerT &io_manager, const K &key) const;
+
         int32_t max_key_num() const;
 
         int32_t max_child_num() const;

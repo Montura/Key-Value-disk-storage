@@ -161,19 +161,7 @@ namespace btree {
 
     template<class K, class V>
     Entry <K, V> BTree<K, V>::BTreeNode::find(IOManagerT &io, const K &key) {
-        Node curr = *this;
-
-        while (!curr.is_leaf) {
-            auto idx = curr.find_key_bin_search(io, key);
-            auto entry = curr.get_entry(io, idx);
-            if (entry.key == key)
-                return entry;
-
-            curr = curr.get_child(io, idx);
-        }
-
-        auto idx = curr.find_key_bin_search(io, key);
-        auto entry = curr.get_entry(io, idx);
+        auto [curr, entry, idx] = find_leaf_node_with_key(io, key);
         if (entry.key == key)
             return entry;
 
@@ -182,26 +170,18 @@ namespace btree {
 
     template<class K, class V>
     bool BTree<K, V>::BTreeNode::set(IOManagerT &io, const K &key, const V &value) {
-        auto idx = find_key_bin_search(io, key);
-        EntryT entry = get_entry(io, idx);
-
+        auto [curr, entry, idx] = find_leaf_node_with_key(io, key);
         if (entry.key == key) {
-            if (entry.has_value(io, value)) {
+            if (!entry.is_equal(io, value)) {
                 auto curr_pos = io.get_file_pos_end();
-                key_pos[idx] = curr_pos;
+                curr.key_pos[idx] = curr_pos;
 
                 io.write_entry(key, value, curr_pos);
-                io.write_node(*this, m_pos);
+                io.write_node(curr, curr.m_pos);
             }
-
             return true;
         }
-
-        if (is_leaf)
-            return false;
-
-        Node child = get_child(io, idx);
-        return child.set(io, key, value);
+        return false;
     }
 
     template<class K, class V>
@@ -430,5 +410,23 @@ namespace btree {
     template<class K, class V>
     int32_t BTree<K, V>::BTreeNode::max_child_num() const {
         return 2 * t;
+    }
+
+    template<class K, class V>
+    std::tuple<typename BTree<K, V>::BTreeNode, Entry<K,V>, int32_t>
+    BTree<K, V>::BTreeNode::find_leaf_node_with_key(IOManagerT& io, const K& key) const {
+        Node curr = *this;
+
+        while (!curr.is_leaf) {
+            int32_t idx = curr.find_key_bin_search(io, key);
+            Entry tmp = curr.get_entry(io, idx);
+            if (tmp.key == key)
+                return std::make_tuple(curr, tmp, idx);
+            curr = curr.get_child(io, idx);
+        }
+
+        int idx = curr.find_key_bin_search(io, key);
+        EntryT dummy = curr.get_entry(io, idx);
+        return std::make_tuple(curr, dummy, idx);
     }
 }
