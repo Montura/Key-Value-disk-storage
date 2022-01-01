@@ -53,8 +53,6 @@ namespace btree {
 
         bool is_ready();
 
-        int32_t get_node_size_in_bytes(Node &node);
-
         void write_entry(const K &key, const V &value, const int64_t pos);
 
         EntryT read_entry(const int64_t pos);

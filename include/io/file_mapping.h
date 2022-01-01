@@ -18,7 +18,6 @@ namespace btree {
         template<typename ValueT, typename ResulT>
         std::pair<ResulT, int32_t> read_next_data();
 
-
         template<typename T>
         void write_next(T val);
 
@@ -30,23 +29,17 @@ namespace btree {
         template<typename T>
         void read_node_vector(std::vector<T> &vec);
 
+        int64_t get_pos() const;
         void set_pos(int64_t pos);
-
-        int64_t get_pos();
-
-        int16_t read_int16();
-
-        int32_t read_int32();
-
-        int64_t read_int64();
-
-        uint8_t read_byte();
-
         void set_file_pos_to_end();
 
-        void shrink_to_fit();
+        uint8_t read_byte();
+        int16_t read_int16();
+        int32_t read_int32();
+        int64_t read_int64();
 
-        bool isEmpty();
+        void shrink_to_fit();
+        bool isEmpty() const;
 
         const std::string path;
     private:
@@ -57,7 +50,6 @@ namespace btree {
         int64_t write_container(T val);
 
         void resize(int64_t new_size);
-
         void remap();
 
         uint8_t *mapped_region_begin;

@@ -179,7 +179,7 @@ int64_t MappedFile::read_int64() {
     return read_next<int64_t>();
 }
 
-int64_t MappedFile::get_pos() {
+int64_t MappedFile::get_pos() const {
     return m_pos;
 }
 
@@ -197,7 +197,7 @@ void MappedFile::shrink_to_fit() {
     remap();
 }
 
-bool MappedFile::isEmpty() {
+bool MappedFile::isEmpty() const {
     return m_size == 0;
 }
 }

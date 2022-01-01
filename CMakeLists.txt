@@ -5,6 +5,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     set(Boost_USE_STATIC_LIBS ON)
 endif()
 
+message(${CMAKE_CXX_COMPILER})
+message(${CMAKE_CXX_COMPILER_VERSION})
+
 find_package(Boost REQUIRED)
 find_package(Boost COMPONENTS iostreams REQUIRED)
 if(NOT Boost_FOUND)
@@ -33,9 +36,6 @@ target_compile_definitions(key-value-storage PRIVATE
     USE_BOOST_PREBUILT_STATIC_LIBRARY=false
 #    UNIT_TESTS
 )
-
-message(${CMAKE_CXX_COMPILER})
-message(${CMAKE_CXX_COMPILER_VERSION})
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     target_compile_options(key-value-storage PRIVATE

@@ -4,17 +4,6 @@
 
 namespace btree {
     template<typename K, typename V>
-    int32_t IOManager<K, V>::get_node_size_in_bytes(Node &node) {
-        static_assert(std::is_same_v<decltype(node.m_pos), typename decltype(node.key_pos)::value_type>);
-        static_assert(std::is_same_v<decltype(node.m_pos), typename decltype(node.child_pos)::value_type>);
-        return
-            sizeof(node.used_keys) +
-            sizeof(node.is_leaf) +
-            node.key_pos.size() * sizeof(node.m_pos) +
-            node.child_pos.size() * sizeof(node.m_pos);
-    }
-
-    template<typename K, typename V>
     int64_t IOManager<K, V>::write_header() {
         file.set_pos(0);
 

@@ -79,7 +79,7 @@ namespace btree {
             root->m_pos = root_pos;
             root->used_keys++;
 
-            auto entry_pos = root->m_pos + io_manager.get_node_size_in_bytes(*root);
+            auto entry_pos = root->m_pos + root->get_node_size_in_bytes();
             root->key_pos[0] = entry_pos;
 
             // write node root and key|value
@@ -113,11 +113,5 @@ namespace btree {
                 root->insert_non_full(io_manager, key, value);
             }
         }
-    }
-
-    template<typename K, typename V>
-    void BTree<K, V>::traverse() {
-        if (!root)
-            root->traverse(io_manager);
     }
 }

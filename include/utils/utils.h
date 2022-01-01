@@ -9,6 +9,20 @@ namespace btree {
     static_assert(sizeof(int32_t) == sizeof(size_t));
 #endif
     template<typename T>
+    void shift_right_by_one(std::vector <T> &v, const int32_t from, const int32_t to) {
+        for (auto i = from; i > to; --i) {
+            v[i] = v[i - 1];
+        }
+    }
+
+    template<typename T>
+    void shift_left_by_one(std::vector <T> &v, const int32_t from, const int32_t to) {
+        for (auto i = from; i < to; ++i) {
+            v[i - 1] = v[i];
+        }
+    }
+
+    template<typename T>
     struct is_string {
         static constexpr bool value = false;
     };

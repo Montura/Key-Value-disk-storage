@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utils/utils.h"
+
 namespace btree {
     template<class K, class V>
     BTree<K, V>::BTreeNode::BTreeNode(const int16_t &t, bool is_leaf) :
@@ -15,20 +17,15 @@ namespace btree {
         return used_keys == max_key_num();
     }
 
-    template<typename T>
-    inline void shift_right_by_one(std::vector <T> &v, const int32_t from, const int32_t to) {
-//    assert(from >= 0 && to <= v.size() && from >= to);
-        for (auto i = from; i > to; --i) {
-            v[i] = v[i - 1];
-        }
-    }
-
-    template<typename T>
-    inline void shift_left_by_one(std::vector <T> &v, const int32_t from, const int32_t to) {
-//    assert(to >= 0 && from <= v.size() && from <= to);
-        for (auto i = from; i < to; ++i) {
-            v[i - 1] = v[i];
-        }
+    template<typename K, typename V>
+    int32_t BTree<K, V>::BTreeNode::get_node_size_in_bytes() const {
+        static_assert(std::is_same_v<decltype(m_pos), typename decltype(key_pos)::value_type>);
+        static_assert(std::is_same_v<decltype(m_pos), typename decltype(child_pos)::value_type>);
+        return
+            sizeof(used_keys) +
+            sizeof(is_leaf) +
+            key_pos.size() * sizeof(m_pos) +
+            child_pos.size() * sizeof(m_pos);
     }
 
     template<class K, class V>
@@ -434,27 +431,4 @@ namespace btree {
     int32_t BTree<K, V>::BTreeNode::max_child_num() const {
         return 2 * t;
     }
-
-//template<class K, class V>
-//void BTree<K,V>::BTreeNode::traverse(IOManagerT& io) {
-//    int32_t i;
-//    Node node;
-//
-//    for (i = 0; i < used_keys; ++i) {
-//        if (!is_leaf) {
-//            node = get_child(io, i);
-//            cout << endl;
-//            node.traverse(io);
-//            cout << endl;
-//        }
-//        entry = read_entry(io, i);
-//        cout << "[key]: " << entry->key << " - [value]: " << entry->value << " ";
-//    }
-//    if (!is_leaf) {
-//        node = get_child(io, i);
-//        cout << endl;
-//        node.traverse(io);
-//        cout << endl;
-//    }
-//}
 }
