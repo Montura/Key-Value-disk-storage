@@ -7,10 +7,12 @@
 #include "utils/utils.h"
 
 namespace btree {
-    template<typename K, typename V>
+    template <typename K, typename V>
+    class IOManager;
+
+    template <typename K, typename V>
     struct Entry {
         typedef typename std::conditional_t<std::is_arithmetic_v<V>, V, const uint8_t *> ValueType;
-
         const K key;
 
     private:
@@ -30,21 +32,15 @@ namespace btree {
             return (key == -1) && (value == 0);
         }
 
-        std::optional<V> get_value() const {
+        std::optional<V> get_value(IOManager<K,V>& io) const {
             if (!value)
                 return std::nullopt;
-            if constexpr (is_string_v<V>) {
-                auto *casted_value = reinterpret_cast<const typename V::value_type *>(value);
-                return V(casted_value, size);
-            } else {
-                return V(value);
-            }
+            return io.read_value(value, size);
         }
 
-        bool has_value(const V &other) {
+        bool has_value(IOManager<K,V>& io, const V &other) const {
             if constexpr (is_string_v<V>) {
-                auto *casted_value = reinterpret_cast<const typename V::value_type *>(value);
-                const V &v = V(casted_value, size);
+                auto v = get_value(io).value();
                 return (size == static_cast<decltype(size)>(other.size())) && (v == other);
             } else {
                 return value == other;

@@ -83,6 +83,16 @@ namespace btree {
     }
 
     template<typename K, typename V>
+    std::optional<V> IOManager<K, V>::read_value(const ValueType value, const int32_t size) {
+        if constexpr (is_string_v<V>) {
+            auto *casted_value = reinterpret_cast<const typename V::value_type *>(value);
+            return V(casted_value, size);
+        } else {
+            return V(value);
+        }
+    }
+
+    template<typename K, typename V>
     void IOManager<K, V>::write_flag(uint8_t flag, const int64_t pos) {
         file.set_pos(pos);
 

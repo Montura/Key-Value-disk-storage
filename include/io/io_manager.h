@@ -1,6 +1,6 @@
+#pragma once
 #include "file_mapping.h"
 #include "entry.h"
-#include "btree.h"
 
 /**
  * Storage structures:
@@ -33,8 +33,12 @@
 */
 namespace btree {
     template<typename K, typename V>
+    class BTree;
+
+    template <typename K, typename V>
     class IOManager {
         using EntryT = Entry<K, V>;
+        using ValueType = typename Entry<K, V>::ValueType;
         using Node = typename BTree<K, V>::Node;
 
         const int16_t t = 0;
@@ -56,6 +60,8 @@ namespace btree {
         EntryT read_entry(const int64_t pos);
 
         K read_key(const int64_t pos);
+
+        std::optional<V> read_value(const ValueType value, const int32_t size);
 
         void write_flag(uint8_t flag, const int64_t pos);
 

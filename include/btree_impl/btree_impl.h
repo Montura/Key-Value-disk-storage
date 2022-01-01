@@ -34,7 +34,7 @@ namespace btree {
     template<typename K, typename V>
     std::optional <V> BTree<K, V>::get(const K &key) {
         EntryT res = root ? root->find(io_manager, key) : EntryT{};
-        return res.get_value();
+        return res.get_value(io_manager);
     }
 
     template<typename K, typename V>

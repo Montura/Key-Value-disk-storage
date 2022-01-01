@@ -8,9 +8,6 @@
 
 namespace btree {
 
-template<typename K, typename V>
-class IOManager;
-
 /** Tree */
 template<typename K, typename V>
 class BTree final {
@@ -97,6 +94,7 @@ private:
     };
 };
 }
+
 #include "io/io_manager.h"
 #include "btree_impl/btree_impl.h"
 #include "btree_impl/btree_node_impl.h"
