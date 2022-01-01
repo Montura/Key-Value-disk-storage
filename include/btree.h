@@ -45,47 +45,37 @@ private:
     public:
         BTreeNode(const int16_t &t, bool isLeaf);
 
-        EntryT find(IOManagerT& io_manager, const K &key);
-
         bool set(IOManagerT& io_manager, const K &key, const V &value);
-
-        K get_key(IOManagerT& io_manager, const int32_t idx);
-
         bool remove(IOManagerT& io_manager, const K &key);
+
+        EntryT find(IOManagerT& io_manager, const K &key) const;
+        K get_key(IOManagerT& io_manager, const int32_t idx) const;
 
         int32_t get_node_size_in_bytes() const;
         bool is_full() const;
 
         void split_child(IOManagerT &manager, const int32_t idx, Node &curr_node);
-
         void insert_non_full(IOManagerT &io_manager, const K &key, const V &value);
     private:
-        std::tuple<Node, EntryT, int32_t> find_leaf_node_with_key(IOManagerT &io_manager, const K &key) const;
-
         int32_t max_key_num() const;
-
         int32_t max_child_num() const;
 
-        int32_t find_key_bin_search(IOManagerT &io_manager, const K &key);
+        int32_t find_key_bin_search(IOManagerT &io_manager, const K &key) const;
+        std::tuple<Node, EntryT, int32_t> find_leaf_node_with_key(IOManagerT &io_manager, const K &key) const;
 
-        Entry<K, V> get_entry(IOManagerT &io_manager, const int32_t idx);
-
-        Node get_child(IOManagerT &io_manager, const int32_t idx);
+        Entry<K, V> get_entry(IOManagerT &io_manager, const int32_t idx) const;
+        Node get_child(IOManagerT &io_manager, const int32_t idx) const;
 
         bool remove_from_leaf(IOManagerT &io_manager, const int32_t idx);
-
         bool remove_from_non_leaf(IOManagerT &io_manager, const int32_t idx);
 
         int64_t get_prev_entry_pos(IOManagerT &io_manager, const int32_t idx);
-
         int64_t get_next_entry_pos(IOManagerT &io_manager, const int32_t idx);
 
         void merge_node(IOManagerT &io_manager, const int32_t idx);
-
         void fill_node(IOManagerT &io_manager, const int32_t idx);
 
         void borrow_from_prev_node(IOManagerT &io_manager, const int32_t idx);
-
         void borrow_from_next_node(IOManagerT &io_manager, const int32_t idx);
     };
 };

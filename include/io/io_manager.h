@@ -51,36 +51,30 @@ namespace btree {
 
         IOManager(const std::string &path, const int16_t user_t);
 
-        bool is_ready();
+        bool is_ready() const;
 
+        int64_t write_node(const Node &node, const int64_t pos);
         void write_entry(const K &key, const V &value, const int64_t pos);
 
-        EntryT read_entry(const int64_t pos);
+        Node read_node(const int64_t pos);
+        void read_node(Node *node, const int64_t pos);
 
         K read_key(const int64_t pos);
-
         std::optional<V> read_value(const ValueType value, const int32_t size);
+        EntryT read_entry(const int64_t pos);
 
         void write_flag(uint8_t flag, const int64_t pos);
 
         int64_t read_header();
-
         int64_t write_header();
 
         void write_invalidated_root();
-
         void write_new_pos_for_root_node(const int64_t posRoot);
-
-        int64_t write_node(const Node &node, const int64_t pos);
-
-        Node read_node(const int64_t pos);
-
-        void read_node(Node *node, const int64_t pos);
 
         int64_t get_file_pos_end();
 
     private:
-        void validate(bool expression, const std::string &msg);
+        void validate(bool expression, const std::string &msg) const;
     };
 }
 #include "io_manager_impl.h"

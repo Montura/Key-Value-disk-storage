@@ -43,7 +43,7 @@ namespace btree {
     IOManager<K, V>::IOManager(const std::string &path, const int16_t user_t) : t(user_t), file(path, 0) {}
 
     template<typename K, typename V>
-    bool IOManager<K, V>::is_ready() {
+    bool IOManager<K, V>::is_ready() const {
         return !file.isEmpty();
     }
 
@@ -139,9 +139,8 @@ namespace btree {
     }
 
     template<typename K, typename V>
-    void IOManager<K, V>::validate(bool expression, const std::string &msg) {
-        if (!expression) {
+    void IOManager<K, V>::validate(bool expression, const std::string &msg) const {
+        if (!expression)
             throw std::logic_error(msg + " in " + file.path);
-        }
     }
 }

@@ -52,7 +52,7 @@ namespace btree {
         void resize(int64_t new_size);
         void remap();
 
-        uint8_t *mapped_region_begin;
+        uint8_t* mapped_region_begin;
         int64_t m_pos;
         int64_t m_size;
         int64_t m_capacity;

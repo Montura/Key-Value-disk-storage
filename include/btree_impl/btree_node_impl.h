@@ -71,7 +71,7 @@ namespace btree {
     }
 
     template<class K, class V>
-    K BTree<K, V>::BTreeNode::get_key(IOManagerT &io, const int32_t idx) {
+    K BTree<K, V>::BTreeNode::get_key(IOManagerT &io, const int32_t idx) const {
         if (idx < 0 || idx > used_keys - 1)
             return -1; // nullptr
 
@@ -79,7 +79,7 @@ namespace btree {
     }
 
     template<class K, class V>
-    Entry <K, V> BTree<K, V>::BTreeNode::get_entry(IOManagerT &io, const int32_t idx) {
+    Entry <K, V> BTree<K, V>::BTreeNode::get_entry(IOManagerT &io, const int32_t idx) const {
         if (idx < 0 || idx > used_keys - 1)
             return EntryT();
 
@@ -87,7 +87,7 @@ namespace btree {
     }
 
     template<class K, class V>
-    typename BTree<K, V>::BTreeNode BTree<K, V>::BTreeNode::get_child(IOManagerT &io, const int32_t idx) {
+    typename BTree<K, V>::BTreeNode BTree<K, V>::BTreeNode::get_child(IOManagerT &io, const int32_t idx) const {
         if (idx < 0 || idx > used_keys)
             return Node(0, false); // dummy
 
@@ -130,7 +130,7 @@ namespace btree {
     }
 
     template<class K, class V>
-    int32_t BTree<K, V>::BTreeNode::find_key_bin_search(IOManagerT &io, const K &key) {
+    int32_t BTree<K, V>::BTreeNode::find_key_bin_search(IOManagerT &io, const K &key) const {
         int32_t left = 0;
         int32_t right = used_keys - 1;
         int32_t mid = 0;
@@ -160,7 +160,7 @@ namespace btree {
     }
 
     template<class K, class V>
-    Entry <K, V> BTree<K, V>::BTreeNode::find(IOManagerT &io, const K &key) {
+    Entry <K, V> BTree<K, V>::BTreeNode::find(IOManagerT &io, const K &key) const {
         auto [curr, entry, idx] = find_leaf_node_with_key(io, key);
         if (entry.key == key)
             return entry;

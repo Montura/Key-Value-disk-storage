@@ -28,7 +28,7 @@ namespace btree {
 
         Entry(const K &key, const ValueType value, const int size) : key(key), value(value), size(size) {}
 
-        bool is_dummy() {
+        bool is_dummy() const {
             return (key == -1) && (value == 0);
         }
 
