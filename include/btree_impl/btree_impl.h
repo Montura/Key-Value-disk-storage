@@ -24,8 +24,20 @@ namespace btree {
     void BTree<K, V>::set(const K &key, const V &value) {
 //    pthread_rwlock_wrlock(&(rwLock));
 
-        if (!root.is_valid() || !root.set(io_manager, key, value))
-            insert(key, value);
+        EntryT e {key, value};
+        if (!root.is_valid() || !root.set(io_manager, e))
+            insert(e);
+
+//    pthread_rwlock_unlock(&(rwLock));
+    }
+
+    template<typename K, typename V>
+    void BTree<K, V>::set(const K &key, const V& value, int32_t size) {
+//    pthread_rwlock_wrlock(&(rwLock));
+
+        EntryT e {key, value, size};
+        if (!root.is_valid() || !root.set(io_manager, e))
+            insert(e);
 
 //    pthread_rwlock_unlock(&(rwLock));
     }
@@ -33,7 +45,7 @@ namespace btree {
     template<typename K, typename V>
     std::optional <V> BTree<K, V>::get(const K &key) {
         EntryT res = root.is_valid() ? root.find(io_manager, key) : EntryT{};
-        return res.get_value(io_manager);
+        return res.value();
     }
 
     template<typename K, typename V>
@@ -68,7 +80,7 @@ namespace btree {
     }
 
     template<typename K, typename V>
-    void BTree<K, V>::insert(const K &key, const V &value) {
+    void BTree<K, V>::insert(const EntryT& e) {
         if (!root.is_valid()) {
             // write header
             auto root_pos = io_manager.write_header();
@@ -82,7 +94,7 @@ namespace btree {
 
             // write node root and key|value
             io_manager.write_node(root, root.m_pos);
-            io_manager.write_entry(key, value, entry_pos);
+            io_manager.write_entry(e, entry_pos);
         } else {
             if (root.is_full()) {
                 Node newRoot(t, false);
@@ -97,18 +109,18 @@ namespace btree {
                 // Find the child have new key
                 int32_t i = 0;
                 K root_key = newRoot.get_key(io_manager, 0);
-                if (root_key < key)
+                if (root_key < e.key)
                     i++;
 
                 // Read node
                 auto pos = newRoot.child_pos[i];
                 Node node = io_manager.read_node(pos);
-                node.insert_non_full(io_manager, key, value);
+                node.insert_non_full(io_manager, e);
 
                 io_manager.read_node(&root, newRoot.m_pos);
                 io_manager.write_new_pos_for_root_node(newRoot.m_pos);
             } else {
-                root.insert_non_full(io_manager, key, value);
+                root.insert_non_full(io_manager, e);
             }
         }
     }

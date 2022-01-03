@@ -22,6 +22,16 @@ namespace btree {
         }
     }
 
+    template <typename T>
+    struct identity_type {
+        using type = std::remove_pointer_t<T>;
+    };
+
+    template <typename T>
+    struct underlying_type {
+        using type = typename T::value_type;
+    };
+
     template<typename T>
     struct is_string {
         static constexpr bool value = false;
@@ -76,7 +86,6 @@ namespace btree {
         }
     }
 
-
     template<typename PtrT>
     constexpr uint8_t *cast_to_uint8_t_data(PtrT t) {
         return reinterpret_cast<uint8_t *>(t);
@@ -85,5 +94,10 @@ namespace btree {
     template<typename PtrT>
     constexpr const uint8_t *cast_to_const_uint8_t_data(PtrT t) {
         return reinterpret_cast<const uint8_t *>(t);
+    }
+
+    void validate(bool expression, const std::string &msg) {
+        if (!expression)
+            throw std::logic_error(msg);
     }
 }

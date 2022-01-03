@@ -23,11 +23,13 @@ public:
 
     bool exist(const K &key);
     void set(const K &key, const V &value);
+    void set(const K &key, const V& value, const int32_t size);
+
     std::optional<V> get(const K &key);
     bool remove(const K &key);
 
 private:
-    void insert(const K &key, const V &value);
+    void insert(const EntryT& e);
 
     IOManager<K, V> io_manager;
     using IOManagerT = IOManager<K, V>;
@@ -44,7 +46,7 @@ private:
         explicit BTreeNode();
         BTreeNode(const int16_t &t, bool isLeaf);
 
-        bool set(IOManagerT& io_manager, const K &key, const V &value);
+        bool set(IOManagerT& io_manager, const EntryT& e);
         bool remove(IOManagerT& io_manager, const K &key);
 
         EntryT find(IOManagerT& io_manager, const K &key) const;
@@ -55,7 +57,7 @@ private:
         bool is_valid() const;
 
         void split_child(IOManagerT &manager, const int32_t idx, Node &curr_node);
-        void insert_non_full(IOManagerT &io_manager, const K &key, const V &value);
+        void insert_non_full(IOManagerT &io_manager, const EntryT& e);
     private:
         int32_t max_key_num() const;
         int32_t max_child_num() const;

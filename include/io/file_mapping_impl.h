@@ -50,44 +50,42 @@ MappedFile::~MappedFile() {
 }
 
 template <typename T>
-T MappedFile::read_next() {
-    if constexpr(std::is_arithmetic_v<T>) {
-        static_assert(std::is_arithmetic_v<T>);
-        auto *value_begin = mapped_region_begin + m_pos;
-        m_pos += sizeof(T);
-        return *(reinterpret_cast<T *>(value_begin));
-    } else {
-        static_assert(is_string_v<T> || is_vector_v<T>);
-        return read_next_data<T>();
-    }
+void MappedFile::write_next_data(const T& val, const int32_t total_size_in_bytes) {
+    if constexpr(std::is_pointer_v<T>)
+        m_pos = write_blob(val, total_size_in_bytes);
+    else
+        m_pos = write_arithmetic(val);
+    m_capacity = std::max(m_pos, m_capacity);
 }
 
-template <typename ValueT, typename ResulT>
-std::pair<ResulT, int32_t> MappedFile::read_next_data() {
-    if constexpr(is_string_v<ValueT> || is_vector_v<ValueT>) {
-        int32_t element_count = *(reinterpret_cast<int32_t*>(mapped_region_begin + m_pos));
-        // todo: ValueT has to know the size of ValueT::value_type
-        //      so, is obsolete:  sizeof(typename ValueT::value_type) * element_count; ????
-        int32_t total_size = element_count;
-        m_pos += sizeof (int32_t);
+template <typename EntryT>
+std::pair<typename EntryT::ValueType, int32_t> MappedFile::read_next_data() {
+    typedef typename EntryT::ValueType ValueType;
+
+    if constexpr(std::is_pointer_v<ValueType>) {
+        auto len = read_next_primitive<int32_t>();
         auto *value_begin = mapped_region_begin + m_pos;
-        m_pos += total_size;
-        return std::make_pair(cast_to_const_uint8_t_data(value_begin), total_size);
+        m_pos += len;
+        return std::make_pair(cast_to_const_uint8_t_data(value_begin), len);
     } else {
-        auto *value_begin = mapped_region_begin + m_pos;
-        m_pos += sizeof(ValueT);
-        return std::make_pair(*(reinterpret_cast<ResulT*>(value_begin)), sizeof(ValueT));
+        static_assert(std::is_arithmetic_v<ValueType>);
+        return std::make_pair(read_next_primitive<ValueType>(), sizeof(ValueType));
     }
 }
 
 template <typename T>
-void MappedFile::write_next(T val) {
-    if constexpr(std::is_arithmetic_v<T>)
-        m_pos = write_arithmetic(val);
-    else
-        m_pos = write_container(val);
-
+void MappedFile::write_next_primitive(const T val) {
+    static_assert(std::is_arithmetic_v<T>);
+    m_pos = write_arithmetic(val);
     m_capacity = std::max(m_pos, m_capacity);
+}
+
+template <typename T>
+T MappedFile::read_next_primitive() {
+    static_assert(std::is_arithmetic_v<T>);
+    auto *value_begin = mapped_region_begin + m_pos;
+    m_pos += sizeof(T);
+    return *(reinterpret_cast<T *>(value_begin));
 }
 
 template <typename T>
@@ -126,19 +124,17 @@ int64_t MappedFile::write_arithmetic(T val) {
 }
 
 template <typename T>
-int64_t MappedFile::write_container(T val) {
-    static_assert(is_string_v<T> || is_vector_v<T>);
-
+int64_t MappedFile::write_blob(T source_data, const int32_t total_size_in_bytes) {
     // write size
-    int32_t elem_count = val.size(); // todo: to provide the SIZE of element_count from header
-    m_pos = write_arithmetic(elem_count);
+    int32_t len = total_size_in_bytes;
+    m_pos = write_arithmetic(len);
 
     // write values
-    int64_t total_bytes_size = sizeof(typename T::value_type) * elem_count;
+    int64_t total_bytes_size = total_size_in_bytes;
     if (m_pos + total_bytes_size > m_size)
         resize(std::max(2 * m_size, total_bytes_size));
 
-    auto* data = cast_to_uint8_t_data(val.data());
+    auto* data = cast_to_const_uint8_t_data(source_data);
     std::copy(data, data + total_bytes_size, mapped_region_begin + m_pos);
     return m_pos + total_bytes_size;
 }
@@ -168,15 +164,15 @@ void MappedFile::set_pos(int64_t pos) {
 }
 
 int16_t MappedFile::read_int16() {
-    return read_next<int16_t>();
+    return read_next_primitive<int16_t>();
 }
 
 int32_t MappedFile::read_int32() {
-    return read_next<int32_t>();
+    return read_next_primitive<int32_t>();
 }
 
 int64_t MappedFile::read_int64() {
-    return read_next<int64_t>();
+    return read_next_primitive<int64_t>();
 }
 
 int64_t MappedFile::get_pos() const {
@@ -184,7 +180,7 @@ int64_t MappedFile::get_pos() const {
 }
 
 uint8_t MappedFile::read_byte() {
-    return read_next<uint8_t>();
+    return read_next_primitive<uint8_t>();
 }
 
 void MappedFile::set_file_pos_to_end() {

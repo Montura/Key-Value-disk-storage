@@ -19,7 +19,7 @@ void test_arithmetics(T val_to_add) {
     // read
     file.set_pos(0);
     for (int i = 0; i < ITERATIONS; ++i) {
-        T tmp = file.read_next<T>();
+        T tmp = file.read_next_primitive<T>();
         assert(tmp == val_to_add + i);
     }
 }
@@ -59,7 +59,7 @@ void test_modify_and_save() {
     {
         MappedFile file(fmap, 32);
         for (int32_t i = 0; i < 1000000; ++i) {
-            auto anInt = file.read_next<int32_t>();
+            auto anInt = file.read_next_primitive<int32_t>();
             if (i % 1000 == 0) {
                 assert(anInt == -1);
             } else {

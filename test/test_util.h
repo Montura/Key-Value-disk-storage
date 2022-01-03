@@ -47,6 +47,12 @@ namespace btree_test {
     template<typename T>
     using generator = T (*)(int i);
 
+    static constexpr int32_t BLOB_SIZE = 5;
+
+    int32_t get_len_by_idx(int32_t const idx) {
+        return idx + 5;
+    }
+
 
     template<typename K, typename V>
     std::map<K, V> test_keys_create_exist(const std::string &path, int order, int total_elements, generator<V> gen) {
@@ -57,7 +63,11 @@ namespace btree_test {
         for (int i = 0; i < total_elements; ++i) {
             K key = i;
             V value = gen(i);
-            btree.set(key, value);
+            if constexpr(std::is_pointer_v<V>) {
+                btree.set(key, value, get_len_by_idx(i));
+            } else {
+                btree.set(key, value);
+            }
             verify_map[key] = value;
         }
 
@@ -73,6 +83,26 @@ namespace btree_test {
         return verify_map;
     }
 
+    template <typename V, typename MapIt>
+    int64_t check(int32_t idx, const std::optional<V>& actual_value, MapIt expected_value, const int64_t counter) {
+        if (actual_value.has_value()) {
+            if constexpr(std::is_pointer_v<V>) {
+                auto* expected = expected_value->second;
+                auto* actual = actual_value.value();
+                size_t len = get_len_by_idx(idx);
+                for (size_t k = 0; k < len; ++k) {
+                    assert(expected[k] == actual[k]);
+                }
+            } else {
+                assert(expected_value->second == actual_value.value());
+            }
+            return counter + 1;
+        } else {
+            assert(actual_value == std::nullopt);
+        }
+        return counter;
+    }
+
     template<typename K, typename V>
     int64_t test_values_get(const std::string &path, int order, int total_elements, const std::map<K, V> &verify_map) {
         BTree <K, V> btree(path, order);
@@ -81,8 +111,7 @@ namespace btree_test {
         for (int i = 0; i < total_elements; ++i) {
             auto expected_value = verify_map.find(i);
             auto actual_value = btree.get(i);
-            assert(expected_value->second == actual_value.value());
-            ++stat.total_found;
+            stat.total_found = check(i, actual_value, expected_value, stat.total_found);
         }
         assert(stat.contains_all());
         return stat.total_found;
@@ -94,29 +123,40 @@ namespace btree_test {
                                                    std::tuple<int, int, int> &keys_to_remove) {
         BTree <K, V> btree(path, order);
 
-        auto[r1, r2, r3] = keys_to_remove;
+        auto [r1, r2, r3] = keys_to_remove;
+
+        auto onErase = [&](const int i){
+            auto it = verify_map.find(i);
+
+            if (it != verify_map.end()) {
+                if constexpr(std::is_pointer_v<V>) {
+                    delete it->second;
+                }
+                verify_map.erase(it);
+            }
+        };
 
         TestStat stat(total_elements);
         for (int i = 0; i < total_elements; i += r1) {
             stat.total_removed += btree.remove(i);
-            verify_map.erase(i);
+            onErase(i);
         }
 
         for (int i = 0; i < total_elements; i += r2) {
             stat.total_removed += btree.remove(i);
-            verify_map.erase(i);
+            onErase(i);
         }
 
         for (int i = 0; i < 50; ++i) {
-            verify_map.erase(r1);
+            onErase(r1);
             stat.total_removed += btree.remove(r1);
 
             int v2 = 3 * r2;
-            verify_map.erase(v2);
+            onErase(v2);
             stat.total_removed += btree.remove(v2);
 
             int v3 = 7 * r3;
-            verify_map.erase(v3);
+            onErase(v3);
             stat.total_removed += btree.remove(v3);
         }
 
@@ -138,12 +178,7 @@ namespace btree_test {
         for (int i = 0; i < total_elements; ++i) {
             auto expected_value = verify_map.find(i);
             auto actual_value = btree.get(i);
-            if (expected_value == verify_map.end()) {
-                assert(actual_value == std::nullopt);
-            } else {
-                assert(expected_value->second == actual_value.value());
-                ++stat.total_after_reopen;
-            }
+            stat.total_after_reopen = check(i, actual_value, expected_value, stat.total_after_reopen);
         }
         assert(stat.total_after_reopen == static_cast<int64_t>(verify_map.size()));
     }
@@ -160,11 +195,23 @@ namespace btree_test {
                 r = +[](int i) -> V { return std::to_wstring(i + 65) + L"abacaba"; };
             }
         } else {
-            r = +[](int i) -> V { return i + 65; };
+            if constexpr(std::is_same_v<V, const char*>) {
+                r = +[](int i) -> V {
+                    int len = get_len_by_idx(i);
+                    auto blob = new char[len];
+                    for (int k = 0; k < len; ++k) {
+                        blob[k] = 2;
+                    }
+                    return blob;
+                };
+            } else {
+                r = +[](int i) -> V { return i + 65; };
+            }
         }
         auto verify_map = test_keys_create_exist<K, V>(db_name, order, n, r);
+        auto total_added = verify_map.size();
         auto total_found = test_values_get(db_name, order, n, verify_map);
-        auto[total_removed, total_after_remove] = test_values_remove(db_name, order, n, verify_map, keys_to_remove);
+        auto [total_removed, total_after_remove] = test_values_remove(db_name, order, n, verify_map, keys_to_remove);
         test_values_after_remove(db_name, order, n, verify_map);
         auto t2 = high_resolution_clock::now();
 
@@ -172,10 +219,15 @@ namespace btree_test {
         duration<double, std::milli> ms_double = t2 - t1;
 
         cout << "Passed for " + db_name << ": " <<
-             "\t added: " << n <<
+             "\t added: " << total_added <<
              ", found: " << total_found <<
              ", removed: " << total_removed <<
              ", total_after_remove: " << total_after_remove <<
              " in " << ms_double.count() << "ms" << endl;
+        if constexpr(std::is_pointer_v<V>) {
+            for (auto &data: verify_map) {
+                delete data.second;
+            }
+        }
     }
 }

@@ -108,6 +108,7 @@ void test() {
             run<int32_t, double>(db_name + "_d" + end, order, n, keys_to_remove);
             run<int32_t, std::string>(db_name + "_str" + end, order, n, keys_to_remove);
             run<int32_t, std::wstring>(db_name + "_wtr" + end, order, n, keys_to_remove);
+            run<int32_t, const char*>(db_name + "_blob" + end, order, n, keys_to_remove);
         }
         std::cout << "iter: " << i << endl;
     }

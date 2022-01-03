@@ -106,13 +106,13 @@ namespace btree {
         return io.read_node(child_pos[idx]);
     }
 
-    template<class K, class V>
-    void BTree<K, V>::BTreeNode::insert_non_full(IOManagerT &io, const K &key, const V &value) {
+    template <class K, class V>
+    void BTree<K, V>::BTreeNode::insert_non_full(IOManagerT &io, const EntryT& e) {
         if (is_leaf) {
             auto idx = used_keys - 1;
             K curr_key = get_key(io, idx);
 
-            while (idx >= 0 && curr_key > key) {
+            while (idx >= 0 && curr_key > e.key) {
                 key_pos[idx + 1] = key_pos[idx];
                 idx--;
                 curr_key = get_key(io, idx);
@@ -124,20 +124,20 @@ namespace btree {
 
             // Write node and entry
             io.write_node(*this, m_pos);
-            io.write_entry(key, value, pos);
+            io.write_entry(e, pos);
         } else {
-            auto idx = find_key_bin_search(io, key);
+            auto idx = find_key_bin_search(io, e.key);
             Node node = get_child(io, idx);
 
             if (node.is_full()) {
                 split_child(io, idx, node);
                 K curr_key = get_key(io, idx);
-                if (curr_key < key)
+                if (curr_key < e.key)
                     idx++;
             }
 
             node = get_child(io, idx);
-            node.insert_non_full(io, key, value);
+            node.insert_non_full(io, e);
         }
     }
 
@@ -181,14 +181,14 @@ namespace btree {
     }
 
     template<class K, class V>
-    bool BTree<K, V>::BTreeNode::set(IOManagerT &io, const K &key, const V &value) {
-        auto [curr, entry, idx] = find_leaf_node_with_key(io, key);
-        if (entry.key == key) {
-            if (!entry.is_equal(io, value)) {
+    bool BTree<K, V>::BTreeNode::set(IOManagerT &io, const EntryT& e) {
+        auto [curr, entry, idx] = find_leaf_node_with_key(io, e.key);
+        if (entry.key == e.key) {
+            if (entry != e) {
                 auto curr_pos = io.get_file_pos_end();
                 curr.key_pos[idx] = curr_pos;
 
-                io.write_entry(key, value, curr_pos);
+                io.write_entry(e, curr_pos);
                 io.write_node(curr, curr.m_pos);
             }
             return true;

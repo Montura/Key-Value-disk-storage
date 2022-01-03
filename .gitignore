@@ -5,3 +5,4 @@ cmake-build-debug
 Testing
 Makefile
 cmake_install.cmake
+*.txt
