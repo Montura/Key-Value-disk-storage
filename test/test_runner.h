@@ -15,11 +15,9 @@ namespace btree_test {
         explicit TestRunner(int iterations) : stat(iterations) {}
 
         template <typename K, typename V>
-        void run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
+        void run_single_thread(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
             auto t1 = high_resolution_clock::now();
-            auto value_generator = utils::create_value_generator<V>();
-            auto verify_map = test_keys_create_exist<K, V>(db_name, order, n, value_generator);
-            std::atomic<int64_t> total_added = verify_map.size();
+            auto verify_map = test_keys_create_exist<K, V>(db_name, order, n);
             test_get_values(db_name, order, n, verify_map);
             test_remove_keys(db_name, order, n, verify_map, keys_to_remove);
             test_after_remove(db_name, order, n, verify_map);
@@ -29,7 +27,7 @@ namespace btree_test {
             duration<double, std::milli> ms_double = t2 - t1;
 
             cout << "Passed for " + db_name << ": " <<
-                 "\t added: " << total_added <<
+                 "\t added: " << stat.total_added <<
                  ", found: " << stat.total_found <<
                  ", removed: " << stat.total_removed <<
                  ", total_after_remove: " << stat.total_after_remove <<
@@ -44,19 +42,20 @@ namespace btree_test {
 
     private:
         template <typename K, typename V>
-        std::map<K, V> test_keys_create_exist(const std::string& path, int order, int n, utils::generator<V> gen) {
+        std::map<K, V> test_keys_create_exist(const std::string& path, int order, int n) {
             BTree<K, V> btree(path, order);
-
             std::map<K, V> verify_map;
+
             for (int i = 0; i < n; ++i) {
                 K key = i;
-                V value = gen(i);
+                V value = utils::generate_value<V>(i);
                 if constexpr(std::is_pointer_v<V>) {
                     btree.set(key, value, utils::get_len_by_idx(i));
                 } else {
                     btree.set(key, value);
                 }
                 verify_map[key] = value;
+                stat.total_added++;
             }
 
             for (int i = 0; i < n; ++i)

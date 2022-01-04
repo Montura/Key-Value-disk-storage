@@ -6,6 +6,7 @@ namespace btree_test {
     class TestStat {
         const int64_t N;
     public:
+        std::atomic<int64_t> total_added = 0;
         std::atomic<int64_t> total_exist = 0;
         std::atomic<int64_t> total_not_exist = 0;
         std::atomic<int64_t> total_found = 0;
@@ -15,6 +16,10 @@ namespace btree_test {
         std::atomic<int64_t> total_after_reopen = 0;
 
         TestStat(int64_t N) : N(N) {
+        }
+
+        bool all_added() const {
+            return total_added == N;
         }
 
         bool all_exist() const {
@@ -42,6 +47,7 @@ namespace btree_test {
         }
 
         void clear_stat() {
+            total_added = 0;
             total_exist = 0;
             total_not_exist = 0;
             total_found = 0;
