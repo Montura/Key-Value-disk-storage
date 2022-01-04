@@ -7,14 +7,14 @@
 
 namespace btree {
     struct MappedFile {
-        MappedFile(const std::string &fn, int64_t bytes_num);
+        MappedFile(const std::string& fn, int64_t bytes_num);
 
         ~MappedFile();
 
         template <typename EntryT>
-        std::pair <typename EntryT::ValueType, int32_t> read_next_data();
+        std::pair<typename EntryT::ValueType, int32_t> read_next_data();
 
-        template<typename T>
+        template <typename T>
         void write_next_primitive(const T val);
 
         template <typename T>
@@ -24,11 +24,11 @@ namespace btree {
         void write_next_data(const T& val, const int32_t total_size_in_bytes);
 
         /** Warning: do not write vector size */
-        template<typename T>
+        template <typename T>
         void write_node_vector(const std::vector<T>& vec);
 
         /** Warning: do not read vector size */
-        template<typename T>
+        template <typename T>
         void read_node_vector(std::vector<T>& vec);
 
         int64_t get_pos() const;
@@ -45,7 +45,7 @@ namespace btree {
 
         const std::string path;
     private:
-        template<typename T>
+        template <typename T>
         int64_t write_arithmetic(T val);
 
         template <typename T>

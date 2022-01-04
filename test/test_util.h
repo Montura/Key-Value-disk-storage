@@ -6,9 +6,6 @@
 namespace btree_test {
     using namespace btree;
 
-    using BTreeIntInt = BTree<int32_t, int32_t>;
-
-
     class TestStat {
         const int64_t N;
     public:
@@ -44,7 +41,7 @@ namespace btree_test {
         return std::make_tuple(r1, r2, r3);
     }
 
-    template<typename T>
+    template <typename T>
     using generator = T (*)(int i);
 
     static constexpr int32_t BLOB_SIZE = 5;
@@ -53,8 +50,7 @@ namespace btree_test {
         return idx + 5;
     }
 
-
-    template<typename K, typename V>
+    template <typename K, typename V>
     std::map<K, V> test_keys_create_exist(const std::string &path, int order, int total_elements, generator<V> gen) {
         BTree <K, V> btree(path, order);
 
@@ -103,7 +99,7 @@ namespace btree_test {
         return counter;
     }
 
-    template<typename K, typename V>
+    template <typename K, typename V>
     int64_t test_values_get(const std::string &path, int order, int total_elements, const std::map<K, V> &verify_map) {
         BTree <K, V> btree(path, order);
 
@@ -117,7 +113,7 @@ namespace btree_test {
         return stat.total_found;
     }
 
-    template<typename K, typename V>
+    template <typename K, typename V>
     std::pair<int64_t, int64_t> test_values_remove(const std::string &path, int order,
                                                    int total_elements, std::map<K, V> &verify_map,
                                                    std::tuple<int, int, int> &keys_to_remove) {
@@ -169,7 +165,7 @@ namespace btree_test {
         return std::make_pair(stat.total_removed, stat.total_after_remove);
     }
 
-    template<typename K, typename V>
+    template <typename K, typename V>
     void
     test_values_after_remove(const std::string &path, int order, int total_elements, const std::map<K, V> &verify_map) {
         BTree <K, V> btree(path, order);
@@ -183,8 +179,7 @@ namespace btree_test {
         assert(stat.total_after_reopen == static_cast<int64_t>(verify_map.size()));
     }
 
-
-    template<typename K, typename V>
+    template <typename K, typename V>
     void run(const std::string &db_name, const int order, const int n, std::tuple<K, K, K> &keys_to_remove) {
         auto t1 = high_resolution_clock::now();
         generator<V> r;

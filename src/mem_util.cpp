@@ -5,14 +5,14 @@
 #include <vector>
 #include <unordered_map>
 
-template <class T>
+template <typename T>
 class CustomAllocator {
 public:
     typedef T value_type;
 
     CustomAllocator() noexcept = default;
 
-    template <class U>
+    template <typename U>
     explicit CustomAllocator (const CustomAllocator<U>&) noexcept {}
 
     T* allocate (std::size_t n) {

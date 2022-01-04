@@ -11,8 +11,7 @@ namespace btree {
         if (root_pos == IOManager<K, V>::INVALID_ROOT_POS)
             return;
 
-        root = Node(t, false);
-        io_manager.read_node(&root, root_pos);
+        root = io_manager.read_node(root_pos);
     }
 
     template<typename K, typename V>
@@ -71,7 +70,7 @@ namespace btree {
             } else {
                 auto pos = root.child_pos[0];
                 io_manager.write_new_pos_for_root_node(pos);
-                io_manager.read_node(&root, pos);
+                root = io_manager.read_node(pos);
             }
         }
 
@@ -117,7 +116,7 @@ namespace btree {
                 Node node = io_manager.read_node(pos);
                 node.insert_non_full(io_manager, e);
 
-                io_manager.read_node(&root, newRoot.m_pos);
+                root = io_manager.read_node(newRoot.m_pos);
                 io_manager.write_new_pos_for_root_node(newRoot.m_pos);
             } else {
                 root.insert_non_full(io_manager, e);

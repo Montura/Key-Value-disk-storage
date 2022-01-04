@@ -8,14 +8,14 @@ namespace btree {
 #else
     static_assert(sizeof(int32_t) == sizeof(size_t));
 #endif
-    template<typename T>
+    template <typename T>
     void shift_right_by_one(std::vector <T> &v, const int32_t from, const int32_t to) {
         for (auto i = from; i > to; --i) {
             v[i] = v[i - 1];
         }
     }
 
-    template<typename T>
+    template <typename T>
     void shift_left_by_one(std::vector <T> &v, const int32_t from, const int32_t to) {
         for (auto i = from; i < to; ++i) {
             v[i - 1] = v[i];
@@ -32,37 +32,43 @@ namespace btree {
         using type = typename T::value_type;
     };
 
-    template<typename T>
+    template <bool Condition>
+    using enable_if_t = typename std::enable_if<Condition, bool>::type;
+
+    template <bool Condition, typename TrueType, typename FalseType>
+    using conditional_t = typename std::conditional_t<Condition, TrueType, FalseType>;
+
+    template <typename T>
     struct is_string {
         static constexpr bool value = false;
     };
 
-    template<typename CharT, typename Traits, typename Alloc>
+    template <typename CharT, typename Traits, typename Alloc>
     struct is_string<std::basic_string<CharT, Traits, Alloc>> {
         static constexpr bool value = true;
     };
 
-    template<typename T>
+    template <typename T>
     inline constexpr bool is_string_v = is_string<T>::value;
 
-    template<typename T>
+    template <typename T>
     struct is_vector {
         static constexpr bool value = false;
     };
 
-    template<typename T, typename Alloc>
+    template <typename T, typename Alloc>
     struct is_vector<std::vector<T, Alloc>> {
         static constexpr bool value = true;
     };
 
-    template<typename T>
+    template <typename T>
     inline constexpr bool is_vector_v = is_vector<T>::value;
 
 
-    template<typename T>
+    template <typename T>
     using to_string = std::basic_string<T> (*)(int i);
 
-    template<typename V>
+    template <typename V>
     constexpr uint8_t get_element_size() {
         if constexpr (std::is_arithmetic_v<V>) {
             return sizeof(V);
@@ -74,7 +80,7 @@ namespace btree {
         }
     }
 
-    template<typename V>
+    template <typename V>
     constexpr uint8_t get_value_type_code() {
         if constexpr (std::is_arithmetic_v<V>) {
             return 0;
@@ -86,12 +92,12 @@ namespace btree {
         }
     }
 
-    template<typename PtrT>
+    template <typename PtrT>
     constexpr uint8_t *cast_to_uint8_t_data(PtrT t) {
         return reinterpret_cast<uint8_t *>(t);
     }
 
-    template<typename PtrT>
+    template <typename PtrT>
     constexpr const uint8_t *cast_to_const_uint8_t_data(PtrT t) {
         return reinterpret_cast<const uint8_t *>(t);
     }

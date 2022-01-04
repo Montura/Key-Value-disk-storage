@@ -32,13 +32,12 @@
  *     ----------–-----
 */
 namespace btree {
-    template<typename K, typename V>
+    template <typename K, typename V>
     class BTree;
 
     template <typename K, typename V>
     class IOManager {
         using EntryT = Entry<K, V>;
-        using ValueType = typename Entry<K, V>::ValueType;
         using Node = typename BTree<K, V>::Node;
 
         const int16_t t = 0;
@@ -49,7 +48,7 @@ namespace btree {
     public:
         static constexpr int64_t INVALID_ROOT_POS = -1;
 
-        IOManager(const std::string &path, const int16_t user_t);
+        IOManager(const std::string& path, const int16_t user_t);
 
         bool is_ready() const;
 
@@ -57,11 +56,8 @@ namespace btree {
         void write_entry(const EntryT& e, const int64_t pos);
 
         Node read_node(const int64_t pos);
-        void read_node(Node *node, const int64_t pos);
-
-        K read_key(const int64_t pos);
-        std::optional<V> read_value(const ValueType value, const int32_t size);
         EntryT read_entry(const int64_t pos);
+        K read_key(const int64_t pos);
 
         int64_t read_header();
         int64_t write_header();
