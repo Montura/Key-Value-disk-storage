@@ -71,11 +71,11 @@ namespace btree {
                 size_in_bytes(size) {}
 
         bool is_valid() const {
-            return (key != -1) && (data != 0);
+            return (key != -1) && (size_in_bytes != 0);
         }
 
         std::optional<V> value() const {
-            if (!data)
+            if (!size_in_bytes)
                 return std::nullopt;
 
             return cast_value();
