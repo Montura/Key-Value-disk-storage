@@ -11,6 +11,7 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
     *  `double`
     *  `std::string`
     *  `std::wstring`
+    *  `blob [const char*, blob_size]`
 * tested on 
     * MacOS (x86-64), compiler Apple clang version 13.0.0 (clang-1300.0.29.3)
     * Windows (x86|x86-64), Visual Studio 2019 Version 16.5.0 (cl v19.25.28610.4)
@@ -19,7 +20,6 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
 * file resizing on Windows
 
 #### Todo-list:
-* to add **blob**-value support
 * to add **coarse-grained synchronization**
 * to test on Linux
 
