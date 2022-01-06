@@ -45,16 +45,5 @@ namespace btree_test {
         bool found_all_the_remaining() const {
             return total_after_remove == (N - total_removed);
         }
-
-        void clear_stat() {
-            total_added = 0;
-            total_exist = 0;
-            total_not_exist = 0;
-            total_found = 0;
-            total_not_found = 0;
-            total_removed = 0;
-            total_after_remove = 0;
-            total_after_reopen = 0;
-        }
     };
 }

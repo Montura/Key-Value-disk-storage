@@ -9,42 +9,44 @@ namespace btree_test {
     using namespace btree;
     using namespace btree_test::utils;
 
-    struct TestRunner {
-        mutable TestStat stat;
+    template <typename K, typename V>
+    class TestRunner {
+        TestStat stat;
+        std::map<K, V> verify_map;
 
         explicit TestRunner(int iterations) : stat(iterations) {}
 
-        template <typename K, typename V>
-        void run_single_thread(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
+        ~TestRunner() {
+            if constexpr(std::is_pointer_v<V>) {
+                for (auto& data: verify_map) {
+                    delete data.second;
+                }
+            }
+        }
+    public:
+
+        static void run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
+            TestRunner<K, V> runner(n);
             auto t1 = high_resolution_clock::now();
-            auto verify_map = test_keys_create_exist<K, V>(db_name, order, n);
-            test_get_values(db_name, order, n, verify_map);
-            test_remove_keys(db_name, order, n, verify_map, keys_to_remove);
-            test_after_remove(db_name, order, n, verify_map);
+            runner.test_keys_create_exist(db_name, order, n);
+            runner.test_get_values(db_name, order, n);
+            runner.test_remove_keys(db_name, order, n, keys_to_remove);
+            runner.test_after_remove(db_name, order, n);
             auto t2 = high_resolution_clock::now();
 
             /* Getting number of milliseconds as a double. */
             duration<double, std::milli> ms_double = t2 - t1;
 
             cout << "Passed for " + db_name << ": " <<
-                 "\t added: " << stat.total_added <<
-                 ", found: " << stat.total_found <<
-                 ", removed: " << stat.total_removed <<
-                 ", total_after_remove: " << stat.total_after_remove <<
+                 "\t added: " << runner.stat.total_added <<
+                 ", found: " << runner.stat.total_found <<
+                 ", removed: " << runner.stat.total_removed <<
+                 ", total_after_remove: " << runner.stat.total_after_remove <<
                  " in " << ms_double.count() << "ms" << endl;
-            if constexpr(std::is_pointer_v<V>) {
-                for (auto& data: verify_map) {
-                    delete data.second;
-                }
-            }
-            stat.clear_stat();
         }
-
     private:
-        template <typename K, typename V>
-        std::map<K, V> test_keys_create_exist(const std::string& path, int order, int n) {
+        void test_keys_create_exist(const std::string& path, int order, int n) {
             BTree<K, V> btree(path, order);
-            std::map<K, V> verify_map;
 
             for (int i = 0; i < n; ++i) {
                 K key = i;
@@ -67,11 +69,9 @@ namespace btree_test {
                 stat.total_not_exist += btree.exist(max_key + i);
 
             assert(stat.any_does_not_exist());
-            return verify_map;
         }
 
-        template <typename K, typename V>
-        void test_get_values(const std::string& path, int order, int n, const std::map<K, V>& verify_map) {
+        void test_get_values(const std::string& path, int order, int n) {
             BTree<K, V> btree(path, order);
 
             for (int i = 0; i < n; ++i) {
@@ -82,9 +82,7 @@ namespace btree_test {
             assert(stat.contains_all());
         }
 
-        template <typename K, typename V>
-        void test_remove_keys(const std::string& path, int order, int n, std::map<K, V>& verify_map,
-                std::tuple<int, int, int>& keys_to_remove) {
+        void test_remove_keys(const std::string& path, int order, int n, std::tuple<int, int, int>& keys_to_remove) {
             BTree<K, V> btree(path, order);
 
             auto[r1, r2, r3] = keys_to_remove;
@@ -130,14 +128,15 @@ namespace btree_test {
             assert(stat.found_all_the_remaining());
         }
 
-        template <typename K, typename V>
-        void test_after_remove(const std::string& path, int order, int n, const std::map<K, V>& verify_map) {
+        void test_after_remove(const std::string& path, int order, int n) {
             BTree<K, V> btree(path, order);
 
             for (int i = 0; i < n; ++i) {
                 auto expected_value = verify_map.find(i);
                 auto actual_value = btree.get(i);
-                stat.total_after_reopen = utils::check(i, actual_value, expected_value, stat.total_after_reopen);
+                if (expected_value != verify_map.end()) {
+                    stat.total_after_reopen = utils::check(i, actual_value, expected_value, stat.total_after_reopen);
+                }
             }
             assert(stat.total_after_reopen == static_cast<int64_t>(verify_map.size()));
         }

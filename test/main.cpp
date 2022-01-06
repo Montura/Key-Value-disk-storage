@@ -94,18 +94,17 @@ void test() {
     std::string db_prefix = "../db_";
     std::string end = ".txt";
 
-    TestRunner runner(n);
-    for (int i = 0; i < 15; ++i) {
+    for (int i = 0; i < 2; ++i) {
         auto keys_to_remove = utils::generate_rand_keys();
-        for (int order = 2; order < 5; ++order) {
+        for (int order = 2; order < 15; ++order) {
             auto db_name = db_prefix + std::to_string(order);
-            runner.run_single_thread<int32_t, int32_t>(db_name + "_i32" + end, order, n, keys_to_remove);
-            runner.run_single_thread<int32_t, int64_t>(db_name + "_i64" + end, order, n, keys_to_remove);
-            runner.run_single_thread<int32_t, float>(db_name + "_f" + end, order, n, keys_to_remove);
-            runner.run_single_thread<int32_t, double>(db_name + "_d" + end, order, n, keys_to_remove);
-            runner.run_single_thread<int32_t, std::string>(db_name + "_str" + end, order, n, keys_to_remove);
-            runner.run_single_thread<int32_t, std::wstring>(db_name + "_wtr" + end, order, n, keys_to_remove);
-            runner.run_single_thread<int32_t, const char*>(db_name + "_blob" + end, order, n, keys_to_remove);
+            TestRunner<int32_t, int32_t>::run(db_name + "_i32" + end, order, n, keys_to_remove);
+            TestRunner<int32_t, int64_t>::run(db_name + "_i64" + end, order, n, keys_to_remove);
+            TestRunner<int32_t, float>::run(db_name + "_f" + end, order, n, keys_to_remove);
+            TestRunner<int32_t, double>::run(db_name + "_d" + end, order, n, keys_to_remove);
+            TestRunner<int32_t, std::string>::run(db_name + "_str" + end, order, n, keys_to_remove);
+            TestRunner<int32_t, std::wstring>::run(db_name + "_wtr" + end, order, n, keys_to_remove);
+            TestRunner<int32_t, const char*>::run(db_name + "_blob" + end, order, n, keys_to_remove);
         }
         std::cout << "iter: " << i << endl;
     }
