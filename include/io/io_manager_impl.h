@@ -98,7 +98,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    typename BTree<K, V>::Node IOManager<K, V>::read_node(const int64_t pos) {
+    BTreeNode<K, V> IOManager<K, V>::read_node(const int64_t pos) {
         file.set_pos(pos);
 
         Node node(t, false);

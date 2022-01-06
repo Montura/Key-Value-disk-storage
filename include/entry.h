@@ -4,12 +4,7 @@
 #include <cstdint>
 #include <optional>
 
-#include "utils/utils.h"
-
 namespace btree {
-    template <typename K, typename V>
-    class IOManager;
-
     template <typename K, typename V>
     class Entry {
         static constexpr bool V_is_arithmetic = std::is_arithmetic_v<V>;

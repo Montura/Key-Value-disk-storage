@@ -1,6 +1,7 @@
 #pragma once
+
 #include "file_mapping.h"
-#include "entry.h"
+#include "utils/forward_decl.h"
 
 /**
  * Storage structures:
@@ -33,12 +34,9 @@
 */
 namespace btree {
     template <typename K, typename V>
-    class BTree;
-
-    template <typename K, typename V>
     class IOManager {
+        using Node = BTreeNode<K, V>;
         using EntryT = Entry<K, V>;
-        using Node = typename BTree<K, V>::Node;
 
         const int16_t t = 0;
         MappedFile file;

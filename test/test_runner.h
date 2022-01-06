@@ -3,7 +3,7 @@
 
 #include "test_stat.h"
 #include "test_utils.h"
-#include "btree.h"
+#include "storage.h"
 
 namespace btree_test {
     using namespace btree;
@@ -13,6 +13,7 @@ namespace btree_test {
     class TestRunner {
         TestStat stat;
         std::map<K, V> verify_map;
+        Storage<K,V> storage;
 
         explicit TestRunner(int iterations) : stat(iterations) {}
 
@@ -46,7 +47,7 @@ namespace btree_test {
         }
     private:
         void test_keys_create_exist(const std::string& path, int order, int n) {
-            BTree<K, V> btree(path, order);
+            auto& btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
                 K key = i;
@@ -72,7 +73,7 @@ namespace btree_test {
         }
 
         void test_get_values(const std::string& path, int order, int n) {
-            BTree<K, V> btree(path, order);
+            auto& btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
                 auto expected_value = verify_map.find(i);
@@ -83,7 +84,7 @@ namespace btree_test {
         }
 
         void test_remove_keys(const std::string& path, int order, int n, std::tuple<int, int, int>& keys_to_remove) {
-            BTree<K, V> btree(path, order);
+            auto& btree = storage.open_volume(path, order);
 
             auto[r1, r2, r3] = keys_to_remove;
 
@@ -129,7 +130,7 @@ namespace btree_test {
         }
 
         void test_after_remove(const std::string& path, int order, int n) {
-            BTree<K, V> btree(path, order);
+            auto& btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
                 auto expected_value = verify_map.find(i);

@@ -94,9 +94,9 @@ void test() {
     std::string db_prefix = "../db_";
     std::string end = ".txt";
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 11; ++i) {
         auto keys_to_remove = utils::generate_rand_keys();
-        for (int order = 2; order < 15; ++order) {
+        for (int order = 2; order < 7; ++order) {
             auto db_name = db_prefix + std::to_string(order);
             TestRunner<int32_t, int32_t>::run(db_name + "_i32" + end, order, n, keys_to_remove);
             TestRunner<int32_t, int64_t>::run(db_name + "_i64" + end, order, n, keys_to_remove);
@@ -115,39 +115,6 @@ void at_exit_handler();
 int main() {
     std::srand(std::time(nullptr)); // use current time as seed for random generator
     test();
-
-//    {
-//        int n = 16;
-//        BTree<int, int> btree("../db_2_i32.txt", 2);
-//        {
-//            for (int i = 0; i < n; ++i) {
-//                btree.set(i, i + 65);
-//            }
-//        }
-//        for (int i = 0; i < n; ++i) {
-//            std::cout << btree.get(i).value_or(-1) << " ";
-//        }
-//        cout << endl;
-//
-//        // Launch the pool with four threads.
-//        int workers_count = 4;
-//        basio::thread_pool pool(4);
-//
-//        for(int i = 0; i < workers_count; ++i) {
-//            boost::asio::post(pool, [&btree, i] {
-//                auto guard = std::lock_guard(output_mutex);
-//                std::cout << "t_id: " << std::this_thread::get_id() << endl;
-//                auto start = i * 4;
-//                std::cout << "i = " << i  << endl;
-//                for (int j = start; j < start + 4; ++j) {
-//                    std::cout << "Get val " << btree.get(j).value_or(-1) << endl;
-//                }
-//            });
-//        }
-//        pool.wait();
-//    }
-
-
     return 0;
 }
 
