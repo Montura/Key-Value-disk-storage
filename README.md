@@ -20,11 +20,9 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
 * file resizing on Windows
 
 #### Todo-list:
-* to add **coarse-grained synchronization**
 * to test on Linux
 
-
-### Storage structures:
+### Volume structure:
 
  #### Header (6 bytes):
      - T                        |=> takes 2 bytes (tree degree)
@@ -59,6 +57,7 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
 
 #### Requirements:
    - [Boost Iostreams Library](https://www.boost.org/doc/libs/1_76_0/libs/iostreams/doc/index.html)
+   - [Boost Thread Library](https://www.boost.org/doc/libs/1_78_0/doc/html/thread.html)
 ```
 cmake . 
 ```
@@ -66,15 +65,32 @@ cmake .
 ### Usage exapmle 
 
 ```cpp
+    Storage<int32_t, int32_t> s;
+    
+    auto path = "../a.txt";
+    int tree_order = 2;
+    
     const int val = 65;
     {
-        BTree<int, int> b("../a.txt", 2);
-        b.set(0, val);
+        auto v = s.open_volume(path, tree_order);
+        v.set(0, val);
+        assert(v.get(0) == val);
     }
     {
-        BTree<int, int> b("../a.txt", 2);
-        auto value = b.get(0);
-        assert(value == val);
+        auto v = s.open_volume(path, tree_order);
+        assert(v.get(0) == val);
     }
 ```
 
+#### MultiThreading usage
+* Support **coarse-grained synchronization**:
+   * Thread safety is guaranteed for SET|GET|REMOVE operations on the same "VOLUME"
+```cpp
+    StorageMT<int32_t, int32_t> s_mt;
+    
+    auto path = "../a.txt";
+    int tree_order = 2;
+    
+    auto v_mt = s_mt.open_volume(path, tree_order);
+
+```
