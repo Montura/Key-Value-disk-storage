@@ -76,7 +76,6 @@ namespace {
 #include <iostream>
 #include <ctime>
 #include <map>
-#include <cassert>
 #include <chrono>
 
 using std::cout;
@@ -87,10 +86,35 @@ using std::chrono::duration;
 using std::chrono::milliseconds;
 
 #include "test_runner.h"
+#include "utils/boost_include.h"
+
 using namespace btree_test;
+using namespace m_boost;
+
+void test_set(const std::string& name, const int order) {
+    int iters = 100;
+    Volume<int32_t, int32_t> v(name, order);
+
+    for (int i = 0; i < iters; ++i) {
+        v.set(i, i + 65);
+    }
+    for (int i = 0; i < iters; ++i) {
+        auto val = v.get(i);
+        assert(val == i + 65);
+    }
+    for (int i = 0; i < iters; ++i) {
+        v.set(i, -i);
+    }
+    for (int i = 0; i < iters; ++i) {
+        auto val = v.get(i);
+        assert(val == -i);
+    }
+}
+
+
+const int n = 10000;
 
 void test() {
-    const int n = 10000;
     std::string db_prefix = "../db_";
     std::string end = ".txt";
 
@@ -110,11 +134,36 @@ void test() {
     }
 }
 
+void test_mt() {
+    std::string db_prefix = "../db_";
+    std::string end = ".txt";
+
+    int order = 2;
+    auto db_name = db_prefix + std::to_string(order);
+    auto name = db_name + "_i32" + end;
+
+    TestRunnerMT<int32_t, int32_t> runner(n);
+    auto volume = runner.get_volume(name, order);
+
+    int workers_count = 10;
+    basio::thread_pool pool(workers_count);
+
+    for (int i = 0; i < 10; ++i) {
+        cout << "Pool iter: " << i << endl;
+        runner.test_set(pool, volume, n);
+        runner.test_remove(pool, volume, n);
+    }
+}
+
 void at_exit_handler();
 
 int main() {
-    std::srand(std::time(nullptr)); // use current time as seed for random generator
+//    std::srand(std::time(nullptr)); // use current time as seed for random generator
     test();
+    test_mt();
+    test();
+    test_mt();
+
     return 0;
 }
 

@@ -151,4 +151,82 @@ namespace btree_test {
         }
     };
 
+    template <typename K, typename V>
+    class TestRunnerMT {
+        using StorageT = Storage<K,V, true>;
+        StorageT storage;
+    public:
+        using VolumeT = typename StorageT::VolumeWrapper;
+        using VerifyT = void (*)(const TestStat& stat);
+
+        explicit TestRunnerMT(int iterations) {}
+
+        VolumeT get_volume(const std::string& db_name, const int order) {
+            return storage.open_volume(db_name, order);
+        }
+
+        void test_set(basio::thread_pool& pool, VolumeT& volume, const int n) {
+            auto task = BoostPackagedTask<TestStat>(boost::bind(&test_set_keys, volume, 0, n));
+            auto set_stat = do_task(pool, task);
+
+            auto get_stat = test_get_keys(volume, 0, n);
+            assert(get_stat.total_found = n);
+        }
+
+        void test_remove(basio::thread_pool& pool, VolumeT& volume, const int n) {
+            auto half = n / 2;
+            auto task = BoostPackagedTask<TestStat>(boost::bind(&test_remove_keys, volume, 0, half));
+
+            auto remove_stat = do_task(pool, task);
+            assert(remove_stat.total_removed == half);
+
+            auto get_stat = test_get_keys(volume, 0, n);
+            assert(get_stat.total_found = half);
+            assert(get_stat.total_not_found = half);
+        }
+
+        TestStat do_task(basio::thread_pool& pool, BoostPackagedTask<TestStat>& task) {
+            auto future = task.get_future();
+            post(pool, std::move(task));
+            return future.get();
+        }
+
+        static TestStat test_set_keys(VolumeT& btree, int from, int to) {
+            TestStat stat(to - from);
+            for (int i = from; i < to; ++i) {
+                K key = i;
+                V value = -i;
+                if constexpr(std::is_pointer_v<V>) {
+                    btree.set(key, value, utils::get_len_by_idx(i));
+                } else {
+                    btree.set(key, value);
+                }
+            }
+            return stat;
+        }
+
+        static TestStat test_get_keys(VolumeT& btree, int from, int to) {
+            TestStat stat(to - from);
+            for (int i = from; i < to; ++i) {
+                auto actual_value = btree.get(i);
+                if (actual_value.has_value()) {
+                    assert(actual_value == -i);
+                    stat.total_found++;
+                } else {
+                    stat.total_not_found++;
+                }
+            }
+            return stat;
+        }
+
+        static TestStat test_remove_keys(VolumeT& btree, int from, int to) {
+            TestStat stat(to - from);
+            for (int i = from; i < to; ++i) {
+                stat.total_removed += btree.remove(i);
+            }
+            return stat;
+        }
+
+    };
+
 }

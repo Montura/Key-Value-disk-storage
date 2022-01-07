@@ -3,7 +3,6 @@
 namespace btree {
     template<typename K, typename V>
     BTree<K, V>::BTree(const int16_t order, IOManagerT& io) : t(order), root() {
-//    pthread_rwlock_init(&(rwLock), NULL);
         if (!io.is_ready())
             return;
 
@@ -16,24 +15,16 @@ namespace btree {
 
     template<typename K, typename V>
     void BTree<K, V>::set(IOManagerT& io, const K &key, const V &value) {
-//    pthread_rwlock_wrlock(&(rwLock));
-
         EntryT e {key, value};
         if (!root.is_valid() || !root.set(io, e))
             insert(io, e);
-
-//    pthread_rwlock_unlock(&(rwLock));
     }
 
     template<typename K, typename V>
     void BTree<K, V>::set(IOManagerT& io, const K &key, const V& value, int32_t size) {
-//    pthread_rwlock_wrlock(&(rwLock));
-
         EntryT e {key, value, size};
         if (!root.is_valid() || !root.set(io, e))
             insert(io, e);
-
-//    pthread_rwlock_unlock(&(rwLock));
     }
 
     template<typename K, typename V>
@@ -44,18 +35,12 @@ namespace btree {
 
     template<typename K, typename V>
     bool BTree<K, V>::exist(IOManagerT& io, const K &key) {
-//    pthread_rwlock_wrlock(&(rwLock));
-
         bool success = root.is_valid() && root.find(io, key).is_valid();
-
-//    pthread_rwlock_unlock(&(rwLock));
         return success;
     }
 
     template<typename K, typename V>
     bool BTree<K, V>::remove(IOManagerT& io, const K &key) {
-//    pthread_rwlock_wrlock(&(rwLock));
-
         bool success = root.is_valid() && root.remove(io, key);
 
         if (success && root.used_keys == 0) {
@@ -69,7 +54,6 @@ namespace btree {
             }
         }
 
-//    pthread_rwlock_unlock(&(rwLock));
         return success;
     }
 
