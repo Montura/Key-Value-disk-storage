@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include "utils/forward_decl.h"
 #include "btree_node.h"
 

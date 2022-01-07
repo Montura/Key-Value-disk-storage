@@ -2,59 +2,49 @@
 
 #include <unordered_map>
 
-#include "entry.h"
-#include "io/io_manager.h"
-#include "btree_impl/btree.h"
+#include "volume.h"
 
 namespace btree {
-    template <typename K, typename V>
-    class Storage final {
-        struct Volume;
-        std::map<std::string, std::unique_ptr<Volume>> volume_map;
-    public:
-        explicit Storage() {
-        }
-
-        Volume& open_volume(const std::string& path, const int16_t user_t) {
-            auto[it, success] = volume_map.template emplace(path, std::make_unique<Volume>(path, user_t));
-            return *it->second;
-        }
-
-        bool close_volume(const Volume& v) {
-            return volume_map.remove(v.path);
-        }
+    template <typename K, typename V, bool SupportMultithreading>
+    struct Storage final {
+        class VolumeWrapper;
 
     private:
-        struct Volume final {
-            const std::string path;
-            IOManager<K, V> io;
-            BTree<K, V> tree;
+        using VolumeT = std::conditional_t<SupportMultithreading, VolumeMT<K,V>, Volume<K,V>>;
+        std::map<std::string, std::unique_ptr<VolumeT>> volume_map;
 
-            explicit Volume(const std::string& path, const int16_t user_t) :
-                    path(path),
-                    io(path, user_t),
-                    tree(user_t, io) {
-            }
+    public:
+        explicit Storage() {}
 
-            bool exist(const K& key) {
-                return tree.exist(io, key);
+        VolumeWrapper open_volume(const std::string& path, const int16_t user_t) {
+            auto it = volume_map.find(path);
+            if (it != volume_map.end()) {
+                return VolumeWrapper(it->second.get());
+            } else {
+                auto [pos, success] = volume_map.emplace(path, std::make_unique<VolumeT>(path, user_t));
+                return VolumeWrapper(pos->second.get());
             }
+        }
 
-            void set(const K& key, const V& value) {
-                tree.set(io, key, value);
-            }
+        bool close_volume(const VolumeWrapper& v) {
+            return volume_map.remove(v.ptr->path);
+        }
 
-            void set(const K& key, const V& value, const int32_t size) {
-                tree.set(io, key, value, size);
-            }
+        class VolumeWrapper {
+            VolumeT* ptr;
 
-            std::optional<V> get(const K& key) {
-                return tree.get(io, key);
-            }
+        public:
+            explicit VolumeWrapper(VolumeT* ptr) : ptr(ptr) {}
 
-            bool remove(const K& key) {
-                return tree.remove(io, key);
-            }
+            bool exist(const K& key) const { return ptr->exist(key); }
+
+            void set(const K& key, const V& value) { ptr->set(key, value); }
+
+            void set(const K& key, const V& value, const int32_t size) { ptr->set(key, value, size); }
+
+            std::optional <V> get(const K& key) const { return ptr->get(key); }
+
+            bool remove(const K& key) { return ptr->remove(key); }
         };
     };
 }

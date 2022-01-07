@@ -45,23 +45,17 @@ namespace utils {
     }
 
     template <typename V, typename MapIt>
-    int64_t check(int32_t idx, const std::optional <V>& actual_value, MapIt expected_value, const int64_t counter) {
-        if (actual_value.has_value()) {
-            if constexpr(std::is_pointer_v < V >) {
-                auto* expected = expected_value->second;
-                auto* actual = actual_value.value();
-                size_t len = utils::get_len_by_idx(idx);
-                for (size_t k = 0; k < len; ++k) {
-                    assert(expected[k] == actual[k]);
-                }
-            } else {
-                assert(expected_value->second == actual_value.value());
+    void check(int32_t idx, const std::optional <V>& actual_value, MapIt expected_value) {
+        if constexpr(std::is_pointer_v < V >) {
+            auto* expected = expected_value->second;
+            auto* actual = actual_value.value();
+            size_t len = utils::get_len_by_idx(idx);
+            for (size_t k = 0; k < len; ++k) {
+                assert(expected[k] == actual[k]);
             }
-            return counter + 1;
         } else {
-            assert(actual_value == std::nullopt);
+            assert(expected_value->second == actual_value.value());
         }
-        return counter;
     }
 }
 }

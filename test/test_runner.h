@@ -13,7 +13,7 @@ namespace btree_test {
     class TestRunner {
         TestStat stat;
         std::map<K, V> verify_map;
-        Storage<K,V> storage;
+        Storage<K,V, false> storage;
 
         explicit TestRunner(int iterations) : stat(iterations) {}
 
@@ -39,7 +39,7 @@ namespace btree_test {
             duration<double, std::milli> ms_double = t2 - t1;
 
             cout << "Passed for " + db_name << ": " <<
-                 "\t added: " << runner.stat.total_added <<
+                 "\t added: " << n <<
                  ", found: " << runner.stat.total_found <<
                  ", removed: " << runner.stat.total_removed <<
                  ", total_after_remove: " << runner.stat.total_after_remove <<
@@ -47,7 +47,7 @@ namespace btree_test {
         }
     private:
         void test_set(const std::string& path, int order, int n) {
-            auto& btree = storage.open_volume(path, order);
+            auto btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
                 K key = i;
@@ -58,7 +58,6 @@ namespace btree_test {
                     btree.set(key, value);
                 }
                 verify_map[key] = value;
-                stat.total_added++;
             }
 
             for (int i = 0; i < n; ++i)
@@ -73,18 +72,24 @@ namespace btree_test {
         }
 
         void test_get(const std::string& path, int order, int n) {
-            auto& btree = storage.open_volume(path, order);
+            auto btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
                 auto expected_value = verify_map.find(i);
                 auto actual_value = btree.get(i);
-                stat.total_found = utils::check(i, actual_value, expected_value, stat.total_found);
+                if (actual_value.has_value()) {
+                    utils::check(i, actual_value, expected_value);
+                    stat.total_found++;
+                } else {
+                    assert(actual_value == std::nullopt);
+                    stat.total_not_found++;
+                }
             }
             assert(stat.contains_all());
         }
 
         void test_remove(const std::string& path, int order, int n, std::tuple<int, int, int>& keys_to_remove) {
-            auto& btree = storage.open_volume(path, order);
+            auto btree = storage.open_volume(path, order);
 
             auto[r1, r2, r3] = keys_to_remove;
 
@@ -130,13 +135,16 @@ namespace btree_test {
         }
 
         void test_after_remove(const std::string& path, int order, int n) {
-            auto& btree = storage.open_volume(path, order);
+            auto btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
                 auto expected_value = verify_map.find(i);
                 auto actual_value = btree.get(i);
-                if (expected_value != verify_map.end()) {
-                    stat.total_after_reopen = utils::check(i, actual_value, expected_value, stat.total_after_reopen);
+                if (actual_value.has_value() && expected_value != verify_map.end()) {
+                    utils::check(i, actual_value, expected_value);
+                    stat.total_after_reopen++;
+                } else {
+                    assert(actual_value == std::nullopt);
                 }
             }
             assert(stat.total_after_reopen == static_cast<int64_t>(verify_map.size()));

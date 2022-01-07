@@ -16,6 +16,7 @@ set(SOURCE_FILES
         utils/boost_include.h
         utils/forward_decl.h.h
         utils/utils.h
+        volume.h
         storage.h
         )
 

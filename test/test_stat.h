@@ -4,22 +4,17 @@
 
 namespace btree_test {
     class TestStat {
-        const int64_t N;
+        int64_t N;
     public:
-        std::atomic<int64_t> total_added = 0;
-        std::atomic<int64_t> total_exist = 0;
-        std::atomic<int64_t> total_not_exist = 0;
-        std::atomic<int64_t> total_found = 0;
-        std::atomic<int64_t> total_not_found = 0;
-        std::atomic<int64_t> total_removed = 0;
-        std::atomic<int64_t> total_after_remove = 0;
-        std::atomic<int64_t> total_after_reopen = 0;
+        int64_t total_exist = 0;
+        int64_t total_not_exist = 0;
+        int64_t total_found = 0;
+        int64_t total_not_found = 0;
+        int64_t total_removed = 0;
+        int64_t total_after_remove = 0;
+        int64_t total_after_reopen = 0;
 
         TestStat(int64_t N) : N(N) {
-        }
-
-        bool all_added() const {
-            return total_added == N;
         }
 
         bool all_exist() const {
@@ -38,7 +33,7 @@ namespace btree_test {
             return total_not_found == 0;
         }
 
-        bool check_deleted(int32_t expected) const {
+        bool check_total_removed(int32_t expected) const {
             return total_removed == expected;
         }
 
