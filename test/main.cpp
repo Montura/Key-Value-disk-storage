@@ -139,29 +139,26 @@ void test_mt() {
     std::string db_prefix = "../db_";
     std::string end = ".txt";
 
-    int order = 2;
-    auto db_name = db_prefix + std::to_string(order);
-    auto name = db_name + "_i32" + end;
+    basio::thread_pool pool(10);
 
-    TestRunnerMT<int32_t, int32_t> runner(n);
-    auto volume = runner.get_volume(name, order);
-
-    int workers_count = 10;
-    basio::thread_pool pool(workers_count);
-
-    for (int i = 0; i < 10; ++i) {
-        cout << "Pool iter: " << i << endl;
-        runner.test_set(pool, volume, n);
-        runner.test_remove(pool, volume, n);
+    for (int i = 0; i < 11; ++i) {
+        for (int order = 2; order < 7; ++order) {
+            auto db_name = db_prefix + std::to_string(order);
+            TestRunnerMT<int32_t, int32_t>::run(pool, db_name + "_i32" + end, order, n);
+            TestRunnerMT<int32_t, int64_t>::run(pool, db_name + "_i64" + end, order, n);
+            TestRunnerMT<int32_t, float>::run(pool, db_name + "_f" + end, order, n);
+            TestRunnerMT<int32_t, double>::run(pool, db_name + "_d" + end, order, n);
+            TestRunnerMT<int32_t, std::string>::run(pool, db_name + "_str" + end, order, n);
+            TestRunnerMT<int32_t, std::wstring>::run(pool, db_name + "_wstr" + end, order, n);
+            TestRunnerMT<int32_t, const char*>::run(pool, db_name + "_blob" + end, order, n);
+        }
     }
 }
 
 void at_exit_handler();
 
 int main() {
-//    std::srand(std::time(nullptr)); // use current time as seed for random generator
-    test();
-    test_mt();
+    std::srand(std::time(nullptr)); // use current time as seed for random generator
     test();
     test_mt();
 

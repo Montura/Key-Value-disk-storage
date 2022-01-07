@@ -75,10 +75,9 @@ namespace btree_test {
             auto btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
-                auto expected_value = verify_map.find(i);
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value()) {
-                    utils::check(i, actual_value, expected_value);
+                    utils::check(i, actual_value, verify_map.find(i));
                     stat.total_found++;
                 } else {
                     assert(actual_value == std::nullopt);
@@ -154,19 +153,44 @@ namespace btree_test {
     template <typename K, typename V>
     class TestRunnerMT {
         StorageMT<K,V> storage;
-    public:
+        std::map<K,V> verify_map;
         using VolumeT = typename StorageMT<K,V>::VolumeWrapper;
         using VerifyT = void (*)(const TestStat& stat);
 
         explicit TestRunnerMT(int iterations) {}
 
-        VolumeT get_volume(const std::string& db_name, const int order) {
-            return storage.open_volume(db_name, order);
+    public:
+
+        static void run(basio::thread_pool& pool, const std::string& db_name, const int order, const int n) {
+            TestRunnerMT runner(n);
+            auto volume = runner.storage.open_volume(db_name, order);
+
+            for (int i = 0; i < 10; ++i) {
+                cout << "Pool iter: " << i << endl;
+                runner.fill_map_with_random_values(n);
+                runner.test_set(pool, volume, n);
+                runner.test_remove(pool, volume, n / 2);
+                runner.clear_map();
+            }
+        }
+
+    private:
+        void fill_map_with_random_values(int n) {
+            for (int i = 0; i < n; ++i)
+                verify_map[i] = utils::generate_value<V>(i);
+        }
+
+        void clear_map() {
+            if constexpr(std::is_pointer_v<V>) {
+                for (auto& entry: verify_map) {
+                    delete entry.second;
+                }
+            }
         }
 
         void test_set(basio::thread_pool& pool, VolumeT& volume, const int n) {
-            auto task = BoostPackagedTask<TestStat>(boost::bind(&test_set_keys, volume, 0, n));
-            auto set_stat = do_task(pool, task);
+            auto task = BoostPackagedTask<TestStat>(boost::bind(&test_set_keys, volume, verify_map, 0, n));
+            do_task(pool, task);
 
             auto get_stat = test_get_keys(volume, 0, n);
             assert(get_stat.total_found = n);
@@ -190,11 +214,25 @@ namespace btree_test {
             return future.get();
         }
 
-        static TestStat test_set_keys(VolumeT& btree, int from, int to) {
+        TestStat test_get_keys(const VolumeT& btree, const int from, const int to) {
+            TestStat stat(to - from);
+            for (int i = from; i < to; ++i) {
+                auto actual_value = btree.get(i);
+                if (actual_value.has_value()) {
+                    utils::check(i, actual_value, verify_map.find(i));
+                    stat.total_found++;
+                } else {
+                    stat.total_not_found++;
+                }
+            }
+            return stat;
+        }
+
+        static TestStat test_set_keys(VolumeT& btree, const std::map<K,V>& map, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {
                 K key = i;
-                V value = -i;
+                V value = map.find(i)->second;
                 if constexpr(std::is_pointer_v<V>) {
                     btree.set(key, value, utils::get_len_by_idx(i));
                 } else {
@@ -204,21 +242,7 @@ namespace btree_test {
             return stat;
         }
 
-        static TestStat test_get_keys(VolumeT& btree, int from, int to) {
-            TestStat stat(to - from);
-            for (int i = from; i < to; ++i) {
-                auto actual_value = btree.get(i);
-                if (actual_value.has_value()) {
-                    assert(actual_value == -i);
-                    stat.total_found++;
-                } else {
-                    stat.total_not_found++;
-                }
-            }
-            return stat;
-        }
-
-        static TestStat test_remove_keys(VolumeT& btree, int from, int to) {
+        static TestStat test_remove_keys(VolumeT& btree, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {
                 stat.total_removed += btree.remove(i);
