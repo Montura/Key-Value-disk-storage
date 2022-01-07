@@ -6,7 +6,7 @@
 
 namespace btree {
     template <typename K, typename V, bool SupportMultithreading>
-    struct Storage final {
+    struct StorageBase final {
         class VolumeWrapper;
 
     private:
@@ -14,7 +14,7 @@ namespace btree {
         std::map<std::string, std::unique_ptr<VolumeT>> volume_map;
 
     public:
-        explicit Storage() {}
+        explicit StorageBase() {}
 
         VolumeWrapper open_volume(const std::string& path, const int16_t user_t) {
             auto it = volume_map.find(path);
@@ -47,4 +47,10 @@ namespace btree {
             bool remove(const K& key) { return ptr->remove(key); }
         };
     };
+
+    template <typename K, typename V>
+    using Storage = StorageBase<K, V, false>;
+
+    template <typename K, typename V>
+    using StorageMT = StorageBase<K, V, true>;
 }

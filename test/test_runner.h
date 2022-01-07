@@ -13,7 +13,7 @@ namespace btree_test {
     class TestRunner {
         TestStat stat;
         std::map<K, V> verify_map;
-        Storage<K,V, false> storage;
+        Storage<K,V> storage;
 
         explicit TestRunner(int iterations) : stat(iterations) {}
 
@@ -153,10 +153,9 @@ namespace btree_test {
 
     template <typename K, typename V>
     class TestRunnerMT {
-        using StorageT = Storage<K,V, true>;
-        StorageT storage;
+        StorageMT<K,V> storage;
     public:
-        using VolumeT = typename StorageT::VolumeWrapper;
+        using VolumeT = typename StorageMT<K,V>::VolumeWrapper;
         using VerifyT = void (*)(const TestStat& stat);
 
         explicit TestRunnerMT(int iterations) {}

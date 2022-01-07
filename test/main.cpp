@@ -93,7 +93,8 @@ using namespace m_boost;
 
 void test_set(const std::string& name, const int order) {
     int iters = 100;
-    Volume<int32_t, int32_t> v(name, order);
+    Storage<int32_t, int32_t> s;
+    auto v = s.open_volume(name, order);
 
     for (int i = 0; i < iters; ++i) {
         v.set(i, i + 65);
