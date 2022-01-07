@@ -29,9 +29,9 @@ namespace btree_test {
         static void run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
             TestRunner<K, V> runner(n);
             auto t1 = high_resolution_clock::now();
-            runner.test_keys_create_exist(db_name, order, n);
-            runner.test_get_values(db_name, order, n);
-            runner.test_remove_keys(db_name, order, n, keys_to_remove);
+            runner.test_set(db_name, order, n);
+            runner.test_get(db_name, order, n);
+            runner.test_remove(db_name, order, n, keys_to_remove);
             runner.test_after_remove(db_name, order, n);
             auto t2 = high_resolution_clock::now();
 
@@ -46,7 +46,7 @@ namespace btree_test {
                  " in " << ms_double.count() << "ms" << endl;
         }
     private:
-        void test_keys_create_exist(const std::string& path, int order, int n) {
+        void test_set(const std::string& path, int order, int n) {
             auto& btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
@@ -72,7 +72,7 @@ namespace btree_test {
             assert(stat.any_does_not_exist());
         }
 
-        void test_get_values(const std::string& path, int order, int n) {
+        void test_get(const std::string& path, int order, int n) {
             auto& btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
@@ -83,7 +83,7 @@ namespace btree_test {
             assert(stat.contains_all());
         }
 
-        void test_remove_keys(const std::string& path, int order, int n, std::tuple<int, int, int>& keys_to_remove) {
+        void test_remove(const std::string& path, int order, int n, std::tuple<int, int, int>& keys_to_remove) {
             auto& btree = storage.open_volume(path, order);
 
             auto[r1, r2, r3] = keys_to_remove;

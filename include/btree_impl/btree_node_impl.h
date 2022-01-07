@@ -190,6 +190,8 @@ namespace btree {
 
                 io.write_entry(e, curr_pos);
                 io.write_node(curr, curr.m_pos);
+                if (m_pos == curr.m_pos) // curr == this
+                    *this = std::move(curr);
             }
             return true;
         }

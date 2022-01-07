@@ -26,20 +26,20 @@ namespace utils {
     V generate_value(int i) {
         if constexpr (is_string_v < V >) {
             if constexpr(std::is_same_v < typename V::value_type, char >) {
-                return std::to_string(i + 65) + "abacaba";
+                return std::to_string(i + std::rand() % 65) + "abacaba";
             } else {
-                return std::to_wstring(i + 65) + L"abacaba";
+                return std::to_wstring(i + std::rand() % 65) + L"abacaba";
             }
         } else {
             if constexpr(std::is_same_v<V, const char*>) {
                 int len = get_len_by_idx(i);
                 auto blob = new char[len];
                 for (int k = 0; k < len; ++k) {
-                    blob[k] = 2;
+                    blob[k] = std::rand() % sizeof(char);
                 }
                 return blob;
             } else {
-                return i + 65;
+                return std::rand() % (i + 65);
             }
         }
     }
