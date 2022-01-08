@@ -64,6 +64,20 @@ namespace btree {
         void write_new_pos_for_root_node(const int64_t posRoot);
 
         int64_t get_file_pos_end();
+
+#ifdef UNIT_TESTS
+        int32_t header_size() {
+            return INITIAL_ROOT_POS_IN_HEADER;
+        }
+
+        int32_t node_size() {
+            return BTreeNode<K,V>(t, false).get_node_size_in_bytes();
+        }
+
+        int32_t entry_size() {
+            return sizeof(K) + sizeof(V);
+        }
+#endif
     };
 }
 #include "io_manager_impl.h"

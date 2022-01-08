@@ -70,8 +70,12 @@ namespace btree {
         }
 
         std::optional<V> value() const {
-            if (!size_in_bytes)
-                return std::nullopt;
+            if (!size_in_bytes) {
+                if constexpr (std::is_pointer_v<V>)
+                    return "";
+                else
+                    return std::nullopt;
+            }
 
             return cast_value();
         }
@@ -101,5 +105,14 @@ namespace btree {
                     return V(data);
             }
         }
+#ifdef UNIT_TESTS
+        int size_in_file() {
+            int size = sizeof(K);
+            if constexpr (is_string_v<V> || V_is_pointer) {
+                size += 4; // strlen
+            }
+            return size + size_in_bytes;
+        }
+#endif
     };
 }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(key-value-storage-lib)
+project(include)
 
 include_directories(.)
 
@@ -22,6 +22,6 @@ set(SOURCE_FILES
 
 set(KEY_VALUE_STORAGE_INCLUDE_DIR .)
 
-add_library(${PROJECT_NAME} INTERFACE)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
-target_include_directories(${PROJECT_NAME} INTERFACE ${KEY_VALUE_STORAGE_INCLUDE_DIR} )
+add_library(key-value-storage-lib INTERFACE)
+target_compile_features(key-value-storage-lib INTERFACE cxx_std_17)
+target_include_directories(key-value-storage-lib INTERFACE ${KEY_VALUE_STORAGE_INCLUDE_DIR} )

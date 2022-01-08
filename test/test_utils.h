@@ -35,7 +35,7 @@ namespace utils {
                 int len = get_len_by_idx(i);
                 auto blob = new char[len];
                 for (int k = 0; k < len; ++k) {
-                    blob[k] = std::rand() % sizeof(char);
+                    blob[k] = 2;
                 }
                 return blob;
             } else {
@@ -55,6 +55,22 @@ namespace utils {
             }
         } else {
             assert(expected_value->second == actual_value.value());
+        }
+    }
+
+    template <typename V>
+    bool check(int32_t idx, const std::optional <V>& actual_value, const V& expected_value) {
+        if constexpr(std::is_pointer_v < V >) {
+            auto* expected = expected_value;
+            auto* actual = actual_value.value();
+            size_t len = utils::get_len_by_idx(idx);
+            bool res = true;
+            for (size_t k = 0; k < len; ++k) {
+                res &= (expected[k] == actual[k]);
+            }
+            return res;
+        } else {
+            return expected_value == actual_value.value();
         }
     }
 }

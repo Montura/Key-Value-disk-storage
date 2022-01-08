@@ -34,6 +34,19 @@ namespace btree {
         bool remove(const K& key) {
             return btree.remove(io, key);
         }
+#ifdef UNIT_TESTS
+        int header_size() {
+            return io.header_size();
+        }
+
+        int node_size() {
+            return io.node_size();
+        }
+
+        int entry_size() {
+            return io.entry_size();
+        }
+#endif
     };
 
     /** Volume with coarse-grained locks for multithreading usage */

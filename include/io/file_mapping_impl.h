@@ -15,7 +15,6 @@ namespace btree {
             if (!pFilebuf)
                 throw std::runtime_error("Wrong path is provided for mapped file, path = " + path);
             fbuf.pubseekoff(bytes_num, std::ios_base::beg);
-            fbuf.sputc(0);
             fbuf.close();
             m_size = m_capacity = bytes_num;
         } else {
