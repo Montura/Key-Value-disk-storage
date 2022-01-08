@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include "utils/utils.h"
 
 namespace btree_test {
