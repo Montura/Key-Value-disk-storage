@@ -1,7 +1,6 @@
 #include <string>
 #include <map>
 #include <chrono>
-//#include <ctime>
 
 #include "test_stat.h"
 #include "test_utils.h"
@@ -27,13 +26,6 @@ namespace btree_test {
 
         explicit TestRunner(int iterations) : stat(iterations) {}
 
-        ~TestRunner() {
-            if constexpr(std::is_pointer_v<V>) {
-                for (auto& data: verify_map) {
-                    delete data.second;
-                }
-            }
-        }
     public:
 
         static void run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
@@ -59,9 +51,10 @@ namespace btree_test {
         void test_set(const std::string& path, int order, int n) {
             auto btree = storage.open_volume(path, order);
 
+            ValueGenerator<V> g;
             for (int i = 0; i < n; ++i) {
                 K key = i;
-                V value = utils::generate_value<V>(i);
+                V value = g.next_value(i);
                 if constexpr(std::is_pointer_v<V>) {
                     btree.set(key, value, utils::get_len_by_idx(i));
                 } else {
@@ -164,6 +157,8 @@ namespace btree_test {
     class TestRunnerMT {
         StorageMT<K,V> storage;
         std::map<K,V> verify_map;
+        ValueGenerator<V> g;
+
         using VolumeT = typename StorageMT<K,V>::VolumeWrapper;
         using VerifyT = void (*)(const TestStat& stat);
 
@@ -187,15 +182,11 @@ namespace btree_test {
     private:
         void fill_map_with_random_values(int n) {
             for (int i = 0; i < n; ++i)
-                verify_map[i] = utils::generate_value<V>(i);
+                verify_map[i] = g.next_value(i);
         }
 
         void clear_map() {
-            if constexpr(std::is_pointer_v<V>) {
-                for (auto& entry: verify_map) {
-                    delete entry.second;
-                }
-            }
+            g.clear();
         }
 
         void test_set(basio::thread_pool& pool, VolumeT& volume, const int n) {

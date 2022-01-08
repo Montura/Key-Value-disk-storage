@@ -50,7 +50,8 @@ namespace {
 
         Storage<int32_t, V> s;
         int32_t key = 0;
-        V val = utils::generate_value<V>(key);
+        ValueGenerator<V> g;
+        V val = g.next_value(key);
 
         auto on_exit = [](auto& storage, const auto& volume,
                 const int32_t key, const V& val, bool after_remove = false) -> bool {
@@ -88,7 +89,8 @@ namespace {
         Storage<int32_t, V> s;
 
         int32_t key = 0;
-        V expected_val = utils::generate_value<V>(key);
+        ValueGenerator<V> g;
+        V expected_val = g.next_value(key);
         bool success = false;
         {
             auto volume = s.open_volume(db_name, order);
@@ -114,7 +116,8 @@ namespace {
         Storage<int32_t, V> s;
 
         int32_t key = 0;
-        V expected_val = utils::generate_value<V>(key);
+        ValueGenerator<V> g;
+        V expected_val = g.next_value(key);
         uint32_t total_size = 0;
 
         bool success = false;
@@ -145,7 +148,8 @@ namespace {
         auto volume = s.open_volume(db_name, order);
 
         int32_t key = 0;
-        V expected_val = utils::generate_value<V>(key);
+        ValueGenerator<V> g;
+        V expected_val = g.next_value(key);
         uint32_t header_size = volume.header_size();
 
         bool success = true;
@@ -171,8 +175,9 @@ namespace {
         bool success = true;
         int32_t key = 0;
 
+        ValueGenerator<V> g;
         for (int i = 0; i < 1000; ++i) {
-            V expected_val = utils::generate_value<V>(i);
+            V expected_val = g.next_value(i);
             set(volume, key, expected_val);
             auto actual_val = volume.get(key);
             success = utils::check(key, actual_val, expected_val);

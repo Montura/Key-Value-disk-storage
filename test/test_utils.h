@@ -24,27 +24,45 @@ namespace utils {
     }
 
     template <typename V>
-    V generate_value(int i) {
-        int val = i + std::rand() % 31;
-        if constexpr (is_string_v < V >) {
-            if constexpr(std::is_same_v < typename V::value_type, char >) {
-                return std::to_string(val) + "abacaba";
-            } else {
-                return std::to_wstring(val) + L"abacaba";
-            }
-        } else {
-            if constexpr(std::is_same_v<V, const char*>) {
-                int len = get_len_by_idx(val);
-                auto blob = new char[len];
-                for (int k = 0; k < len; ++k) {
-                    blob[k] = 2;
-                }
-                return blob;
-            } else {
-                return val;
+    class ValueGenerator {
+        std::map<int, std::unique_ptr<V>> blob_map;
+
+    public:
+        ~ValueGenerator() {
+            clear();
+        }
+
+        void clear() {
+            if constexpr(std::is_pointer_v<V>) {
+                blob_map.clear();
             }
         }
-    }
+
+        V next_value(int i) {
+            int val = i + std::rand() % 31;
+            if constexpr (is_string_v < V >) {
+                if constexpr(std::is_same_v < typename V::value_type, char >) {
+                    return std::to_string(val) + "abacaba";
+                } else {
+                    return std::to_wstring(val) + L"abacaba";
+                }
+            } else {
+                if constexpr(std::is_same_v<V, const char*>) {
+                    int len = get_len_by_idx(val);
+                    auto blob = new char[len];
+                    for (int k = 0; k < len; ++k) {
+                        blob[k] = 2;
+                    }
+                    blob_map.emplace(i, std::make_unique<V>(blob));
+                    return blob;
+                } else {
+                    return val;
+                }
+            }
+        }
+    };
+
+
 
     template <typename V, typename MapIt>
     void check(int32_t idx, const std::optional <V>& actual_value, MapIt expected_value) {

@@ -40,7 +40,7 @@ void *operator new(std::size_t n) {
         throw std::bad_alloc {};
     ma.insert(std::make_pair(reinterpret_cast<uint64_t>(p), n));
     total_bytes_allocated += n;
-//    std::cout << "Alloc " << p << ", size is " << n << endl;
+//    std::cout << "Alloc " << p << ", size is " << n << std::endl;
     return p;
 }
 
@@ -49,7 +49,7 @@ void operator delete(void* mem) noexcept {
     std::size_t n = ma[pVoid];
     total_bytes_deallocated += n;
     ma.erase(pVoid);
-//    std::cout << "Free " << mem << ", size is " << n << endl;
+//    std::cout << "Free " << mem << ", size is " << n << std::endl;
     free(mem);
 }
 
