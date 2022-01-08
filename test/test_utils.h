@@ -23,23 +23,24 @@ namespace utils {
     }
 
     template <typename V>
-    V generate_value(int i) {
+    V generate_value(int i, bool rand = true) {
+        int val = rand ? i + std::rand() % 31 : i;
         if constexpr (is_string_v < V >) {
             if constexpr(std::is_same_v < typename V::value_type, char >) {
-                return std::to_string(i + std::rand() % 65) + "abacaba";
+                return std::to_string(val) + "abacaba";
             } else {
-                return std::to_wstring(i + std::rand() % 65) + L"abacaba";
+                return std::to_wstring(val) + L"abacaba";
             }
         } else {
             if constexpr(std::is_same_v<V, const char*>) {
-                int len = get_len_by_idx(i);
+                int len = get_len_by_idx(val);
                 auto blob = new char[len];
                 for (int k = 0; k < len; ++k) {
                     blob[k] = 2;
                 }
                 return blob;
             } else {
-                return std::rand() % (i + 65);
+                return val;
             }
         }
     }

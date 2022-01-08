@@ -88,7 +88,6 @@ using std::chrono::milliseconds;
 #include "test_runner.h"
 #include "utils/boost_include.h"
 
-#define BOOST_TEST_MODULE example
 #if USE_BOOST_PREBUILT_STATIC_LIBRARY
 #include <boost/test/unit_test.hpp>
 #else
@@ -141,24 +140,18 @@ namespace {
     }
 
     template <typename V>
-    bool run_test_set_one(std::string const& name, int const order) {
+    bool run_test_set_unique(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
         Storage<int32_t, V> s;
+        auto volume = s.open_volume(db_name, order);
 
+        uint32_t total_size = volume.header_size();
         int32_t key = 0;
         V val = utils::generate_value<V>(key);
-        uint32_t total_size = 0;
-        {
-            auto volume = s.open_volume(db_name, order);
-            set(volume, key, val);
+        total_size += volume.node_size() + entry_size_in_file(key, val);
+        set(volume, key, val);
 
-            auto header_size = volume.header_size();
-            auto node_size = volume.node_size();
-            int entry_size = entry_size_in_file(key, val);
-            total_size = header_size + node_size + entry_size;
-            s.close_volume(volume);
-        }
-
+        s.close_volume(volume);
         auto success = fs::file_size(db_name) == total_size;
         fs::remove(db_name);
         return success;
@@ -190,13 +183,65 @@ namespace {
         return success;
     }
 
+    template <typename V>
+    bool run_test_remove_one(std::string const& name, int const order) {
+        std::string db_name = "../" + name + ".txt";
+        Storage<int32_t, V> s;
 
+        int32_t key = 0;
+        V expected_val = utils::generate_value<V>(key);
+        uint32_t total_size = 0;
+
+        bool success = false;
+        {
+            auto volume = s.open_volume(db_name, order);
+            set(volume, key, expected_val);
+            success = volume.remove(key);
+            total_size = volume.header_size();
+            s.close_volume(volume);
+        }
+        success &= (fs::file_size(db_name) == total_size);
+        {
+            auto volume = s.open_volume(db_name, order);
+            auto actual_val = volume.get(key);
+            success &= (actual_val == std::nullopt);
+            s.close_volume(volume);
+        }
+        success &= (fs::file_size(db_name) == total_size);
+
+        fs::remove(db_name);
+        return success;
+    }
+
+    template <typename V>
+    bool run_test_repeatable_operations(std::string const& name, int const order) {
+        std::string db_name = "../" + name + ".txt";
+        Storage<int32_t, V> s;
+        auto volume = s.open_volume(db_name, order);
+
+        int32_t key = 0;
+        V expected_val = utils::generate_value<V>(key);
+        uint32_t header_size = volume.header_size();
+        uint32_t total_size = header_size + volume.node_size() + entry_size_in_file(key, expected_val);
+
+        bool success = true;
+        for (int i = 0; i < 100; ++i) {
+            set(volume, key, expected_val);
+            success &= utils::check(key, volume.get(key), expected_val);
+            success &= volume.remove(key);
+        }
+
+        s.close_volume(volume);
+        success &= fs::file_size(db_name) == header_size;
+
+        fs::remove(db_name);
+        return success;
+    }
 }
 
     BOOST_AUTO_TEST_CASE(empty_file) {
-        bool success = true;
         int order = 2;
-        success &= run_test_emtpy_file<int64_t>("empty_s_i32", order);
+        bool success = run_test_emtpy_file<int64_t>("empty_s_i32", order);
         success &= run_test_emtpy_file<int64_t>("empty_s_i64", order);
         success &= run_test_emtpy_file<float>("empty_s_f", order);
         success &= run_test_emtpy_file<double>("empty_s_d", order);
@@ -206,24 +251,22 @@ namespace {
         BOOST_TEST_REQUIRE(success);
     }
 
-    BOOST_AUTO_TEST_CASE(add_one_element) {
-        bool success = true;
+    BOOST_AUTO_TEST_CASE(set_one_element) {
         int order = 2;
-        success &= run_test_set_one<int32_t>("one_s_i32", order);
-        success &= run_test_set_one<int64_t>("one_s_i64", order);
-        success &= run_test_set_one<float>("one_s_f", order);
-        success &= run_test_set_one<double>("one_s_d", order);
-        success &= run_test_set_one<std::string>("one_s_str", order);
-        success &= run_test_set_one<std::wstring>("one_s_wstr", order);
-        success &= run_test_set_one<const char*>("one_s_blob", order);
+        bool success = run_test_set_unique<int32_t>("one_s_i32", order);
+        success &= run_test_set_unique<int64_t>("one_s_i64", order);
+        success &= run_test_set_unique<float>("one_s_f", order);
+        success &= run_test_set_unique<double>("one_s_d", order);
+        success &= run_test_set_unique<std::string>("one_s_str", order);
+        success &= run_test_set_unique<std::wstring>("one_s_wstr", order);
+        success &= run_test_set_unique<const char*>("one_s_blob", order);
 
         BOOST_TEST_REQUIRE(success);
     }
 
     BOOST_AUTO_TEST_CASE(get_one_element) {
-        bool success = true;
         int order = 2;
-        success &= run_test_get_one<int32_t>("get_one_s_i32", order);
+        bool success = run_test_get_one<int32_t>("get_one_s_i32", order);
         success &= run_test_get_one<int64_t>("get_one_s_i64", order);
         success &= run_test_get_one<float>("get_one_s_f", order);
         success &= run_test_get_one<double>("get_one_s_d", order);
@@ -234,6 +277,31 @@ namespace {
         BOOST_TEST_REQUIRE(success);
     }
 
+    BOOST_AUTO_TEST_CASE(remove_one_element) {
+        int order = 2;
+        bool success = run_test_remove_one<int32_t>("remove_one_s_i32", order);
+        success &= run_test_remove_one<int64_t>("remove_one_s_i64", order);
+        success &= run_test_remove_one<float>("remove_one_s_f", order);
+        success &= run_test_remove_one<double>("remove_one_s_d", order);
+        success &= run_test_remove_one<std::string>("remove_one_s_str", order);
+        success &= run_test_remove_one<std::wstring>("remove_one_s_wstr", order);
+        success &= run_test_remove_one<const char*>("remove_one_s_blob", order);
+
+        BOOST_TEST_REQUIRE(success);
+    }
+
+    BOOST_AUTO_TEST_CASE(set_the_element_many_times) {
+        int order = 2;
+        bool success = run_test_repeatable_operations<int32_t>("repeatable_set_s_i32", order);
+        success &= run_test_repeatable_operations<int64_t>("repeatable_set_s_i64", order);
+        success &= run_test_set_unique<float>("repeatable_set_s_f", order);
+        success &= run_test_set_unique<double>("repeatable_set_s_d", order);
+        success &= run_test_set_unique<std::string>("repeatable_set_s_str", order);
+        success &= run_test_set_unique<std::wstring>("repeatable_set_s_wstr", order);
+        success &= run_test_set_unique<const char*>("repeatable_set_s_blob", order);
+
+        BOOST_TEST_REQUIRE(success);
+    }
 
     BOOST_AUTO_TEST_SUITE_END()
 

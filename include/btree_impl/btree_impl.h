@@ -22,9 +22,11 @@ namespace btree {
 
     template<typename K, typename V>
     void BTree<K, V>::set(IOManagerT& io, const K &key, const V& value, int32_t size) {
-        EntryT e {key, value, size};
-        if (!root.is_valid() || !root.set(io, e))
-            insert(io, e);
+        if (size != 0) {
+            EntryT e{ key, value, size };
+            if (!root.is_valid() || !root.set(io, e))
+                insert(io, e);
+        }
     }
 
     template<typename K, typename V>

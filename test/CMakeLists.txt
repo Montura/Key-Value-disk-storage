@@ -44,7 +44,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
             -Wall
             -Wextra
             -Wno-unused-parameter
-            -O3
+#            -O3
             )
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     target_compile_options(key-value-storage-test PRIVATE

@@ -70,12 +70,8 @@ namespace btree {
         }
 
         std::optional<V> value() const {
-            if (!size_in_bytes) {
-                if constexpr (std::is_pointer_v<V>)
-                    return "";
-                else
-                    return std::nullopt;
-            }
+            if (!size_in_bytes)
+                return std::nullopt;
 
             return cast_value();
         }
