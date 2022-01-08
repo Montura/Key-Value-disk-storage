@@ -258,6 +258,27 @@ namespace {
         fs::remove(db_name);
         return success;
     }
+
+    template <typename V>
+    bool run_test_set_on_the_same_key(std::string const& name, int const order) {
+        std::string db_name = "../" + name + ".txt";
+        Storage<int32_t, V> s;
+
+        auto volume = s.open_volume(db_name, order);
+        bool success = true;
+        int32_t key = 0;
+
+        for (int i = 0; i < 1000; ++i) {
+            V expected_val = utils::generate_value<V>(i);
+            set(volume, key, expected_val);
+            auto actual_val = volume.get(key);
+            success = utils::check(key, actual_val, expected_val);
+        }
+        s.close_volume(volume);
+
+        fs::remove(db_name);
+        return success;
+    }
 }
 
     BOOST_AUTO_TEST_CASE(empty_file) {
@@ -324,33 +345,24 @@ namespace {
         BOOST_TEST_REQUIRE(success);
     }
 
+    BOOST_AUTO_TEST_CASE(set_various_values_on_the_same_key) {
+        int order = 2;
+        bool success = run_test_set_on_the_same_key<int32_t>("various_set_s_i32", order);
+        success &= run_test_set_on_the_same_key<int64_t>("various_set_s_i64", order);
+        success &= run_test_set_on_the_same_key<float>("various_set_s_f", order);
+        success &= run_test_set_on_the_same_key<double>("various_set_s_d", order);
+        success &= run_test_set_on_the_same_key<std::string>("various_set_s_str", order);
+        success &= run_test_set_on_the_same_key<std::wstring>("various_set_s_wstr", order);
+        success &= run_test_set_on_the_same_key<const char*>("various_set_s_blob", order);
+
+        BOOST_TEST_REQUIRE(success);
+    }
+
     BOOST_AUTO_TEST_SUITE_END()
 
 }
 }
 
-//void test_set(const std::string& name, const int order) {
-//    int iters = 100;
-//    Storage<int32_t, int32_t> s;
-//    auto v = s.open_volume(name, order);
-//
-//    for (int i = 0; i < iters; ++i) {
-//        v.set(i, i + 65);
-//    }
-//    for (int i = 0; i < iters; ++i) {
-//        auto val = v.get(i);
-//        assert(val == i + 65);
-//    }
-//    for (int i = 0; i < iters; ++i) {
-//        v.set(i, -i);
-//    }
-//    for (int i = 0; i < iters; ++i) {
-//        auto val = v.get(i);
-//        assert(val == -i);
-//    }
-//}
-//
-//
 
 //#include "test_runner.h"
 //#include "utils/utils.h"

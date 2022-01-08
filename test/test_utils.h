@@ -23,8 +23,8 @@ namespace utils {
     }
 
     template <typename V>
-    V generate_value(int i, bool rand = true) {
-        int val = rand ? i + std::rand() % 31 : i;
+    V generate_value(int i) {
+        int val = i + std::rand() % 31;
         if constexpr (is_string_v < V >) {
             if constexpr(std::is_same_v < typename V::value_type, char >) {
                 return std::to_string(val) + "abacaba";
