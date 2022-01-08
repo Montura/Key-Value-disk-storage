@@ -131,34 +131,55 @@ namespace {
     template <typename V>
     bool run_test_emtpy_file(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
-        Storage<int32_t, V> s;
-        auto v = s.open_volume(db_name, order);
-        s.close_volume(v);
+        {
+            Storage<int32_t, V> s;
+            auto v = s.open_volume(db_name, order);
+        }
         bool success = fs::file_size(db_name) == 0;
         fs::remove(db_name);
         return success;
     }
 
     template <typename V>
-    bool run_test_set_unique(std::string const& name, int const order) {
+    bool run_test_file_size_with_one_entry(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
-        Storage<int32_t, V> s;
-        auto volume = s.open_volume(db_name, order);
 
-        uint32_t total_size = volume.header_size();
+        Storage<int32_t, V> s;
         int32_t key = 0;
         V val = utils::generate_value<V>(key);
-        total_size += volume.node_size() + entry_size_in_file(key, val);
-        set(volume, key, val);
 
-        s.close_volume(volume);
-        auto success = fs::file_size(db_name) == total_size;
+        auto on_exit = [](auto& storage, const auto& volume,
+                const int32_t key, const V& val, bool after_remove = false) -> bool {
+            uint32_t total_size = volume.header_size() +
+                                  (after_remove ? 0 : (volume.node_size() + entry_size_in_file(key, val)));
+            auto path = volume.path();
+            storage.close_volume(volume);
+            return (fs::file_size(path) == total_size);
+        };
+
+        bool success = true;
+        {
+            auto volume = s.open_volume(db_name, order);
+            set(volume, key, val);
+            success &= on_exit(s, volume, key, val);
+        }
+        {
+            auto volume = s.open_volume(db_name, order);
+            success &= utils::check(key, volume.get(key), val);
+            success &= on_exit(s, volume, key, val);
+        }
+        {
+            auto volume = s.open_volume(db_name, order);
+            success &= volume.remove(key);
+            success &= on_exit(s, volume, key, val, true);
+        }
+
         fs::remove(db_name);
         return success;
     }
 
     template <typename V>
-    bool run_test_get_one(std::string const& name, int const order) {
+    bool run_test_set_get_one(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
         Storage<int32_t, V> s;
 
@@ -214,7 +235,7 @@ namespace {
     }
 
     template <typename V>
-    bool run_test_repeatable_operations(std::string const& name, int const order) {
+    bool run_test_repeatable_operations_on_a_unique_key(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
         Storage<int32_t, V> s;
         auto volume = s.open_volume(db_name, order);
@@ -251,28 +272,28 @@ namespace {
         BOOST_TEST_REQUIRE(success);
     }
 
-    BOOST_AUTO_TEST_CASE(set_one_element) {
+    BOOST_AUTO_TEST_CASE(file_size_after_set_one_element) {
         int order = 2;
-        bool success = run_test_set_unique<int32_t>("one_s_i32", order);
-        success &= run_test_set_unique<int64_t>("one_s_i64", order);
-        success &= run_test_set_unique<float>("one_s_f", order);
-        success &= run_test_set_unique<double>("one_s_d", order);
-        success &= run_test_set_unique<std::string>("one_s_str", order);
-        success &= run_test_set_unique<std::wstring>("one_s_wstr", order);
-        success &= run_test_set_unique<const char*>("one_s_blob", order);
+        bool success = run_test_file_size_with_one_entry<int32_t>("one_s_i32", order);
+        success &= run_test_file_size_with_one_entry<int64_t>("one_s_i64", order);
+        success &= run_test_file_size_with_one_entry<float>("one_s_f", order);
+        success &= run_test_set_get_one<double>("one_s_d", order);
+        success &= run_test_file_size_with_one_entry<std::string>("one_s_str", order);
+        success &= run_test_file_size_with_one_entry<std::wstring>("one_s_wstr", order);
+        success &= run_test_file_size_with_one_entry<const char*>("one_s_blob", order);
 
         BOOST_TEST_REQUIRE(success);
     }
 
-    BOOST_AUTO_TEST_CASE(get_one_element) {
+    BOOST_AUTO_TEST_CASE(set_get_one_element) {
         int order = 2;
-        bool success = run_test_get_one<int32_t>("get_one_s_i32", order);
-        success &= run_test_get_one<int64_t>("get_one_s_i64", order);
-        success &= run_test_get_one<float>("get_one_s_f", order);
-        success &= run_test_get_one<double>("get_one_s_d", order);
-        success &= run_test_get_one<std::string>("get_one_s_str", order);
-        success &= run_test_get_one<std::wstring>("get_one_s_wstr", order);
-        success &= run_test_get_one<const char*>("get_one_s_blob", order);
+        bool success = run_test_set_get_one<int32_t>("get_one_s_i32", order);
+        success &= run_test_set_get_one<int64_t>("get_one_s_i64", order);
+        success &= run_test_set_get_one<float>("get_one_s_f", order);
+        success &= run_test_set_get_one<double>("get_one_s_d", order);
+        success &= run_test_set_get_one<std::string>("get_one_s_str", order);
+        success &= run_test_set_get_one<std::wstring>("get_one_s_wstr", order);
+        success &= run_test_set_get_one<const char*>("get_one_s_blob", order);
 
         BOOST_TEST_REQUIRE(success);
     }
@@ -290,15 +311,15 @@ namespace {
         BOOST_TEST_REQUIRE(success);
     }
 
-    BOOST_AUTO_TEST_CASE(set_the_element_many_times) {
+    BOOST_AUTO_TEST_CASE(repeatable_operations_on_a_unique_key) {
         int order = 2;
-        bool success = run_test_repeatable_operations<int32_t>("repeatable_set_s_i32", order);
-        success &= run_test_repeatable_operations<int64_t>("repeatable_set_s_i64", order);
-        success &= run_test_set_unique<float>("repeatable_set_s_f", order);
-        success &= run_test_set_unique<double>("repeatable_set_s_d", order);
-        success &= run_test_set_unique<std::string>("repeatable_set_s_str", order);
-        success &= run_test_set_unique<std::wstring>("repeatable_set_s_wstr", order);
-        success &= run_test_set_unique<const char*>("repeatable_set_s_blob", order);
+        bool success = run_test_repeatable_operations_on_a_unique_key<int32_t>("repeatable_set_s_i32", order);
+        success &= run_test_repeatable_operations_on_a_unique_key<int64_t>("repeatable_set_s_i64", order);
+        success &= run_test_repeatable_operations_on_a_unique_key<float>("repeatable_set_s_f", order);
+        success &= run_test_repeatable_operations_on_a_unique_key<double>("repeatable_set_s_d", order);
+        success &= run_test_repeatable_operations_on_a_unique_key<std::string>("repeatable_set_s_str", order);
+        success &= run_test_repeatable_operations_on_a_unique_key<std::wstring>("repeatable_set_s_wstr", order);
+        success &= run_test_repeatable_operations_on_a_unique_key<const char*>("repeatable_set_s_blob", order);
 
         BOOST_TEST_REQUIRE(success);
     }

@@ -35,15 +35,15 @@ namespace btree {
             return btree.remove(io, key);
         }
 #ifdef UNIT_TESTS
-        int header_size() {
+        int header_size() const {
             return io.header_size();
         }
 
-        int node_size() {
+        int node_size() const {
             return io.node_size();
         }
 
-        int entry_size() {
+        int entry_size() const {
             return io.entry_size();
         }
 #endif

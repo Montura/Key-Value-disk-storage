@@ -66,15 +66,15 @@ namespace btree {
         int64_t get_file_pos_end();
 
 #ifdef UNIT_TESTS
-        int32_t header_size() {
+        int32_t header_size() const {
             return INITIAL_ROOT_POS_IN_HEADER;
         }
 
-        int32_t node_size() {
+        int32_t node_size() const {
             return BTreeNode<K,V>(t, false).get_node_size_in_bytes();
         }
 
-        int32_t entry_size() {
+        int32_t entry_size() const {
             return sizeof(K) + sizeof(V);
         }
 #endif

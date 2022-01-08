@@ -49,9 +49,9 @@ namespace btree {
 #ifdef UNIT_TESTS
             std::string path() const { return ptr->path; }
 
-            int header_size() { return ptr->header_size(); }
-            int node_size() { return ptr->node_size(); }
-            int entry_size() { return ptr->entry_size(); }
+            int header_size() const { return ptr->header_size(); }
+            int node_size() const { return ptr->node_size(); }
+            int entry_size() const { return ptr->entry_size(); }
 #endif
         };
     };
