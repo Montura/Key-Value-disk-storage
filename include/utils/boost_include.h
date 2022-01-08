@@ -13,6 +13,17 @@
 #include <boost/asio.hpp>
 #include <boost/thread/future.hpp>
 
+#ifdef UNIT_TESTS
+    #if USE_BOOST_PREBUILT_STATIC_LIBRARY
+        #include <boost/test/unit_test.hpp>
+    #else
+        #include <boost/test/included/unit_test.hpp>
+    #endif
+
+    #include <boost/test/data/test_case.hpp>
+    //#include <boost/range/iterator_range.hpp>
+#endif
+
 namespace m_boost {
     namespace bio = boost::iostreams;
     namespace bip = boost::interprocess;

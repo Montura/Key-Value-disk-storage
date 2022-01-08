@@ -1,11 +1,21 @@
 #include <string>
 #include <map>
+#include <chrono>
+//#include <ctime>
 
 #include "test_stat.h"
 #include "test_utils.h"
 #include "storage.h"
 
 namespace btree_test {
+    using std::cout;
+    using std::endl;
+
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+
     using namespace btree;
     using namespace btree_test::utils;
 

@@ -1,111 +1,15 @@
-#ifndef UNIT_TESTS
-#if USE_BOOST_PREBUILT_STATIC_LIBRARY
-#include <boost/test/unit_test.hpp>
-#else
-#include <boost/test/included/unit_test.hpp>
-#endif
-
-namespace {
-    BOOST_AUTO_TEST_CASE(test_b_tree_init) {
-        const int n = 1000;
-        using BTreeIntInt = BTreeStore<int, int>;
-        bool found_all = false, any_not_found = false, remove_all = false;
-        std::string db_name = "../db_";
-        std::string end = ".txt";
-
-        for (int order = 2; order < 101; ++order) {
-            int total_deleted = 0;
-            {
-                BTreeIntInt btree(db_name + std::to_string(order) + end, order);
-                for (int i = n - 1; i >= 0; --i) {
-                    btree.set(i, 65 + i);
-                }
-
-                int total_found = 0;
-                for (int i = 0; i < n; ++i) {
-                    total_found += btree.exist(i);
-                }
-                assert(total_found == n);
-
-                int total_not_found = 0;
-                const int key_shift = n;
-                for (int i = 0; i < n; ++i) {
-                    total_not_found += !btree.exist(key_shift + i);
-                }
-                any_not_found = (total_not_found == n);
-
-                int cycles = 0;
-                for (int i = n - 1; i >= 0; i -= 7) {
-                    ++cycles;
-                    total_deleted += btree.remove(i);
-                }
-                remove_all = (total_deleted == cycles);
-
-                for (int i = 0; i < n; i += 31) {
-                    ++cycles;
-                    total_deleted += btree.remove(i);
-                }
-                remove_all = (total_deleted == cycles);
-
-
-                total_found = 0;
-                for (int i = 0; i < n; ++i) {
-                    total_found += btree.exist(i);
-                }
-                found_all = (total_found == (n -  total_deleted));
-            }
-            std::string msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
-            BOOST_REQUIRE_MESSAGE(found_all && any_not_found && remove_all, msg);
-
-            {
-                BTreeIntInt btree(db_name + std::to_string(order) + end, order);
-                int total_found = 0;
-                for (int i = 0; i < n; ++i) {
-                    total_found += btree.exist(i);
-                }
-                found_all = (total_found == (n - total_deleted));
-            }
-            msg = "BTreeStore<int, int, " + std::to_string(order) + ">";
-            BOOST_REQUIRE_MESSAGE(found_all, msg);
-
-        }
-    }
-}
-#else
+#ifdef UNIT_TESTS
 
 #include <iostream>
-#include <ctime>
-#include <map>
-#include <chrono>
-
-using std::cout;
-using std::endl;
-using std::chrono::high_resolution_clock;
-using std::chrono::duration_cast;
-using std::chrono::duration;
-using std::chrono::milliseconds;
+#include <filesystem>
 
 #include "test_runner.h"
 #include "utils/boost_include.h"
 
-#if USE_BOOST_PREBUILT_STATIC_LIBRARY
-#include <boost/test/unit_test.hpp>
-#else
-#include <boost/test/included/unit_test.hpp>
-#endif
-
-#include <boost/test/data/test_case.hpp>
-//#include <boost/range/iterator_range.hpp>
-
-#include <filesystem>
-
-namespace montura {
-namespace test {
-    BOOST_AUTO_TEST_SUITE(utf_converters)
+namespace btree_test {
+    BOOST_AUTO_TEST_SUITE(key_value_operations)
 
 namespace {
-    using namespace btree;
-    using namespace btree_test;
     namespace fs = std::filesystem;
 
     template <typename VolumeT, typename K, typename V>
@@ -133,7 +37,7 @@ namespace {
         std::string db_name = "../" + name + ".txt";
         {
             Storage<int32_t, V> s;
-            auto v = s.open_volume(db_name, order);
+            s.open_volume(db_name, order);
         }
         bool success = fs::file_size(db_name) == 0;
         fs::remove(db_name);
@@ -243,7 +147,6 @@ namespace {
         int32_t key = 0;
         V expected_val = utils::generate_value<V>(key);
         uint32_t header_size = volume.header_size();
-        uint32_t total_size = header_size + volume.node_size() + entry_size_in_file(key, expected_val);
 
         bool success = true;
         for (int i = 0; i < 100; ++i) {
@@ -279,6 +182,19 @@ namespace {
         fs::remove(db_name);
         return success;
     }
+
+    template <typename V>
+    void run_on_random_values(std::string const& name, int const order) {
+        std::string db_name = "../" + name + ".txt";
+        int rounds = 3;
+        int n = 10000;
+        cout << "Run " << rounds << " iterations on " << n << " elements: " << endl;
+        for (int i = 0; i < rounds; ++i) {
+            auto keys_to_remove = utils::generate_rand_keys();
+            TestRunner<int32_t, V>::run(db_name, order, n, keys_to_remove);
+        }
+        fs::remove(db_name);
+    };
 }
 
     BOOST_AUTO_TEST_CASE(empty_file) {
@@ -358,37 +274,24 @@ namespace {
         BOOST_TEST_REQUIRE(success);
     }
 
+    BOOST_AUTO_TEST_CASE(test_on_random_values) {
+            int order = 2;
+            run_on_random_values<int32_t>("random_s_i32", order);
+            run_on_random_values<int64_t>("random_s_i64", order);
+            run_on_random_values<float>("random_s_f", order);
+            run_on_random_values<double>("random_s_d", order);
+            run_on_random_values<std::string>("random_s_str", order);
+            run_on_random_values<std::wstring>("random_s_wstr", order);
+            run_on_random_values<const char*>("random_s_blob", order);
+
+            BOOST_TEST_REQUIRE(true);
+        }
+
     BOOST_AUTO_TEST_SUITE_END()
 
 }
-}
+#endif
 
-
-//#include "test_runner.h"
-//#include "utils/utils.h"
-//using namespace btree_test;
-//
-//const int n = 10000;
-//
-//void test() {
-//    std::string db_prefix = "../db_";
-//    std::string end = ".txt";
-//
-//    for (int i = 0; i < 11; ++i) {
-//        auto keys_to_remove = utils::generate_rand_keys();
-//        for (int order = 2; order < 7; ++order) {
-//            auto db_name = db_prefix + std::to_string(order);
-//            TestRunner<int32_t, int32_t>::run(db_name + "_i32" + end, order, n, keys_to_remove);
-//            TestRunner<int32_t, int64_t>::run(db_name + "_i64" + end, order, n, keys_to_remove);
-//            TestRunner<int32_t, float>::run(db_name + "_f" + end, order, n, keys_to_remove);
-//            TestRunner<int32_t, double>::run(db_name + "_d" + end, order, n, keys_to_remove);
-//            TestRunner<int32_t, std::string>::run(db_name + "_str" + end, order, n, keys_to_remove);
-//            TestRunner<int32_t, std::wstring>::run(db_name + "_wtr" + end, order, n, keys_to_remove);
-//            TestRunner<int32_t, const char*>::run(db_name + "_blob" + end, order, n, keys_to_remove);
-//        }
-//        std::cout << "iter: " << i << endl;
-//    }
-//}
 //
 //void test_mt() {
 //    std::string db_prefix = "../db_";
@@ -420,5 +323,3 @@ namespace {
 //    return 0;
 //}
 
-
-#endif // UNIT_TESTS
