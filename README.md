@@ -25,11 +25,11 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
      - VALUE_TYPE               |=> takes 1 byte 
         - VALUE_TYPE = 0 for primitives: (u)int32_t, (u)int64_t, float, double
         - VALUE_TYPE = 1 for container of values: (w)string, vectors<T>
-        - VALUE_TYPE = 2 for blob
+        - VALUE_TYPE = 2 for blob [char*]
 
      - ELEMENT_SIZE             |=> takes 1 byte 
         - ELEMENT_SIZE = sizeof(VALUE_TYPE) for primitives
-        - ELEMENT_SIZE = mask from the 8 bits (max 256 bytes) for non-primitives
+        - ELEMENT_SIZE = sizeof(VALUE_SUBTYPE) for containers or blob
   
      - ROOT POS                 |=> takes 8 bytes (pos in file)
 
