@@ -4,7 +4,11 @@
 #include <cstdint>
 #include <optional>
 
+#include "utils/utils.h"
+
 namespace btree {
+    using namespace utils;
+
     template <typename K, typename V>
     class Entry {
         static constexpr bool V_is_arithmetic = std::is_arithmetic_v<V>;
@@ -18,7 +22,7 @@ namespace btree {
 
         const K key;
         const ValueType data;
-        const int size_in_bytes;
+        const int32_t size_in_bytes;
 
         template <typename U = V, enable_if_t<std::is_arithmetic_v<U>> = true>
         explicit Entry() :
@@ -42,19 +46,19 @@ namespace btree {
         Entry(const K& key, const V value) :
                 key(key),
                 data(value),
-                size_in_bytes(sizeof(value)) {}
+                size_in_bytes(static_cast<int32_t>(sizeof(value))) {}
 
         template <typename U = V, enable_if_t<is_string_v<U>> = true>
         Entry(const K& key, const V& value) :
                 key(key),
                 data(reinterpret_cast<const ValueType>(value.c_str())),
-                size_in_bytes(value.size() * sizeof(typename V::value_type)) {}
+                size_in_bytes(static_cast<int32_t>(value.size() * sizeof(typename V::value_type))) {}
 
         template <typename U = V, enable_if_t<std::is_pointer_v<U>> = true>
         Entry(const K& key, const V& data, const int size) :
                 key(key),
                 data(reinterpret_cast<const ValueType>(data)),
-                size_in_bytes(size * size_of_original_value_type)
+                size_in_bytes(static_cast<int32_t>(size * size_of_original_value_type))
         {
             typedef typename std::remove_pointer_t<V> data_type;
             static_assert(sizeof(data_type) == sizeof(OriginalValueType));
@@ -101,5 +105,14 @@ namespace btree {
                     return V(data);
             }
         }
+#ifdef UNIT_TESTS
+        int32_t size_in_file() {
+            int32_t size = sizeof(K);
+            if constexpr (is_string_v<V> || V_is_pointer) {
+                size += 4; // strlen
+            }
+            return size + size_in_bytes;
+        }
+#endif
     };
 }

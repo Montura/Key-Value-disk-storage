@@ -1,8 +1,9 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
-namespace btree {
+namespace utils {
 #if _WIN64 || __amd64__
     static_assert(sizeof(int64_t) == sizeof(size_t));
 #else
@@ -63,10 +64,6 @@ namespace btree {
 
     template <typename T>
     inline constexpr bool is_vector_v = is_vector<T>::value;
-
-
-    template <typename T>
-    using to_string = std::basic_string<T> (*)(int i);
 
     template <typename V>
     constexpr uint8_t get_element_size() {

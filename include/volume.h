@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <mutex>
 
 #include "entry.h"
 #include "io/io_manager.h"
@@ -34,6 +35,19 @@ namespace btree {
         bool remove(const K& key) {
             return btree.remove(io, key);
         }
+#ifdef UNIT_TESTS
+        int header_size() const {
+            return io.header_size();
+        }
+
+        int node_size() const {
+            return io.node_size();
+        }
+
+        int entry_size() const {
+            return io.entry_size();
+        }
+#endif
     };
 
     /** Volume with coarse-grained locks for multithreading usage */

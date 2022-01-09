@@ -2,7 +2,7 @@
 
 #include <atomic>
 
-namespace btree_test {
+namespace tests {
     class TestStat {
         int64_t N;
     public:

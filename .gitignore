@@ -2,6 +2,7 @@
 CMakeCache.txt
 CMakeFiles
 cmake-build-debug
+cmake-build-release
 Testing
 Makefile
 cmake_install.cmake

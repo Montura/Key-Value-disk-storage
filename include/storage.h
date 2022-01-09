@@ -27,7 +27,7 @@ namespace btree {
         }
 
         bool close_volume(const VolumeWrapper& v) {
-            return volume_map.remove(v.ptr->path);
+            return volume_map.erase(v.path());
         }
 
         class VolumeWrapper {
@@ -45,6 +45,14 @@ namespace btree {
             std::optional <V> get(const K& key) const { return ptr->get(key); }
 
             bool remove(const K& key) { return ptr->remove(key); }
+
+#ifdef UNIT_TESTS
+            std::string path() const { return ptr->path; }
+
+            int header_size() const { return ptr->header_size(); }
+            int node_size() const { return ptr->node_size(); }
+            int entry_size() const { return ptr->entry_size(); }
+#endif
         };
     };
 

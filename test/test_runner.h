@@ -1,29 +1,33 @@
+#include <iostream>
 #include <string>
 #include <map>
+#include <chrono>
 
 #include "test_stat.h"
 #include "test_utils.h"
 #include "storage.h"
 
-namespace btree_test {
+namespace tests {
+    using std::cout;
+    using std::endl;
+
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+
     using namespace btree;
-    using namespace btree_test::utils;
+    using namespace test_utils;
 
     template <typename K, typename V>
     class TestRunner {
         TestStat stat;
         std::map<K, V> verify_map;
         Storage<K,V> storage;
+        ValueGenerator<V> g;
 
         explicit TestRunner(int iterations) : stat(iterations) {}
 
-        ~TestRunner() {
-            if constexpr(std::is_pointer_v<V>) {
-                for (auto& data: verify_map) {
-                    delete data.second;
-                }
-            }
-        }
     public:
 
         static void run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
@@ -38,8 +42,8 @@ namespace btree_test {
             /* Getting number of milliseconds as a double. */
             duration<double, std::milli> ms_double = t2 - t1;
 
-            cout << "Passed for " + db_name << ": " <<
-                 "\t added: " << n <<
+            cout << "\tPassed for " + db_name << ": " <<
+                 "   added: " << n <<
                  ", found: " << runner.stat.total_found <<
                  ", removed: " << runner.stat.total_removed <<
                  ", total_after_remove: " << runner.stat.total_after_remove <<
@@ -51,9 +55,9 @@ namespace btree_test {
 
             for (int i = 0; i < n; ++i) {
                 K key = i;
-                V value = utils::generate_value<V>(i);
+                V value = g.next_value(key);
                 if constexpr(std::is_pointer_v<V>) {
-                    btree.set(key, value, utils::get_len_by_idx(i));
+                    btree.set(key, value, get_len_by_idx(i));
                 } else {
                     btree.set(key, value);
                 }
@@ -77,7 +81,7 @@ namespace btree_test {
             for (int i = 0; i < n; ++i) {
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value()) {
-                    utils::check(i, actual_value, verify_map.find(i));
+                    check(i, actual_value, verify_map.find(i));
                     stat.total_found++;
                 } else {
                     assert(actual_value == std::nullopt);
@@ -96,9 +100,6 @@ namespace btree_test {
                 auto it = verify_map.find(i);
 
                 if (it != verify_map.end()) {
-                    if constexpr(std::is_pointer_v<V>) {
-                        delete it->second;
-                    }
                     verify_map.erase(it);
                 }
             };
@@ -140,7 +141,7 @@ namespace btree_test {
                 auto expected_value = verify_map.find(i);
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value() && expected_value != verify_map.end()) {
-                    utils::check(i, actual_value, expected_value);
+                    check(i, actual_value, expected_value);
                     stat.total_after_reopen++;
                 } else {
                     assert(actual_value == std::nullopt);
@@ -154,6 +155,8 @@ namespace btree_test {
     class TestRunnerMT {
         StorageMT<K,V> storage;
         std::map<K,V> verify_map;
+        ValueGenerator<V> g;
+
         using VolumeT = typename StorageMT<K,V>::VolumeWrapper;
         using VerifyT = void (*)(const TestStat& stat);
 
@@ -165,27 +168,28 @@ namespace btree_test {
             TestRunnerMT runner(n);
             auto volume = runner.storage.open_volume(db_name, order);
 
+            auto t1 = high_resolution_clock::now();
             for (int i = 0; i < 10; ++i) {
-                cout << "Pool iter: " << i << endl;
                 runner.fill_map_with_random_values(n);
                 runner.test_set(pool, volume, n);
                 runner.test_remove(pool, volume, n / 2);
                 runner.clear_map();
             }
+            auto t2 = high_resolution_clock::now();
+            /* Getting number of milliseconds as a double. */
+            duration<double, std::milli> ms_double = t2 - t1;
+            cout << "\t Passed for " + db_name << ": " << " in " << ms_double.count() << "ms" << endl;
         }
 
     private:
         void fill_map_with_random_values(int n) {
             for (int i = 0; i < n; ++i)
-                verify_map[i] = utils::generate_value<V>(i);
+                verify_map[i] = g.next_value(i);
         }
 
         void clear_map() {
-            if constexpr(std::is_pointer_v<V>) {
-                for (auto& entry: verify_map) {
-                    delete entry.second;
-                }
-            }
+            verify_map.clear();
+            g.clear();
         }
 
         void test_set(basio::thread_pool& pool, VolumeT& volume, const int n) {
@@ -219,7 +223,7 @@ namespace btree_test {
             for (int i = from; i < to; ++i) {
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value()) {
-                    utils::check(i, actual_value, verify_map.find(i));
+                    check(i, actual_value, verify_map.find(i));
                     stat.total_found++;
                 } else {
                     stat.total_not_found++;
@@ -228,13 +232,13 @@ namespace btree_test {
             return stat;
         }
 
-        static TestStat test_set_keys(VolumeT& btree, const std::map<K,V>& map, const int from, const int to) {
+        static TestStat test_set_keys(VolumeT& btree, const std::map<K,V>& verify_map, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {
                 K key = i;
-                V value = map.find(i)->second;
+                V value = verify_map.find(i)->second;
                 if constexpr(std::is_pointer_v<V>) {
-                    btree.set(key, value, utils::get_len_by_idx(i));
+                    btree.set(key, value, get_len_by_idx(i));
                 } else {
                     btree.set(key, value);
                 }
@@ -251,5 +255,4 @@ namespace btree_test {
         }
 
     };
-
 }

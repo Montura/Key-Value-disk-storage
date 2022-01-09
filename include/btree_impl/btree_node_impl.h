@@ -35,11 +35,11 @@ namespace btree {
     int32_t BTreeNode<K,V>::get_node_size_in_bytes() const {
         static_assert(std::is_same_v<decltype(m_pos), typename decltype(key_pos)::value_type>);
         static_assert(std::is_same_v<decltype(m_pos), typename decltype(child_pos)::value_type>);
-        return
+        return static_cast<int32_t>(
                 sizeof(used_keys) +
                 sizeof(is_leaf) +
                 key_pos.size() * sizeof(m_pos) +
-                child_pos.size() * sizeof(m_pos);
+                child_pos.size() * sizeof(m_pos));
     }
 
     template <typename K, typename V>

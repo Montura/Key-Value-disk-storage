@@ -7,12 +7,22 @@
 
 namespace btree {
     struct MappedFile {
+
+        class MappedRegion {
+            bip::mapped_region mapped_region;
+            uint8_t* mapped_region_begin;
+        public:
+            explicit MappedRegion();
+            uint8_t* address_by_offset(const int64_t offset);
+            void remap(const std::string& path);
+        };
+
         MappedFile(const std::string& fn, int64_t bytes_num);
 
         ~MappedFile();
 
-        template <typename EntryT>
-        std::pair<typename EntryT::ValueType, int32_t> read_next_data();
+        template <typename ValueType>
+        std::pair<ValueType, int32_t> read_next_data();
 
         template <typename T>
         void write_next_primitive(const T val);
@@ -52,14 +62,11 @@ namespace btree {
         int64_t write_blob(T source_data, const int32_t total_size_in_bytes);
 
         void resize(int64_t new_size);
-        void remap();
 
-        uint8_t* mapped_region_begin;
         int64_t m_pos;
         int64_t m_size;
         int64_t m_capacity;
-        bip::file_mapping file_mapping;
-        bip::mapped_region mapped_region;
+        MappedRegion* m_mapped_region;
     };
 }
-#include "file_mapping_impl.h"
+#include "mapped_file_impl.h"
