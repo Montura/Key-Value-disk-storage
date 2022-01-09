@@ -27,45 +27,21 @@ namespace btree {
         if (m_size > 0)
             remap();
     }
-#ifdef _MSC_VER
-    // https://youtrack.jetbrains.com/issue/PROF-752
-    // https://github.com/microsoft/STL/blob/main/stl/src/filesystem.cpp#L671
-    [[nodiscard]] __std_win_error __stdcall __std_fs_resize_file(
-            _In_z_ const wchar_t* const _Target, const uintmax_t _New_size) noexcept {
-        __std_win_error _Err;
-        const _STD _Fs_file _Handle(_Target, __std_access_rights::_File_generic_write, __std_fs_file_flags::_None, &_Err);
-        if (_Err != __std_win_error::_Success) {
-            return _Err;
-        }
 
-        LARGE_INTEGER _Large;
-        _Large.QuadPart = _New_size;
-        if (SetFilePointerEx(_Handle._Get(), _Large, nullptr, FILE_BEGIN) == 0 || SetEndOfFile(_Handle._Get()) == 0) {
-            return __std_win_error{GetLastError()};
-        }
 
-        return __std_win_error::_Success;
-    }
-#endif
     MappedFile::~MappedFile() {
 #ifdef _MSC_VER
-        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-        std::wstring wide = converter.from_bytes(path);
-            try {
-                __std_fs_resize_file(wide.c_str(), m_capacity);
-            }
-            catch(std::filesystem::filesystem_error const& ex) {
-                std::cout
-                        << "what():  " << ex.what() << '\n'
-                        << "path1(): " << ex.path1() << '\n'
-                        << "path2(): " << ex.path2() << '\n'
-                        << "code().value():    " << ex.code().value() << '\n'
-                        << "code().message():  " << ex.code().message() << '\n'
-                        << "code().category(): " << ex.code().category().name() << '\n';
-            }
-#else
-        fs::resize_file(path, m_capacity);
+        // Issues:
+        //  - https://youtrack.jetbrains.com/issue/PROF-752
+        //  - https://github.com/microsoft/STL/blob/main/stl/src/filesystem.cpp#L671
+        // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setendoffile
+        // todo:
+        //  CreateFileMapping is called to create a file mapping object for hFile,
+        //  UnmapViewOfFile must be called first to unmap all views and call CloseHandle to close the file mapping object
+        //  before you can call SetEndOfFile.
+        bool unmap = UnmapViewOfFile(mapped_region_begin);
 #endif
+        fs::resize_file(path, m_capacity);
     }
 
     template <typename T>
