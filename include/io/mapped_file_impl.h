@@ -8,13 +8,13 @@ namespace fs = std::filesystem;
 
 namespace btree {
 namespace file {
-    void seek_file_to_offset(const std::string& path, const int file_open_mode, const int64_t offset) {
+    void seek_file_to_offset(const std::string& path, const std::ios_base::openmode file_open_mode, const int64_t offset) {
         std::filebuf buf;
         auto* p_file_buf = buf.open(path, file_open_mode);
         if (!p_file_buf)
             throw std::runtime_error("Wrong path is provided for mapped file, path = " + path);
         buf.pubseekoff(offset, std::ios_base::beg);
-        if (offset > 0) // if file is not empty is needs EOF
+        if (offset > 0) // if file is not empty it needs EOF
             buf.sputc(0);
         buf.close();
     }
