@@ -4,6 +4,10 @@
 
 #include "utils/utils.h"
 
+#include <locale>
+#include <codecvt>
+#include <string>
+
 namespace fs = std::filesystem;
 
 namespace btree {
@@ -23,16 +27,32 @@ namespace btree {
         if (m_size > 0)
             remap();
     }
+#ifdef _MSC_VER
+    // https://youtrack.jetbrains.com/issue/PROF-752
+    // https://github.com/microsoft/STL/blob/main/stl/src/filesystem.cpp#L671
+    [[nodiscard]] __std_win_error __stdcall __std_fs_resize_file(
+            _In_z_ const wchar_t* const _Target, const uintmax_t _New_size) noexcept {
+        __std_win_error _Err;
+        const _STD _Fs_file _Handle(_Target, __std_access_rights::_File_generic_write, __std_fs_file_flags::_None, &_Err);
+        if (_Err != __std_win_error::_Success) {
+            return _Err;
+        }
 
+        LARGE_INTEGER _Large;
+        _Large.QuadPart = _New_size;
+        if (SetFilePointerEx(_Handle._Get(), _Large, nullptr, FILE_BEGIN) == 0 || SetEndOfFile(_Handle._Get()) == 0) {
+            return __std_win_error{GetLastError()};
+        }
+
+        return __std_win_error::_Success;
+    }
+#endif
     MappedFile::~MappedFile() {
 #ifdef _MSC_VER
-        //    std::cout << "RESIZE to " << m_capacity << std::endl;
-            bip::file_mapping new_mapping;
-            bip::mapped_region new_region;
-            file_mapping.swap(new_mapping);
-            mapped_region.swap(new_region);
+        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+        std::wstring wide = converter.from_bytes(path);
             try {
-                fs::resize_file(path, m_capacity);
+                __std_fs_resize_file(wide.c_str(), m_capacity);
             }
             catch(std::filesystem::filesystem_error const& ex) {
                 std::cout
@@ -153,7 +173,7 @@ namespace btree {
     void MappedFile::remap() {
         auto new_mapping = bip::file_mapping(path.data(), bip::read_write);
         auto new_region = bip::mapped_region(new_mapping, bip::read_write);
-        file_mapping.swap(new_mapping);
+       // file_mapping.swap(new_mapping);
         mapped_region.swap(new_region);
         mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
     }

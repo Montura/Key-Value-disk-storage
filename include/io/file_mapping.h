@@ -58,7 +58,7 @@ namespace btree {
         int64_t m_pos;
         int64_t m_size;
         int64_t m_capacity;
-        bip::file_mapping file_mapping;
+//        bip::file_mapping file_mapping;
         bip::mapped_region mapped_region;
     };
 }
