@@ -12,9 +12,8 @@ namespace btree {
             bip::mapped_region mapped_region;
             uint8_t* mapped_region_begin;
         public:
-            MappedRegion();
-
-            uint8_t* pos(const int64_t offset);
+            explicit MappedRegion();
+            uint8_t* address_by_offset(const int64_t offset);
             void remap(const std::string& path);
         };
 
@@ -63,7 +62,6 @@ namespace btree {
         int64_t write_blob(T source_data, const int32_t total_size_in_bytes);
 
         void resize(int64_t new_size);
-        void remap();
 
         int64_t m_pos;
         int64_t m_size;
@@ -71,4 +69,4 @@ namespace btree {
         MappedRegion* m_mapped_region;
     };
 }
-#include "file_mapping_impl.h"
+#include "mapped_file_impl.h"

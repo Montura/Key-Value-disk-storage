@@ -1,6 +1,6 @@
 #pragma once
 
-#include "file_mapping.h"
+#include "mapped_file.h"
 #include "utils/forward_decl.h"
 
 /**

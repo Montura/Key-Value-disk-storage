@@ -1,4 +1,4 @@
-#include "io/file_mapping.h"
+#include "io/mapped_file.h"
 
 constexpr int ITERATIONS = 1000;
 
