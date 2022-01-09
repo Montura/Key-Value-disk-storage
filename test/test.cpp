@@ -96,7 +96,7 @@ namespace tests {
     BOOST_AUTO_TEST_CASE(multithreading_test) {
         int order = 2;
         int elements_count = 10000;
-        basio::thread_pool pool(10);
+        ThreadPool pool(10);
         bool success = run_multithreading_test<int32_t>(pool, "mt_s_i32", order, elements_count);
         success &= run_multithreading_test<int64_t>(pool, "mt_s_i64", order, elements_count);
         success &= run_multithreading_test<float>(pool, "mt_s_f", order, elements_count);

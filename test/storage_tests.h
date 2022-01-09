@@ -204,7 +204,7 @@ namespace storage_tests {
     };
 
     template <typename V>
-    bool run_multithreading_test(basio::thread_pool& pool, std::string const& name, int const order, int const n) {
+    bool run_multithreading_test(ThreadPool& pool, std::string const& name, int const order, int const n) {
         std::string db_name = "../" + name + ".txt";
 #ifdef DEBUG
         std::cout << "Run multithreading test on " << n << " elements on 10 threads: " << std::endl;

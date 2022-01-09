@@ -6,6 +6,8 @@
 #include "test_stat.h"
 #include "test_utils.h"
 #include "storage.h"
+#include "thread_pool.hpp"
+
 
 namespace tests {
     using std::cout;
@@ -162,7 +164,7 @@ namespace tests {
 
     public:
 
-        static bool run(basio::thread_pool& pool, const std::string& db_name, const int order, const int n) {
+        static bool run(ThreadPool& pool, const std::string& db_name, const int order, const int n) {
             TestRunnerMT runner(n);
             auto volume = runner.storage.open_volume(db_name, order);
             bool success = true;
@@ -191,29 +193,23 @@ namespace tests {
             g.clear();
         }
 
-        bool test_set(basio::thread_pool& pool, VolumeT& volume, const int n) {
-            auto task = BoostPackagedTask<TestStat>(boost::bind(&test_set_keys, volume, verify_map, 0, n));
-            do_task(pool, task);
+        bool test_set(ThreadPool& pool, VolumeT& volume, const int n) {
+            auto future = pool.submit([&]() -> TestStat { return test_set_keys(volume, verify_map, 0, n); });
+            future.get();
 
             auto get_stat = test_get_keys(volume, verify_map, 0, n);
             return (get_stat.total_found == n);
         }
 
-        bool test_remove(basio::thread_pool& pool, VolumeT& volume, const int n) {
+        bool test_remove(ThreadPool& pool, VolumeT& volume, const int n) {
             auto half = n / 2;
-            auto task = BoostPackagedTask<TestStat>(boost::bind(&test_remove_keys, volume, 0, half));
 
-            auto remove_stat = do_task(pool, task);
+            auto future = pool.submit([&]() -> TestStat { return test_remove_keys(volume, 0, half); });
+            auto remove_stat = future.get();
             bool success = (remove_stat.total_removed == half);
 
             auto get_stat = test_get_keys(volume, verify_map, 0, n);
             return success && (get_stat.total_found == half) && (get_stat.total_not_found == half);
-        }
-
-        TestStat do_task(basio::thread_pool& pool, BoostPackagedTask<TestStat>& task) {
-            auto future = task.get_future();
-            post(pool, std::move(task));
-            return future.get();
         }
 
         static TestStat test_get_keys(const VolumeT& volume, const std::map<K,V>& verify_map, const int from, const int to) {
