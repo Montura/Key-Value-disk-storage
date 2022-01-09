@@ -11,7 +11,9 @@
 namespace fs = std::filesystem;
 
 namespace btree {
-    MappedFile::MappedFile(const std::string& fn, int64_t bytes_num) : path(fn), m_pos(0) {
+    MappedFile::MappedFile(const std::string& fn, int64_t bytes_num) :
+            path(fn), m_pos(0), m_mapped_region(new MappedRegion())
+    {
         bool file_exists = fs::exists(fn);
         if (!file_exists) {
             std::filebuf fbuf;
@@ -31,17 +33,33 @@ namespace btree {
 
     MappedFile::~MappedFile() {
 #ifdef _MSC_VER
-        // Issues:
-        //  - https://youtrack.jetbrains.com/issue/PROF-752
-        //  - https://github.com/microsoft/STL/blob/main/stl/src/filesystem.cpp#L671
-        // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setendoffile
-        // todo:
-        //  CreateFileMapping is called to create a file mapping object for hFile,
-        //  UnmapViewOfFile must be called first to unmap all views and call CloseHandle to close the file mapping object
-        //  before you can call SetEndOfFile.
-        bool unmap = UnmapViewOfFile(mapped_region_begin);
+//        // Issues:
+//        //  - https://youtrack.jetbrains.com/issue/PROF-752
+//        //  - https://github.com/microsoft/STL/blob/main/stl/src/filesystem.cpp#L671
+//        // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setendoffile
+//        // todo:
+//        //  CreateFileMapping is called to create a file mapping object for hFile,
+//        //  UnmapViewOfFile must be called first to unmap all views and call CloseHandle to close the file mapping object
+//        //  before you can call SetEndOfFile.
+//        bool unmap = UnmapViewOfFile(mapped_region_begin);
+//        // todo: is done here in BOOST_MAPPED_REGION dtor:
+//              https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L555
 #endif
+        delete m_mapped_region;
         fs::resize_file(path, m_capacity);
+    }
+
+    MappedFile::MappedRegion::MappedRegion() {}
+
+    uint8_t* MappedFile::MappedRegion::pos(const int64_t offset) {
+        return mapped_region_begin + offset;
+    }
+
+    void MappedFile::MappedRegion::remap(const std::string& path) {
+        auto new_mapping = bip::file_mapping(path.data(), bip::read_write);
+        auto new_region = bip::mapped_region(new_mapping, bip::read_write);
+        mapped_region.swap(new_region);
+        mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
     }
 
     template <typename T>
@@ -59,7 +77,7 @@ namespace btree {
 
         if constexpr(std::is_pointer_v<ValueType>) {
             auto len = read_next_primitive<int32_t>();
-            auto* value_begin = mapped_region_begin + m_pos;
+            auto* value_begin = m_mapped_region->pos(m_pos);
             m_pos += len;
             return std::make_pair(cast_to_const_uint8_t_data(value_begin), len);
         } else {
@@ -78,7 +96,7 @@ namespace btree {
     template <typename T>
     T MappedFile::read_next_primitive() {
         static_assert(std::is_arithmetic_v<T>);
-        auto* value_begin = mapped_region_begin + m_pos;
+        auto* value_begin = m_mapped_region->pos(m_pos);
         m_pos += sizeof(T);
         return *(reinterpret_cast<T*>(value_begin));
     }
@@ -90,7 +108,7 @@ namespace btree {
             resize(std::max(2 * m_size, m_pos + total_size));
 
         auto* data = cast_to_const_uint8_t_data(vec.data());
-        std::copy(data, data + total_size, mapped_region_begin + m_pos);
+        std::copy(data, data + total_size, m_mapped_region->pos(m_pos));
         m_pos += total_size;
         m_capacity = std::max(m_pos, m_capacity);
     }
@@ -100,7 +118,7 @@ namespace btree {
         int64_t total_size = sizeof(T) * vec.size();
 
         auto* data = cast_to_uint8_t_data(vec.data());
-        auto* start = mapped_region_begin + m_pos;
+        auto* start = m_mapped_region->pos(m_pos);
         auto* end = start + total_size;
         std::copy(start, end, data);
         m_pos += total_size;
@@ -114,7 +132,7 @@ namespace btree {
             resize(std::max(2 * m_size, m_pos + total_size));
 
         auto* data = cast_to_const_uint8_t_data(&val);
-        std::copy(data, data + total_size, mapped_region_begin + m_pos);
+        std::copy(data, data + total_size, m_mapped_region->pos(m_pos));
         return m_pos + total_size;
     }
 
@@ -130,7 +148,7 @@ namespace btree {
             resize(std::max(2 * m_size, total_bytes_size));
 
         auto* data = cast_to_const_uint8_t_data(source_data);
-        std::copy(data, data + total_bytes_size, mapped_region_begin + m_pos);
+        std::copy(data, data + total_bytes_size, m_mapped_region->pos(m_pos));
         return m_pos + total_bytes_size;
     }
 
@@ -147,11 +165,7 @@ namespace btree {
     }
 
     void MappedFile::remap() {
-        auto new_mapping = bip::file_mapping(path.data(), bip::read_write);
-        auto new_region = bip::mapped_region(new_mapping, bip::read_write);
-       // file_mapping.swap(new_mapping);
-        mapped_region.swap(new_region);
-        mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
+        m_mapped_region->remap(path);
     }
 
     void MappedFile::set_pos(int64_t pos) {

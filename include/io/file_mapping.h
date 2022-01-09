@@ -7,6 +7,17 @@
 
 namespace btree {
     struct MappedFile {
+
+        class MappedRegion {
+            bip::mapped_region mapped_region;
+            uint8_t* mapped_region_begin;
+        public:
+            MappedRegion();
+
+            uint8_t* pos(const int64_t offset);
+            void remap(const std::string& path);
+        };
+
         MappedFile(const std::string& fn, int64_t bytes_num);
 
         ~MappedFile();
@@ -54,12 +65,10 @@ namespace btree {
         void resize(int64_t new_size);
         void remap();
 
-        uint8_t* mapped_region_begin;
         int64_t m_pos;
         int64_t m_size;
         int64_t m_capacity;
-//        bip::file_mapping file_mapping;
-        bip::mapped_region mapped_region;
+        MappedRegion* m_mapped_region;
     };
 }
 #include "file_mapping_impl.h"
