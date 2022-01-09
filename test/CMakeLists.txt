@@ -6,8 +6,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(Boost_USE_STATIC_LIBS ON)
 endif()
 
-message(${CMAKE_CXX_COMPILER})
-message(${CMAKE_CXX_COMPILER_VERSION})
+message("CXX_COMPILER = ${CMAKE_CXX_COMPILER}")
+message("CXX_COMPILER_VERSION = ${CMAKE_CXX_COMPILER_VERSION}")
+message("BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
 find_package(Boost COMPONENTS iostreams thread REQUIRED)
 if (NOT Boost_FOUND)
