@@ -17,6 +17,13 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
     * Windows (x86|x86-64), Visual Studio 2019 Version 16.5.0 (cl v19.25.28610.4, Windows 10 Pro)
     * Linux (x86-64), compiler GNU version 10.3.0 (Ubuntu v20.04)
 
+#### TODO:
+   * To implement recovery technique [Write-Ahead-Log](https://people.eecs.berkeley.edu/~kubitron/cs262/handouts/papers/a1-graefe.pdf) 
+      * To provide failure atomicity and durability
+      * The recovery log describes changes before any in-place updates of the B-tree data structure.
+      * *For now all modifications are written to the end of the same file -> file size accordingly grows (drawback)*
+   * Specify mapped region usage [behavior](https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L199) to reduce [overhead in memory mapped file I/O](https://www.usenix.org/sites/default/files/conference/protected-files/hotstorage17_slides_choi.pdf)
+
 ### Volume structure:
 
  #### Header (6 bytes):
@@ -89,3 +96,33 @@ cmake .
     auto v_mt = s_mt.open_volume(path, tree_order);
 
 ```
+
+#### Links:
+   * Overview of data structures for *Key|Value* storage:
+      * [МФТИ. Липовский Р.Г. Теория отказоустойчивых распределенных систем](https://mipt.ru/online/algoritmov-i-tekhnologiy/teoriya-ORS.php)
+         * TFTDS 0. Модель распределенной системы
+            * [примеры систем](https://youtu.be/HJaI4lCgPCs?t=1106)
+         * TFTDS 1. Линеаризуемость. Репликация атомарного регистра, алгоритм ABD
+            *  [k/v storage](https://youtu.be/FWQ37wvq1OI?t=619)
+            *  [реализация k/v storage](https://youtu.be/FWQ37wvq1OI?t=2441)
+         * TFTDS. Семинар 2. Локальное хранилище
+            *  [B-tree](https://youtu.be/wXoQIh6mvwE?t=2806)
+            *  [LSM-tree](https://youtu.be/wXoQIh6mvwE?t=3447)
+      *  [Блеск и нищета key-value базы данных LMDB в приложениях для iOS](https://habr.com/ru/company/vk/blog/480850/)
+      *  [Understanding Key-Value Store’s Internal Working](https://medium.com/swlh/key-value-pair-database-internals-18f52c36bb70)
+      *  [The State of the Storage Engine](https://dzone.com/articles/state-storage-engine)
+      *  [B-Tree vs Log-Structured-Merge-Tree](https://tikv.github.io/deep-dive-tikv/key-value-engine/B-Tree-vs-Log-Structured-Merge-Tree.html)
+      *  [Btree vs LSM (WiredTiger bench)](https://github.com/wiredtiger/wiredtiger/wiki/Btree-vs-LSM)
+      *  [Closing the B-tree vs. LSM-tree Write Amplification Gap on Modern Storage Hardware with Built-in Transparent Compression (WiredTiger article)](https://arxiv.org/pdf/2107.13987.pdf)
+   * Mapped files:
+      * [Introduction to Memory Mapped IO]( https://towardsdatascience.com/introduction-to-memory-mapped-io-3540454770f7)
+      * [Efficient Memory Mapped File I/O for In-Memory File Systems](https://www.usenix.org/sites/default/files/conference/protected-files/hotstorage17_slides_choi.pdf)
+   * Overview of BTree impls:
+      *  B-tree library for eventual proposal to Boost (https://github.com/Beman/btree)
+      *  B-tree based on Google's B-tree implementation. (https://github.com/Kronuz/cpp-btree)
+      *  Fine-Grained-Locked-B-Tree (https://github.com/MentallyCramped/Fine-Grained-Locked-B-Tree)
+      *  BPlusTree(https://github.com/skyzh/BPlusTree)
+      *  B-tree (https://neerc.ifmo.ru/wiki/index.php?title=B-%D0%B4%D0%B5%D1%80%D0%B5%D0%B2%D0%BE)
+      *  [Implement Key-Value Store by B-Tree on Linux OS environment](https://medium.com/@pthtantai97/implement-key-value-store-by-btree-5a100a03da3a)
+         * [B-Tree impl on Linux OS environment](https://github.com/phamtai97/key-value-store)
+         * [Key Value Store using B-Tree](https://github.com/billhcmus/key-value-store)
