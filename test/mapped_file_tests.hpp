@@ -145,37 +145,36 @@ namespace {
 }
     BOOST_AUTO_TEST_SUITE(mapped_file_test)
 
-    BOOST_AUTO_TEST_CASE(test_arithmetics) {
+    BOOST_AUTO_TEST_CASE(test_arithmetics_values) {
         bool success = run_test_arithmetics<int32_t>();
         success &= run_test_arithmetics<uint32_t>();
         success &= run_test_arithmetics<int64_t>();
         success &= run_test_arithmetics<uint64_t>();
         success &= run_test_arithmetics<float>();
         success &= run_test_arithmetics<double>();
-        BOOST_TEST_REQUIRE(success);
+        BOOST_REQUIRE_MESSAGE(success, "TEST_ARITHMETICS");
     }
 
-    BOOST_AUTO_TEST_CASE(test_strings) {
+    BOOST_AUTO_TEST_CASE(test_strings_values) {
         std::string strs[] = { "", "a", "aba", "abacaba", "abba", "abacabacababa" };
         std::wstring wstrs[] = { L"", L"a", L"aba", L"abacaba", L"abba", L"abacabacababa" };
 
         bool success = true;
-        for (auto& str: strs) {
+        for (auto& str: strs)
             success &= run_test_basic_strings<std::string>(str, conv_to_str, calc_str_len);
-        }
 
-        for (auto& wstr: wstrs) {
+        for (auto& wstr: wstrs)
             success &= run_test_basic_strings<std::wstring>(wstr, conv_to_wstr, calc_wstr_len);
-        }
-        BOOST_TEST_REQUIRE(success);
+
+        BOOST_REQUIRE_MESSAGE(success, "TEST_STRING");
     }
 
     BOOST_AUTO_TEST_CASE(test_mody_and_save) {
-        BOOST_TEST_REQUIRE(run_test_modify_and_save());
+        BOOST_REQUIRE_MESSAGE(run_test_modify_and_save(), "TEST_MODIFY_AND_SAVE");
     }
 
     BOOST_AUTO_TEST_CASE(test_array) {
-        BOOST_TEST_REQUIRE(run_test_array());
+        BOOST_REQUIRE_MESSAGE(run_test_array(), "TEST_ARRAY");
     }
 
     BOOST_AUTO_TEST_SUITE_END()

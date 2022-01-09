@@ -30,27 +30,25 @@ namespace tests {
 
     public:
 
-        static void run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
+        static bool run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
             TestRunner<K, V> runner(n);
-            auto t1 = high_resolution_clock::now();
-            runner.test_set(db_name, order, n);
-            runner.test_get(db_name, order, n);
-            runner.test_remove(db_name, order, n, keys_to_remove);
-            runner.test_after_remove(db_name, order, n);
-            auto t2 = high_resolution_clock::now();
 
-            /* Getting number of milliseconds as a double. */
-            duration<double, std::milli> ms_double = t2 - t1;
+            bool success = runner.test_set(db_name, order, n);
+            success &= runner.test_get(db_name, order, n);
+            success &= runner.test_remove(db_name, order, n, keys_to_remove);
+            success &= runner.test_after_remove(db_name, order, n);
 
+#ifdef DEBUG
             cout << "\tPassed for " + db_name << ": " <<
                  "   added: " << n <<
                  ", found: " << runner.stat.total_found <<
                  ", removed: " << runner.stat.total_removed <<
-                 ", total_after_remove: " << runner.stat.total_after_remove <<
-                 " in " << ms_double.count() << "ms" << endl;
+                 ", total_after_remove: " << runner.stat.total_after_remove << endl;
+#endif
+            return success;
         }
     private:
-        void test_set(const std::string& path, int order, int n) {
+        bool test_set(const std::string& path, int order, int n) {
             auto btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
@@ -66,32 +64,32 @@ namespace tests {
 
             for (int i = 0; i < n; ++i)
                 stat.total_exist += btree.exist(i);
-            assert(stat.all_exist());
 
             K max_key = verify_map.rbegin()->first + 1;
             for (int i = 0; i < n; ++i)
                 stat.total_not_exist += btree.exist(max_key + i);
 
-            assert(stat.any_does_not_exist());
+            return stat.all_exist() && stat.any_does_not_exist();
         }
 
-        void test_get(const std::string& path, int order, int n) {
+        bool test_get(const std::string& path, int order, int n) {
             auto btree = storage.open_volume(path, order);
 
+            bool success = true;
             for (int i = 0; i < n; ++i) {
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value()) {
-                    check(i, actual_value, verify_map.find(i));
+                    success &= check(i, actual_value, verify_map.find(i));
                     stat.total_found++;
                 } else {
-                    assert(actual_value == std::nullopt);
+                    success &= (actual_value == std::nullopt);
                     stat.total_not_found++;
                 }
             }
-            assert(stat.contains_all());
+            return success && stat.contains_all();
         }
 
-        void test_remove(const std::string& path, int order, int n, std::tuple<int, int, int>& keys_to_remove) {
+        bool test_remove(const std::string& path, int order, int n, std::tuple<int, int, int>& keys_to_remove) {
             auto btree = storage.open_volume(path, order);
 
             auto[r1, r2, r3] = keys_to_remove;
@@ -130,24 +128,24 @@ namespace tests {
             for (int i = 0; i < n; ++i) {
                 stat.total_after_remove += btree.exist(i);
             }
-            assert(stat.total_after_remove == static_cast<int64_t>(verify_map.size()));
-            assert(stat.found_all_the_remaining());
+            bool success = (stat.total_after_remove == static_cast<int64_t>(verify_map.size()));
+            return success && (stat.found_all_the_remaining());
         }
 
-        void test_after_remove(const std::string& path, int order, int n) {
+        bool test_after_remove(const std::string& path, int order, int n) {
             auto btree = storage.open_volume(path, order);
-
+            bool success = true;
             for (int i = 0; i < n; ++i) {
                 auto expected_value = verify_map.find(i);
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value() && expected_value != verify_map.end()) {
-                    check(i, actual_value, expected_value);
+                    success &= check(i, actual_value, expected_value);
                     stat.total_after_reopen++;
                 } else {
-                    assert(actual_value == std::nullopt);
+                    success &= (actual_value == std::nullopt);
                 }
             }
-            assert(stat.total_after_reopen == static_cast<int64_t>(verify_map.size()));
+            return success && (stat.total_after_reopen == static_cast<int64_t>(verify_map.size()));
         }
     };
 
@@ -164,21 +162,22 @@ namespace tests {
 
     public:
 
-        static void run(basio::thread_pool& pool, const std::string& db_name, const int order, const int n) {
+        static bool run(basio::thread_pool& pool, const std::string& db_name, const int order, const int n) {
             TestRunnerMT runner(n);
             auto volume = runner.storage.open_volume(db_name, order);
+            bool success = true;
 
-            auto t1 = high_resolution_clock::now();
-            for (int i = 0; i < 10; ++i) {
+            int run_pool_iterations = 10;
+            for (int i = 0; i < run_pool_iterations; ++i) {
                 runner.fill_map_with_random_values(n);
-                runner.test_set(pool, volume, n);
-                runner.test_remove(pool, volume, n / 2);
+                success &= runner.test_set(pool, volume, n);
+                success &= runner.test_remove(pool, volume, n / 2);
                 runner.clear_map();
             }
-            auto t2 = high_resolution_clock::now();
-            /* Getting number of milliseconds as a double. */
-            duration<double, std::milli> ms_double = t2 - t1;
-            cout << "\t Passed for " + db_name << ": " << " in " << ms_double.count() << "ms" << endl;
+#ifdef DEBUG
+            cout << "\t Passed for " + db_name << ": in" << run_pool_iterations << " pool iterations " << endl;
+#endif
+            return success;
         }
 
     private:
@@ -192,24 +191,23 @@ namespace tests {
             g.clear();
         }
 
-        void test_set(basio::thread_pool& pool, VolumeT& volume, const int n) {
+        bool test_set(basio::thread_pool& pool, VolumeT& volume, const int n) {
             auto task = BoostPackagedTask<TestStat>(boost::bind(&test_set_keys, volume, verify_map, 0, n));
             do_task(pool, task);
 
-            auto get_stat = test_get_keys(volume, 0, n);
-            assert(get_stat.total_found == n);
+            auto get_stat = test_get_keys(volume, verify_map, 0, n);
+            return (get_stat.total_found == n);
         }
 
-        void test_remove(basio::thread_pool& pool, VolumeT& volume, const int n) {
+        bool test_remove(basio::thread_pool& pool, VolumeT& volume, const int n) {
             auto half = n / 2;
             auto task = BoostPackagedTask<TestStat>(boost::bind(&test_remove_keys, volume, 0, half));
 
             auto remove_stat = do_task(pool, task);
-            assert(remove_stat.total_removed == half);
+            bool success = (remove_stat.total_removed == half);
 
-            auto get_stat = test_get_keys(volume, 0, n);
-            assert(get_stat.total_found == half);
-            assert(get_stat.total_not_found == half);
+            auto get_stat = test_get_keys(volume, verify_map, 0, n);
+            return success && (get_stat.total_found == half) && (get_stat.total_not_found == half);
         }
 
         TestStat do_task(basio::thread_pool& pool, BoostPackagedTask<TestStat>& task) {
@@ -218,13 +216,13 @@ namespace tests {
             return future.get();
         }
 
-        TestStat test_get_keys(const VolumeT& btree, const int from, const int to) {
+        static TestStat test_get_keys(const VolumeT& volume, const std::map<K,V>& verify_map, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {
-                auto actual_value = btree.get(i);
+                auto actual_value = volume.get(i);
                 if (actual_value.has_value()) {
-                    check(i, actual_value, verify_map.find(i));
-                    stat.total_found++;
+                    if (check(i, actual_value, verify_map.find(i)))
+                        stat.total_found++;
                 } else {
                     stat.total_not_found++;
                 }

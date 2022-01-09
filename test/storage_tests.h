@@ -188,25 +188,30 @@ namespace storage_tests {
     }
 
     template <typename V>
-    void run_on_random_values(std::string const& name, int const order) {
+    bool run_on_random_values(std::string const& name, int const order, int const n) {
         std::string db_name = "../" + name + ".txt";
         int rounds = 3;
-        int n = 10000;
+#ifdef DEBUG
         std::cout << "Run " << rounds << " iterations on " << n << " elements: " << std::endl;
+#endif
+        bool success = true;
         for (int i = 0; i < rounds; ++i) {
             auto keys_to_remove = generate_rand_keys();
-            TestRunner<int32_t, V>::run(db_name, order, n, keys_to_remove);
+            success &= TestRunner<int32_t, V>::run(db_name, order, n, keys_to_remove);
         }
         fs::remove(db_name);
+        return success;
     };
 
     template <typename V>
-    void run_multithreading_test(basio::thread_pool& pool, std::string const& name, int const order) {
+    bool run_multithreading_test(basio::thread_pool& pool, std::string const& name, int const order, int const n) {
         std::string db_name = "../" + name + ".txt";
-        int n = 10000;
+#ifdef DEBUG
         std::cout << "Run multithreading test on " << n << " elements on 10 threads: " << std::endl;
-        TestRunnerMT<int32_t, V>::run(pool, db_name, order, n);
+#endif
+        bool success = TestRunnerMT<int32_t, V>::run(pool, db_name, order, n);
         fs::remove(db_name);
+        return success;
     };
 }
 }

@@ -17,8 +17,7 @@ namespace tests {
         success &= run_test_emtpy_file<std::string>("empty_s_str", order);
         success &= run_test_emtpy_file<std::wstring>("empty_s_wstr", order);
         success &= run_test_emtpy_file<const char*>("empty_s_blob", order);
-        bool TEST_EMPTY_FILE = success;
-        BOOST_TEST_REQUIRE(TEST_EMPTY_FILE);
+        BOOST_REQUIRE_MESSAGE(success, "TEST_EMPTY_FILE");
     }
 
     BOOST_AUTO_TEST_CASE(file_size_after_set_one_element) {
@@ -30,8 +29,7 @@ namespace tests {
         success &= run_test_file_size_with_one_entry<std::string>("one_s_str", order);
         success &= run_test_file_size_with_one_entry<std::wstring>("one_s_wstr", order);
         success &= run_test_file_size_with_one_entry<const char*>("one_s_blob", order);
-        bool TEST_FILE_SIZE = success;
-        BOOST_TEST_REQUIRE(TEST_FILE_SIZE);
+        BOOST_REQUIRE_MESSAGE(success, "TEST_FILE_SIZE");
     }
 
     BOOST_AUTO_TEST_CASE(set_get_one_element) {
@@ -43,8 +41,7 @@ namespace tests {
         success &= run_test_set_get_one<std::string>("get_one_s_str", order);
         success &= run_test_set_get_one<std::wstring>("get_one_s_wstr", order);
         success &= run_test_set_get_one<const char*>("get_one_s_blob", order);
-        bool TEST_SET_GET_ONE_ELEMENT = success;
-        BOOST_TEST_REQUIRE(TEST_SET_GET_ONE_ELEMENT);
+        BOOST_REQUIRE_MESSAGE(success, "TEST_SET_GET_ONE_ELEMENT");
     }
 
     BOOST_AUTO_TEST_CASE(remove_one_element) {
@@ -56,8 +53,7 @@ namespace tests {
         success &= run_test_remove_one<std::string>("remove_one_s_str", order);
         success &= run_test_remove_one<std::wstring>("remove_one_s_wstr", order);
         success &= run_test_remove_one<const char*>("remove_one_s_blob", order);
-        bool TEST_REMOVE_ONE_ELEMENT = success;
-        BOOST_TEST_REQUIRE(TEST_REMOVE_ONE_ELEMENT);
+        BOOST_REQUIRE_MESSAGE(success, "TEST_REMOVE_ONE_ELEMENT");
     }
 
     BOOST_AUTO_TEST_CASE(repeatable_operations_on_a_unique_key) {
@@ -69,8 +65,7 @@ namespace tests {
         success &= run_test_repeatable_operations_on_a_unique_key<std::string>("repeatable_set_s_str", order);
         success &= run_test_repeatable_operations_on_a_unique_key<std::wstring>("repeatable_set_s_wstr", order);
         success &= run_test_repeatable_operations_on_a_unique_key<const char*>("repeatable_set_s_blob", order);
-        bool TEST_REPEATABLE_OPERATIONS = success;
-        BOOST_TEST_REQUIRE(TEST_REPEATABLE_OPERATIONS);
+        BOOST_REQUIRE_MESSAGE(success, "TEST_REPEATABLE_OPERATIONS");
     }
 
     BOOST_AUTO_TEST_CASE(set_various_values_on_the_same_key) {
@@ -82,35 +77,34 @@ namespace tests {
         success &= run_test_set_on_the_same_key<std::string>("various_set_s_str", order);
         success &= run_test_set_on_the_same_key<std::wstring>("various_set_s_wstr", order);
         success &= run_test_set_on_the_same_key<const char*>("various_set_s_blob", order);
-        bool TEST_SET_VARIOUS_VALUES = success;
-        BOOST_TEST_REQUIRE(TEST_SET_VARIOUS_VALUES);
+        BOOST_REQUIRE_MESSAGE(success, "TEST_SET_VARIOUS_VALUES");
     }
 
     BOOST_AUTO_TEST_CASE(test_on_random_values) {
         int order = 2;
-        run_on_random_values<int32_t>("random_s_i32", order);
-        run_on_random_values<int64_t>("random_s_i64", order);
-        run_on_random_values<float>("random_s_f", order);
-        run_on_random_values<double>("random_s_d", order);
-        run_on_random_values<std::string>("random_s_str", order);
-        run_on_random_values<std::wstring>("random_s_wstr", order);
-        run_on_random_values<const char*>("random_s_blob", order);
-        bool TEST_RANDOM_VALUES = true;
-        BOOST_TEST_REQUIRE(TEST_RANDOM_VALUES);
+        int elements_count = 10000;
+        bool success = run_on_random_values<int32_t>("random_s_i32", order, elements_count);
+        success &= run_on_random_values<int64_t>("random_s_i64", order, elements_count);
+        success &= run_on_random_values<float>("random_s_f", order, elements_count);
+        success &= run_on_random_values<double>("random_s_d", order, elements_count);
+        success &= run_on_random_values<std::string>("random_s_str", order, elements_count);
+        success &= run_on_random_values<std::wstring>("random_s_wstr", order, elements_count);
+        success &= run_on_random_values<const char*>("random_s_blob", order, elements_count);
+        BOOST_REQUIRE_MESSAGE(success, "TEST_RANDOM_VALUES");
     }
 
     BOOST_AUTO_TEST_CASE(multithreading_test) {
         int order = 2;
+        int elements_count = 10000;
         basio::thread_pool pool(10);
-        run_multithreading_test<int32_t>(pool, "mt_s_i32", order);
-        run_multithreading_test<int64_t>(pool, "mt_s_i64", order);
-        run_multithreading_test<float>(pool, "mt_s_f", order);
-        run_multithreading_test<double>(pool, "mt_s_d", order);
-        run_multithreading_test<std::string>(pool, "mt_s_str", order);
-        run_multithreading_test<std::wstring>(pool, "mt_s_wstr", order);
-        run_multithreading_test<const char*>(pool, "mt_s_blob", order);
-        bool TEST_MULTITHREADING = true;
-        BOOST_TEST_REQUIRE(TEST_MULTITHREADING);
+        bool success = run_multithreading_test<int32_t>(pool, "mt_s_i32", order, elements_count);
+        success &= run_multithreading_test<int64_t>(pool, "mt_s_i64", order, elements_count);
+        success &= run_multithreading_test<float>(pool, "mt_s_f", order, elements_count);
+        success &= run_multithreading_test<double>(pool, "mt_s_d", order, elements_count);
+        success &= run_multithreading_test<std::string>(pool, "mt_s_str", order, elements_count);
+        success &= run_multithreading_test<std::wstring>(pool, "mt_s_wstr", order, elements_count);
+        success &= run_multithreading_test<const char*>(pool, "mt_s_blob", order, elements_count);
+        BOOST_REQUIRE_MESSAGE(success, "TEST_MULTITHREADING");
     }
 
     BOOST_AUTO_TEST_SUITE_END()
