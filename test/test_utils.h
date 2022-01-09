@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cassert>
+#include <optional>
+
 #include "utils/utils.h"
 
 namespace btree_test {
@@ -25,7 +27,7 @@ namespace utils {
 
     template <typename V>
     class ValueGenerator {
-        std::map<int, std::unique_ptr<V>> blob_map;
+        std::map<int, V> blob_map;
 
     public:
         ~ValueGenerator() {
@@ -34,7 +36,9 @@ namespace utils {
 
         void clear() {
             if constexpr(std::is_pointer_v<V>) {
-                blob_map.clear();
+                for (auto& data: blob_map) {
+                    delete data.second;
+                }
             }
         }
 
@@ -53,7 +57,7 @@ namespace utils {
                     for (int k = 0; k < len; ++k) {
                         blob[k] = 2;
                     }
-                    blob_map.emplace(i, std::make_unique<V>(blob));
+                    blob_map.emplace(i, blob);
                     return blob;
                 } else {
                     return val;

@@ -23,6 +23,7 @@ namespace btree_test {
         TestStat stat;
         std::map<K, V> verify_map;
         Storage<K,V> storage;
+        ValueGenerator<V> g;
 
         explicit TestRunner(int iterations) : stat(iterations) {}
 
@@ -51,10 +52,9 @@ namespace btree_test {
         void test_set(const std::string& path, int order, int n) {
             auto btree = storage.open_volume(path, order);
 
-            ValueGenerator<V> g;
             for (int i = 0; i < n; ++i) {
                 K key = i;
-                V value = g.next_value(i);
+                V value = g.next_value(key);
                 if constexpr(std::is_pointer_v<V>) {
                     btree.set(key, value, utils::get_len_by_idx(i));
                 } else {
@@ -99,9 +99,6 @@ namespace btree_test {
                 auto it = verify_map.find(i);
 
                 if (it != verify_map.end()) {
-                    if constexpr(std::is_pointer_v<V>) {
-                        delete it->second;
-                    }
                     verify_map.erase(it);
                 }
             };
