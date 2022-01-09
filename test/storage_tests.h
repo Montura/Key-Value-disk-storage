@@ -199,5 +199,14 @@ namespace storage_tests {
         }
         fs::remove(db_name);
     };
+
+    template <typename V>
+    void run_multithreading_test(basio::thread_pool& pool, std::string const& name, int const order) {
+        std::string db_name = "../" + name + ".txt";
+        int n = 10000;
+        std::cout << "Run multithreading test on " << n << " elements on 10 threads: " << std::endl;
+        TestRunnerMT<int32_t, V>::run(pool, db_name, order, n);
+        fs::remove(db_name);
+    };
 }
 }

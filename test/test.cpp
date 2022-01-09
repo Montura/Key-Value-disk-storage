@@ -93,35 +93,24 @@ namespace tests {
         BOOST_TEST_REQUIRE(true);
     }
 
+    BOOST_AUTO_TEST_CASE(multithreading_test) {
+        int order = 2;
+        basio::thread_pool pool(10);
+        run_multithreading_test<int32_t>(pool, "mt_s_i32", order);
+        run_multithreading_test<int64_t>(pool, "mt_s_i64", order);
+        run_multithreading_test<float>(pool, "mt_s_f", order);
+        run_multithreading_test<double>(pool, "mt_s_d", order);
+        run_multithreading_test<std::string>(pool, "mt_s_str", order);
+        run_multithreading_test<std::wstring>(pool, "mt_s_wstr", order);
+        run_multithreading_test<const char*>(pool, "mt_s_blob", order);
+        BOOST_TEST_REQUIRE(true);
+    }
+
     BOOST_AUTO_TEST_SUITE_END()
 
 }
 
 #else
-
-#include "test_runner.h"
-
-void test_mt() {
-    std::string db_prefix = "../db_";
-    std::string end = ".txt";
-
-    int n = 1000;
-    basio::thread_pool pool(10);
-
-    for (int i = 0; i < 11; ++i) {
-        for (int order = 2; order < 7; ++order) {
-            auto db_name = db_prefix + std::to_string(order);
-            tests::TestRunnerMT<int32_t, int32_t>::run(pool, db_name + "_i32" + end, order, n);
-            tests::TestRunnerMT<int32_t, int64_t>::run(pool, db_name + "_i64" + end, order, n);
-            tests::TestRunnerMT<int32_t, float>::run(pool, db_name + "_f" + end, order, n);
-            tests::TestRunnerMT<int32_t, double>::run(pool, db_name + "_d" + end, order, n);
-            tests::TestRunnerMT<int32_t, std::string>::run(pool, db_name + "_str" + end, order, n);
-            tests::TestRunnerMT<int32_t, std::wstring>::run(pool, db_name + "_wstr" + end, order, n);
-            tests::TestRunnerMT<int32_t, const char*>::run(pool, db_name + "_blob" + end, order, n);
-        }
-    }
-}
-
 
 #if defined(MEM_CHECK) && !defined(UNIT_TESTS) && !defined(BOOST_ALL_NO_LIB)
     #include <cstdlib>
@@ -136,6 +125,5 @@ int main() {
     delete a;
     return 0;
 #endif
-    test_mt();
 }
 #endif // UNIT_TESTS

@@ -42,8 +42,8 @@ namespace tests {
             /* Getting number of milliseconds as a double. */
             duration<double, std::milli> ms_double = t2 - t1;
 
-            cout << "Passed for " + db_name << ": " <<
-                 "\t added: " << n <<
+            cout << "\tPassed for " + db_name << ": " <<
+                 "   added: " << n <<
                  ", found: " << runner.stat.total_found <<
                  ", removed: " << runner.stat.total_removed <<
                  ", total_after_remove: " << runner.stat.total_after_remove <<
@@ -168,13 +168,17 @@ namespace tests {
             TestRunnerMT runner(n);
             auto volume = runner.storage.open_volume(db_name, order);
 
+            auto t1 = high_resolution_clock::now();
             for (int i = 0; i < 10; ++i) {
-                cout << "Pool iter: " << i << endl;
                 runner.fill_map_with_random_values(n);
                 runner.test_set(pool, volume, n);
                 runner.test_remove(pool, volume, n / 2);
                 runner.clear_map();
             }
+            auto t2 = high_resolution_clock::now();
+            /* Getting number of milliseconds as a double. */
+            duration<double, std::milli> ms_double = t2 - t1;
+            cout << "\t Passed for " + db_name << ": " << " in " << ms_double.count() << "ms" << endl;
         }
 
     private:
