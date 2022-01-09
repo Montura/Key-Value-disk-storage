@@ -8,13 +8,13 @@ namespace fs = std::filesystem;
 
 namespace btree {
 namespace file {
-    void seek_file_to_offset(const std::string& path, const int file_open_mode, const int64_t offset, bool need_EOF) {
+    void seek_file_to_offset(const std::string& path, const int file_open_mode, const int64_t offset) {
         std::filebuf buf;
         auto* p_file_buf = buf.open(path, file_open_mode);
         if (!p_file_buf)
             throw std::runtime_error("Wrong path is provided for mapped file, path = " + path);
         buf.pubseekoff(offset, std::ios_base::beg);
-        if (need_EOF)
+        if (offset > 0) // if file is not empty is needs EOF
             buf.sputc(0);
         buf.close();
     }
@@ -25,7 +25,7 @@ namespace file {
     {
         bool file_exists = fs::exists(fn);
         if (!file_exists) {
-            file::seek_file_to_offset(path, std::ios_base::out | std::ios_base::trunc, bytes_num, false);
+            file::seek_file_to_offset(path, std::ios_base::out | std::ios_base::trunc, bytes_num);
             m_size = m_capacity = bytes_num;
         } else {
             m_size = m_capacity = static_cast<int64_t>(fs::file_size(fn));
@@ -76,10 +76,8 @@ namespace file {
         m_capacity = std::max(m_pos, m_capacity);
     }
 
-    template <typename EntryT>
-    std::pair<typename EntryT::ValueType, int32_t> MappedFile::read_next_data() {
-        typedef typename EntryT::ValueType ValueType;
-
+    template <typename ValueType>
+    std::pair<ValueType, int32_t> MappedFile::read_next_data() {
         if constexpr(std::is_pointer_v<ValueType>) {
             auto len = read_next_primitive<int32_t>();
             auto* value_begin = m_mapped_region->address_by_offset(m_pos);
@@ -159,7 +157,7 @@ namespace file {
 
     void MappedFile::resize(int64_t new_size) {
         // Can't use std::filesystem::resize_file(), see file_mapping_impl.h: ~MappedFile() {...}
-        file::seek_file_to_offset(path, std::ios_base::in | std::ios_base::out, new_size, true);
+        file::seek_file_to_offset(path, std::ios_base::in | std::ios_base::out, new_size);
         m_size = new_size;
         m_mapped_region->remap(path);
     }

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <optional>
 
+#include "utils/utils.h"
+
 namespace btree {
     template <typename K, typename V>
     class Entry {

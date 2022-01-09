@@ -44,8 +44,8 @@ namespace utils {
 
         V next_value(int i) {
             int val = i + std::rand() % 31;
-            if constexpr (is_string_v < V >) {
-                if constexpr(std::is_same_v < typename V::value_type, char >) {
+            if constexpr (is_string_v<V>) {
+                if constexpr(std::is_same_v<typename V::value_type, char>) {
                     return std::to_string(val) + "abacaba";
                 } else {
                     return std::to_wstring(val) + L"abacaba";
@@ -66,11 +66,9 @@ namespace utils {
         }
     };
 
-
-
     template <typename V, typename MapIt>
-    void check(int32_t idx, const std::optional <V>& actual_value, MapIt expected_value) {
-        if constexpr(std::is_pointer_v < V >) {
+    void check(int32_t idx, const std::optional<V>& actual_value, MapIt expected_value) {
+        if constexpr(std::is_pointer_v<V>) {
             auto* expected = expected_value->second;
             auto* actual = actual_value.value();
             size_t len = utils::get_len_by_idx(idx);
@@ -83,8 +81,8 @@ namespace utils {
     }
 
     template <typename V>
-    bool check(int32_t idx, const std::optional <V>& actual_value, const V& expected_value) {
-        if constexpr(std::is_pointer_v < V >) {
+    bool check(int32_t idx, const std::optional<V>& actual_value, const V& expected_value) {
+        if constexpr(std::is_pointer_v<V>) {
             auto* expected = expected_value;
             auto* actual = actual_value.value();
             size_t len = utils::get_len_by_idx(idx);

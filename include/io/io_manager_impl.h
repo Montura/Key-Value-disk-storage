@@ -60,7 +60,7 @@ namespace btree {
         file.set_pos(pos);
 
         K key = file.read_next_primitive<K>();
-        auto [value, size] = file.read_next_data<EntryT>();
+        auto [value, size] = file.read_next_data<typename EntryT::ValueType>();
         return { key, value, size };
     }
 

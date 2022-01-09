@@ -21,8 +21,8 @@ namespace btree {
 
         ~MappedFile();
 
-        template <typename EntryT>
-        std::pair<typename EntryT::ValueType, int32_t> read_next_data();
+        template <typename ValueType>
+        std::pair<ValueType, int32_t> read_next_data();
 
         template <typename T>
         void write_next_primitive(const T val);

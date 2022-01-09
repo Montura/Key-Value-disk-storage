@@ -5,6 +5,7 @@
 
 #include "test_runner.h"
 #include "utils/boost_include.h"
+#include "mapped_file_tests.hpp"
 
 namespace btree_test {
     BOOST_AUTO_TEST_SUITE(key_value_operations)
@@ -15,7 +16,7 @@ namespace {
     template <typename VolumeT, typename K, typename V>
     void set(VolumeT& volume, const K& key, const V& val) {
         if constexpr(std::is_pointer_v<V>) {
-            int size = strlen(val);
+            int size = std::strlen(val);
             volume.set(key, val, size);
         } else {
             volume.set(key, val);
@@ -25,7 +26,7 @@ namespace {
     template <typename K, typename V>
     int entry_size_in_file(const K& key, const V& val) {
         if constexpr(std::is_pointer_v<V>) {
-            int size = strlen(val);
+            int size = std::strlen(val);
             return Entry<int32_t,V>(key, val, size).size_in_file();
         } else {
             return Entry<int32_t,V>(key, val).size_in_file();
