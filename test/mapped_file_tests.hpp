@@ -26,18 +26,20 @@ namespace {
         template <typename T>
         bool compare(const T& str, const uint8_t* data, int size) {
             auto raw_data = cast_to_const_uint8_t_data(str.data());
+            bool success = true;
             for (int j = 0; j < size; ++j) {
-                assert(data[j] == raw_data[j]);
+                success &= (data[j] == raw_data[j]);
             }
-            return true;
+            return success;
         }
     }
 
     constexpr int ITERATIONS = 10000;
 
     template <typename T>
-    void run_test_arithmetics() {
+    bool run_test_arithmetics() {
         std::string path = "../arithmetics_test.txt";
+        bool success = true;
         {
             MappedFile file(path, 32);
 
@@ -51,19 +53,20 @@ namespace {
             file.set_pos(0);
             for (int i = 0; i < ITERATIONS; ++i) {
                 T tmp = file.read_next_primitive<T>();
-                assert(tmp == static_cast<T>(i));
+                success &= (tmp == static_cast<T>(i));
             }
         }
-        assert(fs::file_size(path) == sizeof(T) * ITERATIONS);
+        success &= (fs::file_size(path) == sizeof(T) * ITERATIONS);
         fs::remove(path);
+        return success;
     }
 
     template <typename T, typename V = typename T::value_type>
-    void run_test_basic_strings(T val, to_string_ptr<V> converter, strlen_ptr<V> strlen_impl) {
+    bool run_test_basic_strings(T val, to_string_ptr<V> converter, strlen_ptr<V> strlen_impl) {
         std::string path = "../strings_test.txt";
         int64_t total_write_size = 0;
         int64_t total_read_size = 0;
-
+        bool success = true;
         {
             MappedFile file(path, 32);
 
@@ -80,19 +83,20 @@ namespace {
             for (int i = 0; i < ITERATIONS; ++i) {
                 T tmp = val + converter(i);
                 auto[value, size] = file.read_next_data<const uint8_t*>();
-                assert(compare(tmp, value, size));
+                success &= compare(tmp, value, size);
             }
             total_read_size = file.get_pos();
         }
 
-        assert(total_write_size == total_read_size);
-        auto size = fs::file_size(path);
-        assert(size == static_cast<uint64_t>(total_write_size));
+        success &= (total_write_size == total_read_size);
+        success &= (fs::file_size(path) == static_cast<uint64_t>(total_write_size));
         fs::remove(path);
+        return success;
     }
 
-    void run_test_modify_and_save() {
+    bool run_test_modify_and_save() {
         std::string path = "../modify_text.txt";
+        bool success = true;
         {
             MappedFile file(path, 32);
             for (int32_t i = 0; i < ITERATIONS; ++i) {
@@ -110,16 +114,18 @@ namespace {
             for (int32_t i = 0; i < ITERATIONS; ++i) {
                 auto actual = file.read_next_primitive<int32_t>();
                 auto expected = i * 2;
-                assert(actual == expected);
+                success &= (actual == expected);
             }
         }
         fs::remove(path);
+        return success;
     }
 
-    void run_test_array() {
+    bool run_test_array() {
         std::string fmap = std::string("../file_mapping_array") + std::string(".txt");
         const int n = 1000000;
         std::vector<int> out(n, 1);
+        bool success = false;
         {
             MappedFile file(fmap, 32);
             int size_in_bytes = n * sizeof(int);
@@ -131,41 +137,45 @@ namespace {
             auto [data_ptr, size_in_bytes] = file.read_next_data<const uint8_t*>();
             auto* int_data = reinterpret_cast<const int*>(data_ptr);
             std::vector<int> in(int_data, int_data + size_in_bytes / sizeof(int));
-            assert(in == out);
+            success = (in == out);
         }
         fs::remove(fmap);
+        return success;
     }
 }
     BOOST_AUTO_TEST_SUITE(mapped_file_test)
 
     BOOST_AUTO_TEST_CASE(test_arithmetics) {
-        run_test_arithmetics<int32_t>();
-        run_test_arithmetics<uint32_t>();
-        run_test_arithmetics<int64_t>();
-        run_test_arithmetics<uint64_t>();
-        run_test_arithmetics<float>();
-        run_test_arithmetics<double>();
+        bool success = run_test_arithmetics<int32_t>();
+        success &= run_test_arithmetics<uint32_t>();
+        success &= run_test_arithmetics<int64_t>();
+        success &= run_test_arithmetics<uint64_t>();
+        success &= run_test_arithmetics<float>();
+        success &= run_test_arithmetics<double>();
+        BOOST_TEST_REQUIRE(success);
     }
 
     BOOST_AUTO_TEST_CASE(test_strings) {
         std::string strs[] = { "", "a", "aba", "abacaba", "abba", "abacabacababa" };
         std::wstring wstrs[] = { L"", L"a", L"aba", L"abacaba", L"abba", L"abacabacababa" };
 
+        bool success = true;
         for (auto& str: strs) {
-            run_test_basic_strings<std::string>(str, conv_to_str, calc_str_len);
+            success &= run_test_basic_strings<std::string>(str, conv_to_str, calc_str_len);
         }
 
         for (auto& wstr: wstrs) {
-            run_test_basic_strings<std::wstring>(wstr, conv_to_wstr, calc_wstr_len);
+            success &= run_test_basic_strings<std::wstring>(wstr, conv_to_wstr, calc_wstr_len);
         }
+        BOOST_TEST_REQUIRE(success);
     }
 
     BOOST_AUTO_TEST_CASE(test_mody_and_save) {
-        run_test_modify_and_save();
+        BOOST_TEST_REQUIRE(run_test_modify_and_save());
     }
 
     BOOST_AUTO_TEST_CASE(test_array) {
-        run_test_array();
+        BOOST_TEST_REQUIRE(run_test_array());
     }
 
     BOOST_AUTO_TEST_SUITE_END()

@@ -179,7 +179,7 @@ namespace storage_tests {
             V expected_val = g.next_value(i);
             set(volume, key, expected_val);
             auto actual_val = volume.get(key);
-            success = check(key, actual_val, expected_val);
+            success &= check(key, actual_val, expected_val);
         }
         s.close_volume(volume);
 

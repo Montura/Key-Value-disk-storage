@@ -68,17 +68,19 @@ namespace test_utils {
     };
 
     template <typename V, typename MapIt>
-    void check(int32_t idx, const std::optional<V>& actual_value, MapIt expected_value) {
+    bool check(int32_t idx, const std::optional<V>& actual_value, MapIt expected_value) {
+        bool success = true;
         if constexpr(std::is_pointer_v<V>) {
             auto* expected = expected_value->second;
             auto* actual = actual_value.value();
             size_t len = get_len_by_idx(idx);
             for (size_t k = 0; k < len; ++k) {
-                assert(expected[k] == actual[k]);
+                success &= (expected[k] == actual[k]);
             }
         } else {
-            assert(expected_value->second == actual_value.value());
+            success = (expected_value->second == actual_value.value());
         }
+        return success;
     }
 
     template <typename V>
