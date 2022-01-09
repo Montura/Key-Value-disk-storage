@@ -8,20 +8,20 @@ namespace btree_test {
 namespace {
     namespace mapped_file_test_utils {
         template <typename T>
-        using to_string = std::basic_string<T> (*)(int i);
+        using to_string_ptr = std::basic_string<T> (*)(int i);
 
         template <typename T>
-        using strlen = size_t(*)(const T *s);
+        using strlen_ptr = size_t(*)(const T *s);
 
-        to_string<char> conv_to_str = std::to_string;
-        to_string<wchar_t> conv_to_wstr = std::to_wstring;
+        to_string_ptr<char> conv_to_str = std::to_string;
+        to_string_ptr<wchar_t> conv_to_wstr = std::to_wstring;
 
-        strlen<char> calc_str_len = std::strlen;
-        strlen<wchar_t> calc_wstr_len = std::wcslen;
+        strlen_ptr<char> calc_str_len = std::strlen;
+        strlen_ptr<wchar_t> calc_wstr_len = std::wcslen;
 
         template <typename T, typename V = typename T::value_type>
-        int32_t calc_size_in_bytes(const T& str, strlen<V> calc_str_len) {
-            return sizeof(V) * calc_str_len(str.data());
+        int32_t calc_size_in_bytes(const T& str, strlen_ptr<V> strlen_impl) {
+            return sizeof(V) * strlen_impl(str.data());
         }
 
         template <typename T>
@@ -37,7 +37,7 @@ namespace {
     using namespace btree;
     using namespace mapped_file_test_utils;
 
-    constexpr int ITERATIONS = 100;
+    constexpr int ITERATIONS = 10000;
 
     template <typename T>
     void run_test_arithmetics() {
@@ -63,7 +63,7 @@ namespace {
     }
 
     template <typename T, typename V = typename T::value_type>
-    void test_basic_strings(T val, to_string<V> converter, strlen<V> calc_str_len) {
+    void run_test_basic_strings(T val, to_string_ptr<V> converter, strlen_ptr<V> strlen_impl) {
         std::string path = "../strings_test.txt";
         int64_t total_write_size = 0;
         int64_t total_read_size = 0;
@@ -74,7 +74,7 @@ namespace {
             // write
             for (auto i = 0; i < ITERATIONS; ++i) {
                 T tmp = val + converter(i);
-                auto size = calc_size_in_bytes(tmp, calc_str_len);
+                auto size = calc_size_in_bytes(tmp, strlen_impl);
                 file.write_next_data(tmp.data(), size);
             }
             total_write_size = file.get_pos();
@@ -95,23 +95,23 @@ namespace {
         fs::remove(path);
     }
 
-    void test_modify_and_save() {
+    void run_test_modify_and_save() {
         std::string path = "../modify_text.txt";
         {
             MappedFile file(path, 32);
-            for (int32_t i = 0; i < 1000000; ++i) {
+            for (int32_t i = 0; i < ITERATIONS; ++i) {
                 file.write_next_primitive(i);
             }
         }
         {
             MappedFile file(path, 32);
-            for (int32_t i = 0; i < 1000000; ++i) {
+            for (int32_t i = 0; i < ITERATIONS; ++i) {
                 file.write_next_primitive(i * 2);
             }
         }
         {
             MappedFile file(path, 32);
-            for (int32_t i = 0; i < 1000000; ++i) {
+            for (int32_t i = 0; i < ITERATIONS; ++i) {
                 auto actual = file.read_next_primitive<int32_t>();
                 auto expected = i * 2;
                 assert(actual == expected);
@@ -120,28 +120,26 @@ namespace {
         fs::remove(path);
     }
 
-    //void test_array() {
-//    std::string fmap = std::string("../file_mapping_array") + std::string(".txt");
-//    if (fs::exists(fmap)) {
-//        fs::remove(fmap);
-//    }
-//
-//    int n = 1000000;
-////    std::vector<int> out(n, 1);
-////    std::vector<int> in(n, 0);
-//    {
-//        MappedFile file(fmap, 32);
-////        file.write_int_array(out, n);
-//    }
-//
-//    {
-//        MappedFile file(fmap, 32);
-////        file.read_int_array(in, n);
-//    }
-////    assert(in == out);
-//}
-}
+    void run_test_array() {
+        std::string fmap = std::string("../file_mapping_array") + std::string(".txt");
+        const int n = 1000000;
+        std::vector<int> out(n, 1);
+        {
+            MappedFile file(fmap, 32);
+            int size_in_bytes = n * sizeof(int);
+            file.write_next_data(out.data(), size_in_bytes);
+        }
 
+        {
+            MappedFile file(fmap, 32);
+            auto [data_ptr, size_in_bytes] = file.read_next_data<const uint8_t*>();
+            auto* int_data = reinterpret_cast<const int*>(data_ptr);
+            std::vector<int> in(int_data, int_data + size_in_bytes / sizeof(int));
+            assert(in == out);
+        }
+        fs::remove(fmap);
+    }
+}
 
     BOOST_AUTO_TEST_CASE(test_arithmetics) {
         run_test_arithmetics<int32_t>();
@@ -157,19 +155,21 @@ namespace {
         std::wstring wstrs[] = { L"", L"a", L"aba", L"abacaba", L"abba", L"abacabacababa" };
 
         for (auto& str: strs) {
-            test_basic_strings<std::string>(str, conv_to_str, calc_str_len);
+            run_test_basic_strings<std::string>(str, conv_to_str, calc_str_len);
         }
 
         for (auto& wstr: wstrs) {
-            test_basic_strings<std::wstring>(wstr, conv_to_wstr, calc_wstr_len);
+            run_test_basic_strings<std::wstring>(wstr, conv_to_wstr, calc_wstr_len);
         }
     }
 
     BOOST_AUTO_TEST_CASE(test_mody_and_save) {
-        test_modify_and_save();
+        run_test_modify_and_save();
     }
 
-//    test_array();
+    BOOST_AUTO_TEST_CASE(test_array) {
+        run_test_array();
+    }
 
     BOOST_AUTO_TEST_SUITE_END()
 }
