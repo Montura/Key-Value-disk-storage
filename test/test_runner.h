@@ -197,7 +197,7 @@ namespace tests {
             do_task(pool, task);
 
             auto get_stat = test_get_keys(volume, 0, n);
-            assert(get_stat.total_found = n);
+            assert(get_stat.total_found == n);
         }
 
         void test_remove(basio::thread_pool& pool, VolumeT& volume, const int n) {
@@ -208,8 +208,8 @@ namespace tests {
             assert(remove_stat.total_removed == half);
 
             auto get_stat = test_get_keys(volume, 0, n);
-            assert(get_stat.total_found = half);
-            assert(get_stat.total_not_found = half);
+            assert(get_stat.total_found == half);
+            assert(get_stat.total_not_found == half);
         }
 
         TestStat do_task(basio::thread_pool& pool, BoostPackagedTask<TestStat>& task) {
