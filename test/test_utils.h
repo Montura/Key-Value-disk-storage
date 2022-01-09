@@ -58,10 +58,10 @@ namespace test_utils {
                     for (int k = 0; k < len; ++k) {
                         blob[k] = 2;
                     }
-                    blob_map.emplace(i, blob);
+                    blob_map[i] = blob;
                     return blob;
                 } else {
-                    return val;
+                    return static_cast<V>(val);
                 }
             }
         }

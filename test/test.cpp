@@ -65,7 +65,7 @@ namespace tests {
         success &= run_test_repeatable_operations_on_a_unique_key<std::string>("repeatable_set_s_str", order);
         success &= run_test_repeatable_operations_on_a_unique_key<std::wstring>("repeatable_set_s_wstr", order);
         success &= run_test_repeatable_operations_on_a_unique_key<const char*>("repeatable_set_s_blob", order);
-        assert(success);
+        BOOST_TEST_REQUIRE(success);
     }
 
     BOOST_AUTO_TEST_CASE(set_various_values_on_the_same_key) {
@@ -81,17 +81,17 @@ namespace tests {
     }
 
     BOOST_AUTO_TEST_CASE(test_on_random_values) {
-            int order = 2;
-            run_on_random_values<int32_t>("random_s_i32", order);
-            run_on_random_values<int64_t>("random_s_i64", order);
-            run_on_random_values<float>("random_s_f", order);
-            run_on_random_values<double>("random_s_d", order);
-            run_on_random_values<std::string>("random_s_str", order);
-            run_on_random_values<std::wstring>("random_s_wstr", order);
-            run_on_random_values<const char*>("random_s_blob", order);
+        int order = 2;
+        run_on_random_values<int32_t>("random_s_i32", order);
+        run_on_random_values<int64_t>("random_s_i64", order);
+        run_on_random_values<float>("random_s_f", order);
+        run_on_random_values<double>("random_s_d", order);
+        run_on_random_values<std::string>("random_s_str", order);
+        run_on_random_values<std::wstring>("random_s_wstr", order);
+        run_on_random_values<const char*>("random_s_blob", order);
 
-            BOOST_TEST_REQUIRE(true);
-        }
+        BOOST_TEST_REQUIRE(true);
+    }
 
     BOOST_AUTO_TEST_SUITE_END()
 

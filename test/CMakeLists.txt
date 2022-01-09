@@ -2,13 +2,28 @@ cmake_minimum_required(VERSION 3.12)
 project(test)
 enable_language(CXX)
 
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "valid configurations" FORCE)
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(Boost_USE_STATIC_LIBS ON)
 endif()
 
-message("CXX_COMPILER = ${CMAKE_CXX_COMPILER}")
-message("CXX_COMPILER_VERSION = ${CMAKE_CXX_COMPILER_VERSION}")
+message("Platform = ${CMAKE_SYSTEM_NAME} v${CMAKE_SYSTEM_VERSION}")
+message("Compiler = ${CMAKE_CXX_COMPILER}")
+message("  ${CMAKE_CXX_COMPILER_ID} v.${CMAKE_CXX_COMPILER_VERSION}")
 message("BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+
+if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+  message("  target arch = x86-64, CPU = ${CMAKE_SYSTEM_PROCESSOR}")
+  set(TARGET_ARCH x64)
+elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+  set(TARGET_ARCH x86-64)
+  if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    message(FATAL_ERROR MSVC compiler is expected for ${TARGET_ARCH})
+  endif()
+  message("  target arch = x86, CPU = ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
 
 find_package(Boost COMPONENTS iostreams thread REQUIRED)
 if (NOT Boost_FOUND)
@@ -49,14 +64,19 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
       -O3
       )
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  target_compile_definitions(key-value-storage-test PRIVATE
+      _WIN32_WINDOWS
+      _WINSOCK_DEPRECATED_NO_WARNINGS
+      )
   target_compile_options(key-value-storage-test PRIVATE
       /std:c++17
       /W3
-      /GL
-      #       /Ox
-      /Ob2
-      /Oi
-      /Oy-
+      "$<$<CONFIG:Release>:/GL>"
+      "$<$<CONFIG:Release>:/Ox>"
+      "$<$<CONFIG:Release>:/Ob2>"
+      "$<$<CONFIG:Release>:/Ot>"
+      "$<$<CONFIG:Release>:/Oi>"
+      "$<$<CONFIG:Release>:/Oy->"
       )
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   target_compile_options(key-value-storage-test PRIVATE

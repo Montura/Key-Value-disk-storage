@@ -20,7 +20,7 @@ namespace {
 
         template <typename T, typename V = typename T::value_type>
         int32_t calc_size_in_bytes(const T& str, strlen_ptr<V> strlen_impl) {
-            return sizeof(V) * strlen_impl(str.data());
+            return static_cast<int32_t>(sizeof(V) * strlen_impl(str.data()));
         }
 
         template <typename T>
@@ -43,7 +43,7 @@ namespace {
 
             // write
             for (int i = 0; i < ITERATIONS; ++i) {
-                T tmp = i;
+                T tmp = static_cast<T>(i);
                 file.write_next_primitive(tmp);
             }
 
@@ -70,7 +70,7 @@ namespace {
             // write
             for (auto i = 0; i < ITERATIONS; ++i) {
                 T tmp = val + converter(i);
-                auto size = calc_size_in_bytes(tmp, strlen_impl);
+                int32_t size = calc_size_in_bytes(tmp, strlen_impl);
                 file.write_next_data(tmp.data(), size);
             }
             total_write_size = file.get_pos();

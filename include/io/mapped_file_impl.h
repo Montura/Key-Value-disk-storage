@@ -85,7 +85,7 @@ namespace file {
             return std::make_pair(cast_to_const_uint8_t_data(value_begin), len);
         } else {
             static_assert(std::is_arithmetic_v<ValueType>);
-            return std::make_pair(read_next_primitive<ValueType>(), sizeof(ValueType));
+            return std::make_pair(read_next_primitive<ValueType>(), static_cast<int32_t>(sizeof(ValueType)));
         }
     }
 

@@ -14,7 +14,7 @@ namespace storage_tests {
     template <typename VolumeT, typename K, typename V>
     void set(VolumeT& volume, const K& key, const V& val) {
         if constexpr(std::is_pointer_v<V>) {
-            int size = std::strlen(val);
+            auto size =  static_cast<int32_t>(std::strlen(val));
             volume.set(key, val, size);
         } else {
             volume.set(key, val);
@@ -22,9 +22,9 @@ namespace storage_tests {
     }
 
     template <typename K, typename V>
-    int entry_size_in_file(const K& key, const V& val) {
+    int32_t entry_size_in_file(const K& key, const V& val) {
         if constexpr(std::is_pointer_v<V>) {
-            int size = std::strlen(val);
+            auto size = static_cast<int32_t>(std::strlen(val));
             return Entry<int32_t,V>(key, val, size).size_in_file();
         } else {
             return Entry<int32_t,V>(key, val).size_in_file();
@@ -191,7 +191,7 @@ namespace storage_tests {
     void run_on_random_values(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
         int rounds = 3;
-        int n = 100;
+        int n = 10000;
         std::cout << "Run " << rounds << " iterations on " << n << " elements: " << std::endl;
         for (int i = 0; i < rounds; ++i) {
             auto keys_to_remove = generate_rand_keys();
