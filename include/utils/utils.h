@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace btree {
+namespace utils {
 #if _WIN64 || __amd64__
     static_assert(sizeof(int64_t) == sizeof(size_t));
 #else

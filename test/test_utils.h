@@ -5,9 +5,9 @@
 
 #include "utils/utils.h"
 
-namespace btree_test {
-namespace utils {
-    using namespace btree;
+namespace tests {
+namespace test_utils {
+    using namespace utils;
 
     std::tuple<int, int, int> generate_rand_keys() {
         int r1 = std::rand() % 7 + 1;
@@ -39,6 +39,7 @@ namespace utils {
                 for (auto& data: blob_map) {
                     delete data.second;
                 }
+                blob_map.clear();
             }
         }
 
@@ -71,7 +72,7 @@ namespace utils {
         if constexpr(std::is_pointer_v<V>) {
             auto* expected = expected_value->second;
             auto* actual = actual_value.value();
-            size_t len = utils::get_len_by_idx(idx);
+            size_t len = get_len_by_idx(idx);
             for (size_t k = 0; k < len; ++k) {
                 assert(expected[k] == actual[k]);
             }
@@ -85,7 +86,7 @@ namespace utils {
         if constexpr(std::is_pointer_v<V>) {
             auto* expected = expected_value;
             auto* actual = actual_value.value();
-            size_t len = utils::get_len_by_idx(idx);
+            size_t len = get_len_by_idx(idx);
             bool res = true;
             for (size_t k = 0; k < len; ++k) {
                 res &= (expected[k] == actual[k]);

@@ -35,6 +35,7 @@ target_compile_definitions(key-value-storage-test PRIVATE
     BOOST_TEST_MODULE=unit-cpp
     USE_BOOST_PREBUILT_STATIC_LIBRARY=false
     UNIT_TESTS
+#    MEM_CHECK
     )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")

@@ -1,209 +1,14 @@
 #ifdef UNIT_TESTS
 
-#include <iostream>
-#include <filesystem>
-
-#include "test_runner.h"
-#include "utils/boost_include.h"
+#include "storage_tests.h"
 #include "mapped_file_tests.hpp"
 
-namespace btree_test {
-    BOOST_AUTO_TEST_SUITE(key_value_operations)
+namespace tests {
+    using namespace storage_tests;
 
-namespace {
-    namespace fs = std::filesystem;
+    BOOST_AUTO_TEST_SUITE(key_value_operations_test)
 
-    template <typename VolumeT, typename K, typename V>
-    void set(VolumeT& volume, const K& key, const V& val) {
-        if constexpr(std::is_pointer_v<V>) {
-            int size = std::strlen(val);
-            volume.set(key, val, size);
-        } else {
-            volume.set(key, val);
-        }
-    }
-
-    template <typename K, typename V>
-    int entry_size_in_file(const K& key, const V& val) {
-        if constexpr(std::is_pointer_v<V>) {
-            int size = std::strlen(val);
-            return Entry<int32_t,V>(key, val, size).size_in_file();
-        } else {
-            return Entry<int32_t,V>(key, val).size_in_file();
-        }
-    }
-
-    template <typename V>
-    bool run_test_emtpy_file(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
-        {
-            Storage<int32_t, V> s;
-            s.open_volume(db_name, order);
-        }
-        bool success = fs::file_size(db_name) == 0;
-        fs::remove(db_name);
-        return success;
-    }
-
-    template <typename V>
-    bool run_test_file_size_with_one_entry(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
-
-        Storage<int32_t, V> s;
-        int32_t key = 0;
-        ValueGenerator<V> g;
-        V val = g.next_value(key);
-
-        auto on_exit = [](auto& storage, const auto& volume,
-                const int32_t key, const V& val, bool after_remove = false) -> bool {
-            uint32_t total_size = volume.header_size() +
-                                  (after_remove ? 0 : (volume.node_size() + entry_size_in_file(key, val)));
-            auto path = volume.path();
-            storage.close_volume(volume);
-            return (fs::file_size(path) == total_size);
-        };
-
-        bool success = true;
-        {
-            auto volume = s.open_volume(db_name, order);
-            set(volume, key, val);
-            success &= on_exit(s, volume, key, val);
-        }
-        {
-            auto volume = s.open_volume(db_name, order);
-            success &= utils::check(key, volume.get(key), val);
-            success &= on_exit(s, volume, key, val);
-        }
-        {
-            auto volume = s.open_volume(db_name, order);
-            success &= volume.remove(key);
-            success &= on_exit(s, volume, key, val, true);
-        }
-
-        fs::remove(db_name);
-        return success;
-    }
-
-    template <typename V>
-    bool run_test_set_get_one(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
-        Storage<int32_t, V> s;
-
-        int32_t key = 0;
-        ValueGenerator<V> g;
-        V expected_val = g.next_value(key);
-        bool success = false;
-        {
-            auto volume = s.open_volume(db_name, order);
-            set(volume, key, expected_val);
-            auto actual_val = volume.get(key);
-            success = utils::check(key, actual_val, expected_val);
-            s.close_volume(volume);
-        }
-        {
-            auto volume = s.open_volume(db_name, order);
-            auto actual_val = volume.get(key);
-            success &= utils::check(key, actual_val, expected_val);
-            s.close_volume(volume);
-        }
-
-        fs::remove(db_name);
-        return success;
-    }
-
-    template <typename V>
-    bool run_test_remove_one(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
-        Storage<int32_t, V> s;
-
-        int32_t key = 0;
-        ValueGenerator<V> g;
-        V expected_val = g.next_value(key);
-        uint32_t total_size = 0;
-
-        bool success = false;
-        {
-            auto volume = s.open_volume(db_name, order);
-            set(volume, key, expected_val);
-            success = volume.remove(key);
-            total_size = volume.header_size();
-            s.close_volume(volume);
-        }
-        success &= (fs::file_size(db_name) == total_size);
-        {
-            auto volume = s.open_volume(db_name, order);
-            auto actual_val = volume.get(key);
-            success &= (actual_val == std::nullopt);
-            s.close_volume(volume);
-        }
-        success &= (fs::file_size(db_name) == total_size);
-
-        fs::remove(db_name);
-        return success;
-    }
-
-    template <typename V>
-    bool run_test_repeatable_operations_on_a_unique_key(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
-        Storage<int32_t, V> s;
-        auto volume = s.open_volume(db_name, order);
-
-        int32_t key = 0;
-        ValueGenerator<V> g;
-        V expected_val = g.next_value(key);
-        uint32_t header_size = volume.header_size();
-
-        bool success = true;
-        for (int i = 0; i < 100; ++i) {
-            set(volume, key, expected_val);
-            success &= utils::check(key, volume.get(key), expected_val);
-            success &= volume.remove(key);
-        }
-
-        s.close_volume(volume);
-        success &= fs::file_size(db_name) == header_size;
-
-        fs::remove(db_name);
-        return success;
-    }
-
-    template <typename V>
-    bool run_test_set_on_the_same_key(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
-        Storage<int32_t, V> s;
-
-        auto volume = s.open_volume(db_name, order);
-        bool success = true;
-        int32_t key = 0;
-
-        ValueGenerator<V> g;
-        for (int i = 0; i < 1000; ++i) {
-            V expected_val = g.next_value(i);
-            set(volume, key, expected_val);
-            auto actual_val = volume.get(key);
-            success = utils::check(key, actual_val, expected_val);
-        }
-        s.close_volume(volume);
-
-        fs::remove(db_name);
-        return success;
-    }
-
-    template <typename V>
-    void run_on_random_values(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
-        int rounds = 3;
-        int n = 10000;
-        cout << "Run " << rounds << " iterations on " << n << " elements: " << endl;
-        for (int i = 0; i < rounds; ++i) {
-            auto keys_to_remove = utils::generate_rand_keys();
-            TestRunner<int32_t, V>::run(db_name, order, n, keys_to_remove);
-        }
-        fs::remove(db_name);
-    };
-}
-
-    BOOST_AUTO_TEST_CASE(empty_file) {
+    BOOST_AUTO_TEST_CASE(test_empty_file) {
         int order = 2;
         bool success = run_test_emtpy_file<int64_t>("empty_s_i32", order);
         success &= run_test_emtpy_file<int64_t>("empty_s_i64", order);
@@ -224,7 +29,6 @@ namespace {
         success &= run_test_file_size_with_one_entry<std::string>("one_s_str", order);
         success &= run_test_file_size_with_one_entry<std::wstring>("one_s_wstr", order);
         success &= run_test_file_size_with_one_entry<const char*>("one_s_blob", order);
-
         BOOST_TEST_REQUIRE(success);
     }
 
@@ -237,7 +41,6 @@ namespace {
         success &= run_test_set_get_one<std::string>("get_one_s_str", order);
         success &= run_test_set_get_one<std::wstring>("get_one_s_wstr", order);
         success &= run_test_set_get_one<const char*>("get_one_s_blob", order);
-
         BOOST_TEST_REQUIRE(success);
     }
 
@@ -250,7 +53,6 @@ namespace {
         success &= run_test_remove_one<std::string>("remove_one_s_str", order);
         success &= run_test_remove_one<std::wstring>("remove_one_s_wstr", order);
         success &= run_test_remove_one<const char*>("remove_one_s_blob", order);
-
         BOOST_TEST_REQUIRE(success);
     }
 
@@ -263,8 +65,7 @@ namespace {
         success &= run_test_repeatable_operations_on_a_unique_key<std::string>("repeatable_set_s_str", order);
         success &= run_test_repeatable_operations_on_a_unique_key<std::wstring>("repeatable_set_s_wstr", order);
         success &= run_test_repeatable_operations_on_a_unique_key<const char*>("repeatable_set_s_blob", order);
-
-        BOOST_TEST_REQUIRE(success);
+        assert(success);
     }
 
     BOOST_AUTO_TEST_CASE(set_various_values_on_the_same_key) {
@@ -276,7 +77,6 @@ namespace {
         success &= run_test_set_on_the_same_key<std::string>("various_set_s_str", order);
         success &= run_test_set_on_the_same_key<std::wstring>("various_set_s_wstr", order);
         success &= run_test_set_on_the_same_key<const char*>("various_set_s_blob", order);
-
         BOOST_TEST_REQUIRE(success);
     }
 
@@ -296,36 +96,46 @@ namespace {
     BOOST_AUTO_TEST_SUITE_END()
 
 }
+
+#else
+
+#include "test_runner.h"
+
+void test_mt() {
+    std::string db_prefix = "../db_";
+    std::string end = ".txt";
+
+    int n = 1000;
+    basio::thread_pool pool(10);
+
+    for (int i = 0; i < 11; ++i) {
+        for (int order = 2; order < 7; ++order) {
+            auto db_name = db_prefix + std::to_string(order);
+            tests::TestRunnerMT<int32_t, int32_t>::run(pool, db_name + "_i32" + end, order, n);
+            tests::TestRunnerMT<int32_t, int64_t>::run(pool, db_name + "_i64" + end, order, n);
+            tests::TestRunnerMT<int32_t, float>::run(pool, db_name + "_f" + end, order, n);
+            tests::TestRunnerMT<int32_t, double>::run(pool, db_name + "_d" + end, order, n);
+            tests::TestRunnerMT<int32_t, std::string>::run(pool, db_name + "_str" + end, order, n);
+            tests::TestRunnerMT<int32_t, std::wstring>::run(pool, db_name + "_wstr" + end, order, n);
+            tests::TestRunnerMT<int32_t, const char*>::run(pool, db_name + "_blob" + end, order, n);
+        }
+    }
+}
+
+
+#if defined(MEM_CHECK) && !defined(UNIT_TESTS) && !defined(BOOST_ALL_NO_LIB)
+    #include <cstdlib>
+    #include "utils/mem_util.hpp"
 #endif
 
-//
-//void test_mt() {
-//    std::string db_prefix = "../db_";
-//    std::string end = ".txt";
-//
-//    basio::thread_pool pool(10);
-//
-//    for (int i = 0; i < 11; ++i) {
-//        for (int order = 2; order < 7; ++order) {
-//            auto db_name = db_prefix + std::to_string(order);
-//            TestRunnerMT<int32_t, int32_t>::run(pool, db_name + "_i32" + end, order, n);
-//            TestRunnerMT<int32_t, int64_t>::run(pool, db_name + "_i64" + end, order, n);
-//            TestRunnerMT<int32_t, float>::run(pool, db_name + "_f" + end, order, n);
-//            TestRunnerMT<int32_t, double>::run(pool, db_name + "_d" + end, order, n);
-//            TestRunnerMT<int32_t, std::string>::run(pool, db_name + "_str" + end, order, n);
-//            TestRunnerMT<int32_t, std::wstring>::run(pool, db_name + "_wstr" + end, order, n);
-//            TestRunnerMT<int32_t, const char*>::run(pool, db_name + "_blob" + end, order, n);
-//        }
-//    }
-//}
-//
-//void at_exit_handler();
-//
-//int main() {
-//    std::srand(std::time(nullptr)); // use current time as seed for random generator
-//    test();
-////    test_mt();
-//
-//    return 0;
-//}
+int main() {
+#if defined(MEM_CHECK) && !defined(UNIT_TESTS) && !defined(BOOST_ALL_NO_LIB)
+    atexit(at_exit_handler);
 
+    int* a = new int[5];
+    delete a;
+    return 0;
+#endif
+    test_mt();
+}
+#endif // UNIT_TESTS

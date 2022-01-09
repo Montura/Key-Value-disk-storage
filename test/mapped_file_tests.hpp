@@ -2,11 +2,10 @@
 
 #include "io/mapped_file.h"
 
-namespace btree_test {
+namespace tests {
 
-    BOOST_AUTO_TEST_SUITE(mapped_file_test)
 namespace {
-    namespace mapped_file_test_utils {
+    namespace {
         template <typename T>
         using to_string_ptr = std::basic_string<T> (*)(int i);
 
@@ -33,9 +32,6 @@ namespace {
             return true;
         }
     }
-
-    using namespace btree;
-    using namespace mapped_file_test_utils;
 
     constexpr int ITERATIONS = 10000;
 
@@ -140,6 +136,7 @@ namespace {
         fs::remove(fmap);
     }
 }
+    BOOST_AUTO_TEST_SUITE(mapped_file_test)
 
     BOOST_AUTO_TEST_CASE(test_arithmetics) {
         run_test_arithmetics<int32_t>();

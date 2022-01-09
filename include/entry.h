@@ -7,6 +7,8 @@
 #include "utils/utils.h"
 
 namespace btree {
+    using namespace utils;
+
     template <typename K, typename V>
     class Entry {
         static constexpr bool V_is_arithmetic = std::is_arithmetic_v<V>;

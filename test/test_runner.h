@@ -1,3 +1,4 @@
+#include <iostream>
 #include <string>
 #include <map>
 #include <chrono>
@@ -6,7 +7,7 @@
 #include "test_utils.h"
 #include "storage.h"
 
-namespace btree_test {
+namespace tests {
     using std::cout;
     using std::endl;
 
@@ -16,7 +17,7 @@ namespace btree_test {
     using std::chrono::milliseconds;
 
     using namespace btree;
-    using namespace btree_test::utils;
+    using namespace test_utils;
 
     template <typename K, typename V>
     class TestRunner {
@@ -56,7 +57,7 @@ namespace btree_test {
                 K key = i;
                 V value = g.next_value(key);
                 if constexpr(std::is_pointer_v<V>) {
-                    btree.set(key, value, utils::get_len_by_idx(i));
+                    btree.set(key, value, get_len_by_idx(i));
                 } else {
                     btree.set(key, value);
                 }
@@ -80,7 +81,7 @@ namespace btree_test {
             for (int i = 0; i < n; ++i) {
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value()) {
-                    utils::check(i, actual_value, verify_map.find(i));
+                    check(i, actual_value, verify_map.find(i));
                     stat.total_found++;
                 } else {
                     assert(actual_value == std::nullopt);
@@ -140,7 +141,7 @@ namespace btree_test {
                 auto expected_value = verify_map.find(i);
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value() && expected_value != verify_map.end()) {
-                    utils::check(i, actual_value, expected_value);
+                    check(i, actual_value, expected_value);
                     stat.total_after_reopen++;
                 } else {
                     assert(actual_value == std::nullopt);
@@ -183,6 +184,7 @@ namespace btree_test {
         }
 
         void clear_map() {
+            verify_map.clear();
             g.clear();
         }
 
@@ -217,7 +219,7 @@ namespace btree_test {
             for (int i = from; i < to; ++i) {
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value()) {
-                    utils::check(i, actual_value, verify_map.find(i));
+                    check(i, actual_value, verify_map.find(i));
                     stat.total_found++;
                 } else {
                     stat.total_not_found++;
@@ -226,13 +228,13 @@ namespace btree_test {
             return stat;
         }
 
-        static TestStat test_set_keys(VolumeT& btree, const std::map<K,V>& map, const int from, const int to) {
+        static TestStat test_set_keys(VolumeT& btree, const std::map<K,V>& verify_map, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {
                 K key = i;
-                V value = map.find(i)->second;
+                V value = verify_map.find(i)->second;
                 if constexpr(std::is_pointer_v<V>) {
-                    btree.set(key, value, utils::get_len_by_idx(i));
+                    btree.set(key, value, get_len_by_idx(i));
                 } else {
                     btree.set(key, value);
                 }
