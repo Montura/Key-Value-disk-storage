@@ -17,9 +17,6 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
     * Windows (x86|x86-64), Visual Studio 2019 Version 16.5.0 (cl v19.25.28610.4, Windows 10 Pro)
     * Linux (x86-64), compiler GNU version 10.3.0 (Ubuntu v20.04)
 
-#### Current problems:
-* file resizing on Windows
-
 ### Volume structure:
 
  #### Header (6 bytes):
