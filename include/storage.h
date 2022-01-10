@@ -31,7 +31,7 @@ namespace btree {
         }
 
         class VolumeWrapper {
-            VolumeT* ptr;
+            VolumeT* const ptr;
 
         public:
             explicit VolumeWrapper(VolumeT* ptr) : ptr(ptr) {}
@@ -46,13 +46,7 @@ namespace btree {
 
             bool remove(const K& key) { return ptr->remove(key); }
 
-#ifdef UNIT_TESTS
             std::string path() const { return ptr->path; }
-
-            int header_size() const { return ptr->header_size(); }
-            int node_size() const { return ptr->node_size(); }
-            int entry_size() const { return ptr->entry_size(); }
-#endif
         };
     };
 

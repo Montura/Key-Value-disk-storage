@@ -28,15 +28,15 @@ namespace btree {
         EntryT find(IOManagerT& io_manager, const K& key) const;
         K get_key(IOManagerT& io_manager, const int32_t idx) const;
 
-        int32_t get_node_size_in_bytes() const;
+        static constexpr int32_t get_node_size_in_bytes(const int16_t t);
         bool is_full() const;
         bool is_valid() const;
 
         void split_child(IOManagerT& manager, const int32_t idx, BTreeNode& curr_node);
         void insert_non_full(IOManagerT& io_manager, const EntryT& e);
     private:
-        int32_t max_key_num() const;
-        int32_t max_child_num() const;
+        static constexpr int32_t max_key_num(const int16_t t);
+        static constexpr int32_t max_child_num(const int16_t t);
 
         int32_t find_key_bin_search(IOManagerT& io_manager, const K& key) const;
         std::tuple<BTreeNode, EntryT, int32_t> find_leaf_node_with_key(IOManagerT& io_manager, const K& key) const;

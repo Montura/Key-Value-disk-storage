@@ -14,7 +14,8 @@ set(SOURCE_FILES
     io/mapped_file.h
     io/mapped_file_impl.h
     utils/boost_include.h
-    utils/forward_decl.h.h
+    utils/forward_decl.h
+    utils/size_info.h
     utils/utils.h
     volume.h
     storage.h

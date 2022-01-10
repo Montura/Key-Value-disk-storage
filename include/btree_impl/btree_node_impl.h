@@ -3,6 +3,8 @@
 #include "utils/utils.h"
 
 namespace btree {
+    using namespace utils;
+
     template <typename K, typename V>
     BTreeNode<K, V>::BTreeNode() :
             used_keys(0),
@@ -18,12 +20,12 @@ namespace btree {
             t(t),
             is_leaf(is_leaf),
             m_pos(-1),
-            key_pos(max_key_num(), -1),
-            child_pos(max_child_num(), -1) {}
+            key_pos(max_key_num(t), -1),
+            child_pos(max_child_num(t), -1) {}
 
     template <typename K, typename V>
     bool BTreeNode<K, V>::is_full() const {
-        return used_keys == max_key_num();
+        return used_keys == max_key_num(t);
     }
 
     template <typename K, typename V>
@@ -32,14 +34,14 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    int32_t BTreeNode<K,V>::get_node_size_in_bytes() const {
+    constexpr int32_t BTreeNode<K,V>::get_node_size_in_bytes(const int16_t t) {
         static_assert(std::is_same_v<decltype(m_pos), typename decltype(key_pos)::value_type>);
         static_assert(std::is_same_v<decltype(m_pos), typename decltype(child_pos)::value_type>);
         return static_cast<int32_t>(
                 sizeof(used_keys) +
                 sizeof(is_leaf) +
-                key_pos.size() * sizeof(m_pos) +
-                child_pos.size() * sizeof(m_pos));
+                max_key_num(t) * sizeof(m_pos) +
+                max_child_num(t) * sizeof(m_pos));
     }
 
     template <typename K, typename V>
@@ -417,12 +419,12 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    int32_t BTreeNode<K,V>::max_key_num() const {
+    constexpr int32_t BTreeNode<K,V>::max_key_num(const int16_t t) {
         return 2 * t - 1;
     }
 
     template <typename K, typename V>
-    int32_t BTreeNode<K,V>::max_child_num() const {
+    constexpr int32_t BTreeNode<K,V>::max_child_num(const int16_t t) {
         return 2 * t;
     }
 

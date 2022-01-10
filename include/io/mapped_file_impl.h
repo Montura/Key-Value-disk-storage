@@ -19,6 +19,7 @@ namespace file {
         buf.close();
     }
 }
+    using namespace utils;
 
     MappedFile::MappedFile(const std::string& fn, int64_t bytes_num) :
             path(fn), m_pos(0), m_mapped_region(new MappedRegion())

@@ -69,7 +69,7 @@ namespace btree {
             root.m_pos = root_pos;
             root.used_keys++;
 
-            auto entry_pos = root.m_pos + root.get_node_size_in_bytes();
+            auto entry_pos = root.m_pos + Node::get_node_size_in_bytes(t);
             root.key_pos[0] = entry_pos;
 
             // write node root and key|value
