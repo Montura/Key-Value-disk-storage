@@ -8,8 +8,9 @@ namespace tests {
 
     BOOST_AUTO_TEST_SUITE(key_value_operations_test)
 
-    BOOST_AUTO_TEST_CASE(test_empty_file) {
-        int order = 2;
+    int const orders[] = { 2, 5, 13, 31, 50, 79, 100};
+
+    BOOST_DATA_TEST_CASE(test_empty_file, boost::make_iterator_range(orders), order) {
         bool success = run_test_emtpy_file<int32_t, int64_t>("empty_s_i32", order);
         success &= run_test_emtpy_file<int32_t, int64_t>("empty_s_i64", order);
         success &= run_test_emtpy_file<int32_t, float>("empty_s_f", order);
@@ -20,8 +21,7 @@ namespace tests {
         BOOST_REQUIRE_MESSAGE(success, "TEST_EMPTY_FILE");
     }
 
-    BOOST_AUTO_TEST_CASE(file_size_after_set_one_element) {
-        int order = 2;
+     BOOST_DATA_TEST_CASE(file_size_after_set_one_element, boost::make_iterator_range(orders), order) {
         bool success = run_test_file_size_with_one_entry<int32_t, int32_t>("one_s_i32", order);
         success &= run_test_file_size_with_one_entry<int32_t, int64_t>("one_s_i64", order);
         success &= run_test_file_size_with_one_entry<int32_t, float>("one_s_f", order);
@@ -32,8 +32,7 @@ namespace tests {
         BOOST_REQUIRE_MESSAGE(success, "TEST_FILE_SIZE");
     }
 
-    BOOST_AUTO_TEST_CASE(set_get_one_element) {
-        int order = 2;
+    BOOST_DATA_TEST_CASE(set_get_one_element, boost::make_iterator_range(orders), order) {
         bool success = run_test_set_get_one<int32_t, int32_t>("get_one_s_i32", order);
         success &= run_test_set_get_one<int32_t, int64_t>("get_one_s_i64", order);
         success &= run_test_set_get_one<int32_t, float>("get_one_s_f", order);
@@ -44,8 +43,7 @@ namespace tests {
         BOOST_REQUIRE_MESSAGE(success, "TEST_SET_GET_ONE_ELEMENT");
     }
 
-    BOOST_AUTO_TEST_CASE(remove_one_element) {
-        int order = 2;
+    BOOST_DATA_TEST_CASE(remove_one_element, boost::make_iterator_range(orders), order) {
         bool success = run_test_remove_one<int32_t, int32_t>("remove_one_s_i32", order);
         success &= run_test_remove_one<int32_t, int64_t>("remove_one_s_i64", order);
         success &= run_test_remove_one<int32_t, float>("remove_one_s_f", order);
@@ -56,8 +54,7 @@ namespace tests {
         BOOST_REQUIRE_MESSAGE(success, "TEST_REMOVE_ONE_ELEMENT");
     }
 
-    BOOST_AUTO_TEST_CASE(repeatable_operations_on_a_unique_key) {
-        int order = 2;
+    BOOST_DATA_TEST_CASE(repeatable_operations_on_a_unique_key, boost::make_iterator_range(orders), order) {
         bool success = run_test_repeatable_operations_on_a_unique_key<int32_t, int32_t>("repeatable_set_s_i32", order);
         success &= run_test_repeatable_operations_on_a_unique_key<int32_t, int64_t>("repeatable_set_s_i64", order);
         success &= run_test_repeatable_operations_on_a_unique_key<int32_t, float>("repeatable_set_s_f", order);
@@ -68,8 +65,7 @@ namespace tests {
         BOOST_REQUIRE_MESSAGE(success, "TEST_REPEATABLE_OPERATIONS");
     }
 
-    BOOST_AUTO_TEST_CASE(set_various_values_on_the_same_key) {
-        int order = 2;
+    BOOST_DATA_TEST_CASE(set_various_values_on_the_same_key, boost::make_iterator_range(orders), order) {
         bool success = run_test_set_on_the_same_key<int32_t, int32_t>("various_set_s_i32", order);
         success &= run_test_set_on_the_same_key<int32_t, int64_t>("various_set_s_i64", order);
         success &= run_test_set_on_the_same_key<int32_t, float>("various_set_s_f", order);
@@ -80,8 +76,8 @@ namespace tests {
         BOOST_REQUIRE_MESSAGE(success, "TEST_SET_VARIOUS_VALUES");
     }
 
-    BOOST_AUTO_TEST_CASE(test_on_random_values) {
-        int order = 2;
+
+    BOOST_DATA_TEST_CASE(test_on_random_values, boost::make_iterator_range(orders), order) {
         int elements_count = 10000;
         bool success = run_on_random_values<int32_t, int32_t>("random_s_i32", order, elements_count);
         success &= run_on_random_values<int32_t, int64_t>("random_s_i64", order, elements_count);
@@ -93,9 +89,8 @@ namespace tests {
         BOOST_REQUIRE_MESSAGE(success, "TEST_RANDOM_VALUES");
     }
 
-    BOOST_AUTO_TEST_CASE(multithreading_test) {
-        int order = 2;
-        int elements_count = 10000;
+    BOOST_DATA_TEST_CASE(multithreading_test, boost::make_iterator_range(orders), order) {
+        int elements_count = 1000;
         ThreadPool pool(10);
         bool success = run_multithreading_test<int32_t, int32_t>(pool, "mt_s_i32", order, elements_count);
         success &= run_multithreading_test<int32_t, int64_t>(pool, "mt_s_i64", order, elements_count);

@@ -12,7 +12,8 @@
         #include <boost/test/included/unit_test.hpp>
     #endif
 
-    #include <boost/test/data/test_case.hpp>
+#include <boost/range/iterator_range.hpp>
+#include <boost/test/data/test_case.hpp>
 #endif
 
 namespace m_boost {

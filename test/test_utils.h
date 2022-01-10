@@ -49,10 +49,11 @@ namespace test_utils {
             } else {
                 if constexpr(std::is_same_v<V, const char*>) {
                     int len = get_len_by_idx(val);
-                    auto blob = new char[len];
+                    auto blob = new char[len + 1];
                     for (int k = 0; k < len; ++k) {
                         blob[k] = 2;
                     }
+                    blob[len] = 0;
                     blob_map[i] = blob;
                     return blob;
                 } else {
