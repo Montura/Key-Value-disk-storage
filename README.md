@@ -18,7 +18,8 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
     * Linux (x86-64), compiler GNU version 10.3.0 (Ubuntu v20.04)
 
 #### TODO:
-   * To implement recovery technique [Write-Ahead-Log](https://people.eecs.berkeley.edu/~kubitron/cs262/handouts/papers/a1-graefe.pdf) 
+   * Implement automatic remove for expiring keys (see [Redis impl](https://github.com/redis/redis/blob/a92921da135e38eedd89138e15fe9fd1ffdd9b48/src/expire.c#L98))
+   * Implement recovery technique [Write-Ahead-Log](https://people.eecs.berkeley.edu/~kubitron/cs262/handouts/papers/a1-graefe.pdf) 
       * To provide failure atomicity and durability
       * The recovery log describes changes before any in-place updates of the B-tree data structure.
       * *For now all modifications are written to the end of the same file -> file size accordingly grows (drawback)*
@@ -118,11 +119,11 @@ cmake .
       * [Introduction to Memory Mapped IO]( https://towardsdatascience.com/introduction-to-memory-mapped-io-3540454770f7)
       * [Efficient Memory Mapped File I/O for In-Memory File Systems](https://www.usenix.org/sites/default/files/conference/protected-files/hotstorage17_slides_choi.pdf)
    * Overview of BTree impls:
-      *  B-tree library for eventual proposal to Boost (https://github.com/Beman/btree)
-      *  B-tree based on Google's B-tree implementation. (https://github.com/Kronuz/cpp-btree)
-      *  Fine-Grained-Locked-B-Tree (https://github.com/MentallyCramped/Fine-Grained-Locked-B-Tree)
-      *  BPlusTree(https://github.com/skyzh/BPlusTree)
-      *  B-tree (https://neerc.ifmo.ru/wiki/index.php?title=B-%D0%B4%D0%B5%D1%80%D0%B5%D0%B2%D0%BE)
+      *  [B-tree library for eventual proposal to Boost](https://github.com/Beman/btree)
+      *  [B-tree based on Google's B-tree implementation](https://github.com/Kronuz/cpp-btree)
+      *  [Fine-Grained-Locked-B-Tree](https://github.com/MentallyCramped/Fine-Grained-Locked-B-Tree)
+      *  [BPlusTree](https://github.com/skyzh/BPlusTree)
+      *  [B-tree ИМТО конспект](https://neerc.ifmo.ru/wiki/index.php?title=B-%D0%B4%D0%B5%D1%80%D0%B5%D0%B2%D0%BE)
       *  [Implement Key-Value Store by B-Tree on Linux OS environment](https://medium.com/@pthtantai97/implement-key-value-store-by-btree-5a100a03da3a)
          * [B-Tree impl on Linux OS environment](https://github.com/phamtai97/key-value-store)
          * [Key Value Store using B-Tree](https://github.com/billhcmus/key-value-store)
