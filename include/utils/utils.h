@@ -10,14 +10,14 @@ namespace utils {
     static_assert(sizeof(int32_t) == sizeof(size_t));
 #endif
     template <typename T>
-    void shift_right_by_one(std::vector <T> &v, const int32_t from, const int32_t to) {
+    void shift_right_by_one(std::vector<T>& v, const int32_t from, const int32_t to) {
         for (auto i = from; i > to; --i) {
             v[i] = v[i - 1];
         }
     }
 
     template <typename T>
-    void shift_left_by_one(std::vector <T> &v, const int32_t from, const int32_t to) {
+    void shift_left_by_one(std::vector<T>& v, const int32_t from, const int32_t to) {
         for (auto i = from; i < to; ++i) {
             v[i - 1] = v[i];
         }
@@ -69,11 +69,13 @@ namespace utils {
     constexpr uint8_t get_element_size() {
         if constexpr (std::is_arithmetic_v<V>) {
             return sizeof(V);
-        }
-        if constexpr (is_string_v<V> || is_vector_v<V>) {
-            return sizeof(typename V::value_type);
         } else {
-            return 0;
+            if constexpr (is_string_v<V> || is_vector_v<V>)
+                return sizeof(typename V::value_type);
+            else {
+                static_assert(std::is_pointer_v<V>);
+                return sizeof(std::remove_pointer_t<V>);
+            }
         }
     }
 
@@ -81,25 +83,27 @@ namespace utils {
     constexpr uint8_t get_value_type_code() {
         if constexpr (std::is_arithmetic_v<V>) {
             return 0;
-        }
-        if constexpr (is_string_v<V> || is_vector_v<V>) {
-            return 1;
         } else {
-            return -1;
+            if constexpr (is_string_v<V> || is_vector_v<V>) {
+                return 1;
+            } else {
+                static_assert(std::is_pointer_v<V>);
+                return 2;
+            }
         }
     }
 
     template <typename PtrT>
-    constexpr uint8_t *cast_to_uint8_t_data(PtrT t) {
-        return reinterpret_cast<uint8_t *>(t);
+    constexpr uint8_t* cast_to_uint8_t_data(PtrT t) {
+        return reinterpret_cast<uint8_t*>(t);
     }
 
     template <typename PtrT>
-    constexpr const uint8_t *cast_to_const_uint8_t_data(PtrT t) {
-        return reinterpret_cast<const uint8_t *>(t);
+    constexpr const uint8_t* cast_to_const_uint8_t_data(PtrT t) {
+        return reinterpret_cast<const uint8_t*>(t);
     }
 
-    void validate(bool expression, const std::string &msg) {
+    void validate(bool expression, const std::string& msg) {
         if (!expression)
             throw std::logic_error(msg);
     }

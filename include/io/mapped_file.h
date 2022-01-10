@@ -13,7 +13,7 @@ namespace btree {
             uint8_t* mapped_region_begin;
         public:
             explicit MappedRegion();
-            uint8_t* address_by_offset(const int64_t offset);
+            uint8_t* address_by_offset(const int64_t offset) const;
             void remap(const std::string& path);
         };
 
@@ -51,7 +51,7 @@ namespace btree {
         int64_t read_int64();
 
         void shrink_to_fit();
-        bool isEmpty() const;
+        bool is_empty() const;
 
         const std::string path;
     private:
@@ -69,4 +69,5 @@ namespace btree {
         MappedRegion* m_mapped_region;
     };
 }
+
 #include "mapped_file_impl.h"

@@ -16,11 +16,6 @@ namespace test_utils {
         return std::make_tuple(r1, r2, r3);
     }
 
-    template <typename T>
-    using generator = T (*)(int i);
-
-    static constexpr int32_t BLOB_SIZE = 5;
-
     int32_t get_len_by_idx(int32_t const idx) {
         return idx + 5;
     }

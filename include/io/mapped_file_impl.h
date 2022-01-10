@@ -56,7 +56,7 @@ namespace file {
 
     MappedFile::MappedRegion::MappedRegion() {}
 
-    uint8_t* MappedFile::MappedRegion::address_by_offset(const int64_t offset) {
+    uint8_t* MappedFile::MappedRegion::address_by_offset(const int64_t offset) const {
         return mapped_region_begin + offset;
     }
 
@@ -196,7 +196,7 @@ namespace file {
         m_mapped_region->remap(path);
     }
 
-    bool MappedFile::isEmpty() const {
+    bool MappedFile::is_empty() const {
         return m_size == 0;
     }
 }

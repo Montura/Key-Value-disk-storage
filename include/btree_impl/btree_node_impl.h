@@ -4,7 +4,7 @@
 
 namespace btree {
     template <typename K, typename V>
-    BTreeNode<K,V>::BTreeNode() :
+    BTreeNode<K, V>::BTreeNode() :
             used_keys(0),
             t(0),
             is_leaf(false),
@@ -13,7 +13,7 @@ namespace btree {
             child_pos(0, -1) {}
 
     template <typename K, typename V>
-    BTreeNode<K,V>::BTreeNode(const int16_t& t, bool is_leaf) :
+    BTreeNode<K, V>::BTreeNode(const int16_t& t, bool is_leaf) :
             used_keys(0),
             t(t),
             is_leaf(is_leaf),
@@ -22,12 +22,12 @@ namespace btree {
             child_pos(max_child_num(), -1) {}
 
     template <typename K, typename V>
-    bool BTreeNode<K,V>::is_full() const {
+    bool BTreeNode<K, V>::is_full() const {
         return used_keys == max_key_num();
     }
 
     template <typename K, typename V>
-    bool BTreeNode<K,V>::is_valid() const {
+    bool BTreeNode<K, V>::is_valid() const {
         return t != 0;
     }
 
@@ -43,7 +43,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    void BTreeNode<K,V>::split_child(IOManagerT& manager, const int32_t idx, Node& curr_node) {
+    void BTreeNode<K, V>::split_child(IOManagerT& manager, const int32_t idx, Node& curr_node) {
         // Create a new node to store (t-1) keys of divided node
         Node new_node(curr_node.t, curr_node.is_leaf);
         new_node.used_keys = t - 1;
@@ -83,15 +83,15 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    K BTreeNode<K,V>::get_key(IOManagerT& io, const int32_t idx) const {
+    K BTreeNode<K, V>::get_key(IOManagerT& io, const int32_t idx) const {
         if (idx < 0 || idx > used_keys - 1)
-            return -1; // nullptr
+            return IOManagerT::INVALID_POS;
 
         return io.read_key(key_pos[idx]);
     }
 
     template <typename K, typename V>
-    Entry <K, V> BTreeNode<K,V>::get_entry(IOManagerT& io, const int32_t idx) const {
+    Entry <K, V> BTreeNode<K, V>::get_entry(IOManagerT& io, const int32_t idx) const {
         if (idx < 0 || idx > used_keys - 1)
             return EntryT();
 
@@ -99,7 +99,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    BTreeNode<K,V> BTreeNode<K,V>::get_child(IOManagerT& io, const int32_t idx) const {
+    BTreeNode <K, V> BTreeNode<K, V>::get_child(IOManagerT& io, const int32_t idx) const {
         if (idx < 0 || idx > used_keys)
             return Node();
 
@@ -107,7 +107,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    void BTreeNode<K,V>::insert_non_full(IOManagerT& io, const EntryT& e) {
+    void BTreeNode<K, V>::insert_non_full(IOManagerT& io, const EntryT& e) {
         if (is_leaf) {
             auto idx = used_keys - 1;
             K curr_key = get_key(io, idx);
@@ -142,7 +142,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    int32_t BTreeNode<K,V>::find_key_bin_search(IOManagerT& io, const K& key) const {
+    int32_t BTreeNode<K, V>::find_key_bin_search(IOManagerT& io, const K& key) const {
         int32_t left = 0;
         int32_t right = used_keys - 1;
         int32_t mid = 0;
@@ -172,7 +172,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    Entry <K, V> BTreeNode<K,V>::find(IOManagerT& io, const K& key) const {
+    Entry <K, V> BTreeNode<K, V>::find(IOManagerT& io, const K& key) const {
         const auto&[curr, entry, idx] = find_leaf_node_with_key(io, key);
         if (entry.key == key)
             return entry;
@@ -181,8 +181,8 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    bool BTreeNode<K,V>::set(IOManagerT& io, const EntryT& e) {
-        auto[curr, entry, idx] = find_leaf_node_with_key(io, e.key);
+    bool BTreeNode<K, V>::set(IOManagerT& io, const EntryT& e) {
+        auto [curr, entry, idx] = find_leaf_node_with_key(io, e.key);
         if (entry.key == e.key) {
             if (entry != e) {
                 auto curr_pos = io.get_file_pos_end();
@@ -199,7 +199,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    bool BTreeNode<K,V>::remove(IOManagerT& io, const K& key) {
+    bool BTreeNode<K, V>::remove(IOManagerT& io, const K& key) {
         auto writeOnExit = [&io](const Node& node, const auto pos, bool success) -> bool {
             io.write_node(node, pos);
             return success;
@@ -233,7 +233,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    bool BTreeNode<K,V>::remove_from_leaf(IOManagerT& io, const int32_t idx) {
+    bool BTreeNode<K, V>::remove_from_leaf(IOManagerT& io, const int32_t idx) {
         // shift to the left by 1 all the keys after the pos
         shift_left_by_one(key_pos, idx + 1, used_keys);
         --used_keys;
@@ -241,7 +241,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    bool BTreeNode<K,V>::remove_from_non_leaf(IOManagerT& io, const int32_t idx) {
+    bool BTreeNode<K, V>::remove_from_non_leaf(IOManagerT& io, const int32_t idx) {
         auto onExit = [&io](Node& curr, const K key) -> bool {
             bool success = curr.remove(io, key);
             io.write_node(curr, curr.m_pos);
@@ -280,7 +280,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    int64_t BTreeNode<K,V>::get_prev_entry_pos(IOManagerT& io, const int32_t idx) {
+    int64_t BTreeNode<K, V>::get_prev_entry_pos(IOManagerT& io, const int32_t idx) const {
         Node curr = io.read_node(child_pos[idx]);
         // Keep moving to the right most node until CURR becomes a leaf
         while (!curr.is_leaf)
@@ -290,7 +290,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    int64_t BTreeNode<K,V>::get_next_entry_pos(IOManagerT& io, const int32_t idx) {
+    int64_t BTreeNode<K, V>::get_next_entry_pos(IOManagerT& io, const int32_t idx) const {
         Node curr = io.read_node(child_pos[idx + 1]);
         // Keep moving the left most node until CURR becomes a leaf
         while (!curr.is_leaf)
@@ -300,7 +300,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    void BTreeNode<K,V>::merge_node(IOManagerT& io, const int32_t idx) {
+    void BTreeNode<K, V>::merge_node(IOManagerT& io, const int32_t idx) {
         Node child = get_child(io, idx);
         Node next_child = get_child(io, idx + 1);
 
@@ -334,7 +334,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    void BTreeNode<K,V>::fill_node(IOManagerT& io, const int32_t idx) {
+    void BTreeNode<K, V>::fill_node(IOManagerT& io, const int32_t idx) {
         Node left_child = get_child(io, idx - 1);
         Node right_child = get_child(io, idx + 1);
 
@@ -360,7 +360,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    void BTreeNode<K,V>::borrow_from_prev_node(IOManagerT& io, const int32_t idx) {
+    void BTreeNode<K, V>::borrow_from_prev_node(IOManagerT& io, const int32_t idx) {
         // To borrow a key from child[idx-1] and insert it to child[idx]
         Node prev = get_child(io, idx - 1);
         Node child = get_child(io, idx);
@@ -389,7 +389,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    void BTreeNode<K,V>::borrow_from_next_node(IOManagerT& io, const int32_t idx) {
+    void BTreeNode<K, V>::borrow_from_next_node(IOManagerT& io, const int32_t idx) {
         Node child = get_child(io, idx);
         Node next = get_child(io, idx + 1);
 

@@ -47,8 +47,8 @@ namespace btree {
         bool remove_from_leaf(IOManagerT& io_manager, const int32_t idx);
         bool remove_from_non_leaf(IOManagerT& io_manager, const int32_t idx);
 
-        int64_t get_prev_entry_pos(IOManagerT& io_manager, const int32_t idx);
-        int64_t get_next_entry_pos(IOManagerT& io_manager, const int32_t idx);
+        int64_t get_prev_entry_pos(IOManagerT& io_manager, const int32_t idx) const;
+        int64_t get_next_entry_pos(IOManagerT& io_manager, const int32_t idx) const;
 
         void merge_node(IOManagerT& io_manager, const int32_t idx);
         void fill_node(IOManagerT& io_manager, const int32_t idx);

@@ -48,16 +48,15 @@ namespace storage_tests {
         std::string db_name = "../" + name + ".txt";
 
         Storage<int32_t, V> s;
-        int32_t key = 0;
+        const int32_t key = 0;
         ValueGenerator<V> g;
-        V val = g.next_value(key);
+        const V val = g.next_value(key);
+        const int32_t entry_size = entry_size_in_file(key, val);
 
-        auto on_exit = [](auto& storage, const auto& volume,
-                const int32_t key, const V& val, bool after_remove = false) -> bool {
-            uint32_t total_size = volume.header_size() +
-                                  (after_remove ? 0 : (volume.node_size() + entry_size_in_file(key, val)));
+        auto on_exit = [&](const auto& volume, bool after_remove = false) -> bool {
+            uint32_t total_size = volume.header_size() + (after_remove ? 0 : (volume.node_size() + entry_size));
             auto path = volume.path();
-            storage.close_volume(volume);
+            s.close_volume(volume);
             return (fs::file_size(path) == total_size);
         };
 
@@ -65,17 +64,17 @@ namespace storage_tests {
         {
             auto volume = s.open_volume(db_name, order);
             set(volume, key, val);
-            success &= on_exit(s, volume, key, val);
+            success &= on_exit(volume);
         }
         {
             auto volume = s.open_volume(db_name, order);
             success &= check(key, volume.get(key), val);
-            success &= on_exit(s, volume, key, val);
+            success &= on_exit(volume);
         }
         {
             auto volume = s.open_volume(db_name, order);
             success &= volume.remove(key);
-            success &= on_exit(s, volume, key, val, true);
+            success &= on_exit(volume, true);
         }
 
         fs::remove(db_name);

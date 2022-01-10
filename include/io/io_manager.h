@@ -42,9 +42,9 @@ namespace btree {
         MappedFile file;
 
         static constexpr uint8_t ROOT_POS_IN_HEADER = sizeof(t) + 3;
-        static constexpr int64_t INITIAL_ROOT_POS_IN_HEADER = sizeof(t) + 3 + sizeof(int64_t);
     public:
-        static constexpr int64_t INVALID_ROOT_POS = -1;
+        static constexpr int64_t INITIAL_ROOT_POS_IN_HEADER = ROOT_POS_IN_HEADER + sizeof(int64_t);
+        static constexpr int64_t INVALID_POS = -1;
 
         IOManager(const std::string& path, const int16_t user_t);
 

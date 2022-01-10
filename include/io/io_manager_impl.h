@@ -44,7 +44,7 @@ namespace btree {
 
     template <typename K, typename V>
     bool IOManager<K, V>::is_ready() const {
-        return !file.isEmpty();
+        return !file.is_empty();
     }
 
     template <typename K, typename V>
@@ -82,7 +82,7 @@ namespace btree {
     void IOManager<K, V>::write_invalidated_root() {
         file.set_pos(ROOT_POS_IN_HEADER);
 
-        file.write_next_primitive(INVALID_ROOT_POS);
+        file.write_next_primitive(INVALID_POS);
         file.shrink_to_fit();
     }
 
@@ -98,7 +98,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    BTreeNode<K, V> IOManager<K, V>::read_node(const int64_t pos) {
+    BTreeNode <K, V> IOManager<K, V>::read_node(const int64_t pos) {
         file.set_pos(pos);
 
         Node node(t, false);

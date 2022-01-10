@@ -94,7 +94,7 @@ namespace tests {
         bool test_remove(const std::string& path, int order, int n, std::tuple<int, int, int>& keys_to_remove) {
             auto btree = storage.open_volume(path, order);
 
-            auto[r1, r2, r3] = keys_to_remove;
+            const auto& [r1, r2, r3] = keys_to_remove;
 
             auto onErase = [&](const int i) {
                 auto it = verify_map.find(i);
