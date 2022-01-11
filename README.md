@@ -68,20 +68,37 @@ cmake .
 ### Usage exapmle 
 
 ```cpp
-    Storage<int32_t, int32_t> s;
-    
-    auto path = "../a.txt";
-    int tree_order = 2;
-    
-    const int val = 65;
     {
-        auto v = s.open_volume(path, tree_order);
-        v.set(0, val);
-        assert(v.get(0) == val);
+        btree::Storage<int, int> int_storage;
+        auto volume = int_storage.open_volume("../int_storage.txt", 2);
+        int val = -1;
+        volume.set(0, val);
+        std::optional<int> opt = volume.get(0);
+        assert(opt.value() == val);
     }
     {
-        auto v = s.open_volume(path, tree_order);
-        assert(v.get(0) == val);
+        btree::Storage<int, std::string> str_storage;
+        auto volume = str_storage.open_volume("../str_storage.txt", 2);
+        std::string val = "abacaba";
+        volume.set(0, val);
+        std::optional<std::string> opt = volume.get(0);
+        assert(opt.value() == val);
+    }
+    {
+        btree::Storage<int, const char*> blob_storage;
+        auto volume = blob_storage.open_volume("../blob_storage.txt", 2);
+        int len = 10;
+        auto blob = std::make_unique<char*>(new char[len + 1]);
+        for (int i = 0; i < len; ++i) {
+            (*blob)[i] = (char)(i + 1);
+        }
+        volume.set(0, *blob, len);
+
+        std::optional<const char*> opt = volume.get(0);
+        auto ptr = opt.value();
+        for (int i = 0; i < len; ++i) {
+            assert(ptr[i] == (*blob)[i]);
+        }
     }
 ```
 
@@ -89,12 +106,48 @@ cmake .
 * Support **coarse-grained synchronization**:
    * Thread safety is guaranteed for SET|GET|REMOVE operations on the same "VOLUME"
 ```cpp
-    StorageMT<int32_t, int32_t> s_mt;
-    
-    auto path = "../a.txt";
-    int tree_order = 2;
-    
-    auto v_mt = s_mt.open_volume(path, tree_order);
+    btree::StorageMT<int, int> int_storage;
+    auto volume = int_storage.open_volume("../mt_int_storage.txt", 100);
+
+    int n = 100000;
+    std::vector<int> keys(n), values(n);
+    for (int i = 0; i < n; ++i) {
+        keys[i] = i; values[i] = -i;
+    }
+
+    ThreadPool tp { 10 };
+    auto ranges = generate_ranges(n, 10); // ten not-overlapped intervals
+    // pass volume to ThreadPool
+
+    std::vector<std::future<bool>> futures;
+    for (auto& range : ranges) {
+        futures.emplace_back(
+                tp.submit([&volume, &keys, &values, &range]() -> bool {
+                    for (int i = range.first; i < range.second; ++i)
+                        volume.set(keys[i], values[i]);
+                    return true;
+                })
+        );
+    }
+    for (auto& future : futures) {
+        future.get();
+    }
+    futures.clear();
+
+    // check
+    for (int i = 0; i < n; ++i)
+        assert(volume.get(i).value() == -i);
+
+    tp.post([&volume, &keys, &n]() {
+        for (int i = 0; i < n; ++i) {
+            volume.set(keys[i], 0);
+        }
+    });
+    tp.join();
+
+    // check
+    for (int i = 0; i < n; ++i)
+        assert(volume.get(i).value() == 0);
 
 ```
 
