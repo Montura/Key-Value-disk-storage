@@ -64,10 +64,31 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
 ```
 $ git clone https://github.com/Montura/experiments.git
 $ cd experiments
+```
+
+* Unix sytems
+```
 $ cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
 $ cmake --build build --target key-value-storage-test
 $ ./build/test/key-value-storage-test --log_level=success
 ```
+
+* Windows
+   * x64 
+   ```
+   $ cmake -B build_x64 -S . -DCMAKE_BUILD_TYPE=Release -A x64
+   $ cmake --build build_x64 --target key-value-storage-test
+   $ %vs2019_install%\MSBuild\Current\Bin\MSBuild.exe build_x64\experiments.sln /p:Configuration=Release
+   $ build_64\test\Release\key-value-storage-test.exe --log_level=success
+   ```
+
+   * x86 
+   ```
+   $ cmake -B build_x86 -S . -DCMAKE_BUILD_TYPE=Release -A win32
+   $ cmake --build build_x86 --target key-value-storage-test
+   $ %vs2019_install%\MSBuild\Current\Bin\MSBuild.exe build_x86\experiments.sln /p:Configuration=Release
+   $ build_x86\test\Release\key-value-storage-test.exe --log_level=success
+   ```
 
 ### Usage exapmle
 * an exapmle is in test/test.cpp
