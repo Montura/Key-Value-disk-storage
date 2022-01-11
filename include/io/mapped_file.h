@@ -61,7 +61,11 @@ namespace btree {
         template <typename T>
         int64_t write_blob(T source_data, const int32_t total_size_in_bytes);
 
-        void resize(int64_t new_size);
+        void resize(int64_t new_size, bool shrink_to_fit = false);
+
+        constexpr int64_t scale_current_size() {
+            return static_cast<int64_t>(m_size * 1.1);
+        }
 
         int64_t m_pos;
         int64_t m_size;

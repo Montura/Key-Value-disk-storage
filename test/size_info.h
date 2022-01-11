@@ -4,13 +4,13 @@
 #include "io/io_manager.h"
 #include "utils/utils.h"
 
-namespace btree {
+namespace tests {
     using namespace utils;
 
     template <typename K, typename V>
     struct SizeInfo {
         static constexpr int32_t header_size_in_bytes() {
-            return IOManager<K,V>::INITIAL_ROOT_POS_IN_HEADER;
+            return btree::IOManager<K,V>::INITIAL_ROOT_POS_IN_HEADER;
         }
 
         static constexpr int32_t file_size_in_bytes(const int t, const K& key, const V& val, const bool after_remove) {
@@ -32,7 +32,7 @@ namespace btree {
 
     private:
         static constexpr int32_t node_size(const int t) {
-            return BTreeNode<K,V>::get_node_size_in_bytes(t);
+            return btree::BTreeNode<K,V>::get_node_size_in_bytes(t);
         }
 
         static constexpr int32_t entry_size_in_bytes(const K& key, const V& val) {

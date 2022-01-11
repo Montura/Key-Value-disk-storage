@@ -4,7 +4,7 @@
 #include <filesystem>
 
 #include "test_runner.h"
-#include "utils/size_info.h"
+#include "size_info.h"
 
 namespace tests {
 namespace storage_tests {
@@ -56,7 +56,7 @@ namespace storage_tests {
         }
         {
             auto volume = s.open_volume(db_name, order);
-            success &= check(key, volume.get(key), val);
+            success &= g.check(key, volume.get(key));
             success &= on_exit(volume);
         }
         {
@@ -82,13 +82,13 @@ namespace storage_tests {
             auto volume = s.open_volume(db_name, order);
             set(volume, key, expected_val);
             auto actual_val = volume.get(key);
-            success = check(key, actual_val, expected_val);
+            success = g.check(key, actual_val);
             s.close_volume(volume);
         }
         {
             auto volume = s.open_volume(db_name, order);
             auto actual_val = volume.get(key);
-            success &= check(key, actual_val, expected_val);
+            success &= g.check(key, actual_val);
             s.close_volume(volume);
         }
 
@@ -140,7 +140,7 @@ namespace storage_tests {
         bool success = true;
         for (int i = 0; i < 100; ++i) {
             set(volume, key, expected_val);
-            success &= check(key, volume.get(key), expected_val);
+            success &= g.check(key, volume.get(key));
             success &= volume.remove(key);
         }
 
@@ -162,10 +162,10 @@ namespace storage_tests {
 
         ValueGenerator<V> g;
         for (int i = 0; i < 1000; ++i) {
-            V expected_val = g.next_value(i);
+            V expected_val = g.next_value(key);
             set(volume, key, expected_val);
             auto actual_val = volume.get(key);
-            success &= check(key, actual_val, expected_val);
+            success &= g.check(key, actual_val);
         }
         s.close_volume(volume);
 
@@ -176,15 +176,15 @@ namespace storage_tests {
     template <typename K, typename V>
     bool run_on_random_values(std::string const& name, int const order, int const n) {
         std::string db_name = "../" + name + ".txt";
-        int rounds = 3;
+//        int rounds = 3;
 #ifdef DEBUG
         std::cout << "Run " << rounds << " iterations on " << n << " elements: " << std::endl;
 #endif
         bool success = true;
-        for (int i = 0; i < rounds; ++i) {
-            auto keys_to_remove = generate_rand_keys();
-            success &= TestRunner<K, V>::run(db_name, order, n, keys_to_remove);
-        }
+//        for (int i = 0; i < rounds; ++i) {
+        auto keys_to_remove = generate_rand_keys();
+        success &= TestRunner<K, V>::run(db_name, order, n, keys_to_remove);
+//        }
         fs::remove(db_name);
         return success;
     };

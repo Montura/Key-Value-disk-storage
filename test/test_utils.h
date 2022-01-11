@@ -17,7 +17,7 @@ namespace test_utils {
     }
 
     int32_t get_len_by_idx(int32_t const idx) {
-        return idx + 5;
+        return std::min(idx + 5, 1000);
     }
 
     template <typename V>
@@ -38,61 +38,71 @@ namespace test_utils {
             }
         }
 
-        V next_value(int i) {
-            int val = i + std::rand() % 31;
+        int64_t map_size() {
+            return blob_map.size();
+        }
+
+        const std::map<int32_t, V>& map() {
+            return blob_map;
+        }
+
+        void remove(int32_t key) {
+            auto it = blob_map.find(key);
+
+            if (it != blob_map.end()) {
+                if constexpr(std::is_pointer_v<V>) {
+                    delete it->second;
+                }
+                blob_map.erase(it);
+            }
+        }
+
+        V next_value(int key) {
+            int rand = key + std::rand() % 31;
             if constexpr (is_string_v<V>) {
                 if constexpr(std::is_same_v<typename V::value_type, char>) {
-                    return std::to_string(val) + "abacaba";
+                    auto val = std::to_string(rand) + "abacaba";
+                    blob_map[key] = val;
+                    return val;
                 } else {
-                    return std::to_wstring(val) + L"abacaba";
+                    auto val = std::to_wstring(rand) + L"abacaba";
+                    blob_map[key] = val;
+                    return val;
                 }
             } else {
                 if constexpr(std::is_same_v<V, const char*>) {
-                    int len = get_len_by_idx(val);
+                    int len = get_len_by_idx(rand);
                     auto blob = new char[len + 1];
                     for (int k = 0; k < len; ++k) {
                         blob[k] = 2;
                     }
                     blob[len] = 0;
-                    blob_map[i] = blob;
+                    blob_map[key] = blob;
                     return blob;
                 } else {
-                    return static_cast<V>(val);
+                    auto val = static_cast<V>(rand);
+                    blob_map[key] = val;
+                    return val;
                 }
+            }
+        }
+
+        bool check(int32_t key, const std::optional<V>& actual_value) {
+            auto expected = blob_map.find(key)->second;
+            if constexpr(std::is_pointer_v<V>) {
+                auto* actual = actual_value.value();
+                size_t len = get_len_by_idx(key);
+                bool res = true;
+                for (size_t k = 0; k < len; ++k) {
+                    res &= (expected[k] == actual[k]);
+                }
+                return res;
+            } else {
+                return expected == actual_value.value();
             }
         }
     };
 
-    template <typename V, typename MapIt>
-    bool check(int32_t idx, const std::optional<V>& actual_value, MapIt expected_value) {
-        bool success = true;
-        if constexpr(std::is_pointer_v<V>) {
-            auto* expected = expected_value->second;
-            auto* actual = actual_value.value();
-            size_t len = get_len_by_idx(idx);
-            for (size_t k = 0; k < len; ++k) {
-                success &= (expected[k] == actual[k]);
-            }
-        } else {
-            success = (expected_value->second == actual_value.value());
-        }
-        return success;
-    }
 
-    template <typename V>
-    bool check(int32_t idx, const std::optional<V>& actual_value, const V& expected_value) {
-        if constexpr(std::is_pointer_v<V>) {
-            auto* expected = expected_value;
-            auto* actual = actual_value.value();
-            size_t len = get_len_by_idx(idx);
-            bool res = true;
-            for (size_t k = 0; k < len; ++k) {
-                res &= (expected[k] == actual[k]);
-            }
-            return res;
-        } else {
-            return expected_value == actual_value.value();
-        }
-    }
 }
 }

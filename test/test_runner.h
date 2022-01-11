@@ -24,7 +24,6 @@ namespace tests {
     template <typename K, typename V>
     class TestRunner {
         TestStat stat;
-        std::map<K, V> verify_map;
         Storage<K,V> storage;
         ValueGenerator<V> g;
 
@@ -61,13 +60,12 @@ namespace tests {
                 } else {
                     btree.set(key, value);
                 }
-                verify_map[key] = value;
             }
 
             for (int i = 0; i < n; ++i)
                 stat.total_exist += btree.exist(i);
 
-            K max_key = verify_map.rbegin()->first + 1;
+            K max_key = n;
             for (int i = 0; i < n; ++i)
                 stat.total_not_exist += btree.exist(max_key + i);
 
@@ -81,7 +79,7 @@ namespace tests {
             for (int i = 0; i < n; ++i) {
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value()) {
-                    success &= check(i, actual_value, verify_map.find(i));
+                    success &= g.check(i, actual_value);
                     stat.total_found++;
                 } else {
                     success &= (actual_value == std::nullopt);
@@ -96,41 +94,33 @@ namespace tests {
 
             const auto& [r1, r2, r3] = keys_to_remove;
 
-            auto onErase = [&](const int i) {
-                auto it = verify_map.find(i);
-
-                if (it != verify_map.end()) {
-                    verify_map.erase(it);
-                }
-            };
-
             for (int i = 0; i < n; i += r1) {
                 stat.total_removed += btree.remove(i);
-                onErase(i);
+                g.remove(i);
             }
 
             for (int i = 0; i < n; i += r2) {
                 stat.total_removed += btree.remove(i);
-                onErase(i);
+                g.remove(i);
             }
 
             for (int i = 0; i < 50; ++i) {
-                onErase(r1);
+                g.remove(r1);
                 stat.total_removed += btree.remove(r1);
 
                 int v2 = 3 * r2;
-                onErase(v2);
+                g.remove(v2);
                 stat.total_removed += btree.remove(v2);
 
                 int v3 = 7 * r3;
-                onErase(v3);
+                g.remove(v3);
                 stat.total_removed += btree.remove(v3);
             }
 
             for (int i = 0; i < n; ++i) {
                 stat.total_after_remove += btree.exist(i);
             }
-            bool success = (stat.total_after_remove == static_cast<int64_t>(verify_map.size()));
+            bool success = (stat.total_after_remove == g.map_size());
             return success && (stat.found_all_the_remaining());
         }
 
@@ -138,23 +128,21 @@ namespace tests {
             auto btree = storage.open_volume(path, order);
             bool success = true;
             for (int i = 0; i < n; ++i) {
-                auto expected_value = verify_map.find(i);
                 auto actual_value = btree.get(i);
-                if (actual_value.has_value() && expected_value != verify_map.end()) {
-                    success &= check(i, actual_value, expected_value);
+                if (actual_value.has_value()) {
+                    success &= g.check(i, actual_value);
                     stat.total_after_reopen++;
                 } else {
                     success &= (actual_value == std::nullopt);
                 }
             }
-            return success && (stat.total_after_reopen == static_cast<int64_t>(verify_map.size()));
+            return success && (stat.total_after_reopen == g.map_size());
         }
     };
 
     template <typename K, typename V>
     class TestRunnerMT {
         StorageMT<K,V> storage;
-        std::map<K,V> verify_map;
         ValueGenerator<V> g;
 
         using VolumeT = typename StorageMT<K,V>::VolumeWrapper;
@@ -174,7 +162,7 @@ namespace tests {
                 runner.fill_map_with_random_values(n);
                 success &= runner.test_set(pool, volume, n);
                 success &= runner.test_remove(pool, volume, n / 2);
-                runner.clear_map();
+                runner.g.clear();
             }
 #ifdef DEBUG
             cout << "\t Passed for " + db_name << ": in" << run_pool_iterations << " pool iterations " << endl;
@@ -185,19 +173,14 @@ namespace tests {
     private:
         void fill_map_with_random_values(int n) {
             for (int i = 0; i < n; ++i)
-                verify_map[i] = g.next_value(i);
-        }
-
-        void clear_map() {
-            verify_map.clear();
-            g.clear();
+                g.next_value(i);
         }
 
         bool test_set(ThreadPool& pool, VolumeT& volume, const int n) {
-            auto future = pool.submit([&]() -> TestStat { return test_set_keys(volume, verify_map, 0, n); });
+            auto future = pool.submit([&]() -> TestStat { return test_set_keys(volume, g.map(), 0, n); });
             future.get();
 
-            auto get_stat = test_get_keys(volume, verify_map, 0, n);
+            auto get_stat = test_get_keys(volume, 0, n);
             return (get_stat.total_found == n);
         }
 
@@ -208,16 +191,16 @@ namespace tests {
             auto remove_stat = future.get();
             bool success = (remove_stat.total_removed == half);
 
-            auto get_stat = test_get_keys(volume, verify_map, 0, n);
+            auto get_stat = test_get_keys(volume, 0, n);
             return success && (get_stat.total_found == half) && (get_stat.total_not_found == half);
         }
 
-        static TestStat test_get_keys(const VolumeT& volume, const std::map<K,V>& verify_map, const int from, const int to) {
+        TestStat test_get_keys(const VolumeT& volume, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {
                 auto actual_value = volume.get(i);
                 if (actual_value.has_value()) {
-                    if (check(i, actual_value, verify_map.find(i)))
+                    if (g.check(i, actual_value))
                         stat.total_found++;
                 } else {
                     stat.total_not_found++;

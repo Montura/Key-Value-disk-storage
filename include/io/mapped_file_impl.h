@@ -107,13 +107,13 @@ namespace file {
 
     template <typename T>
     void MappedFile::write_node_vector(const std::vector<T>& vec) {
-        int64_t total_size = sizeof(T) * vec.size();
-        if (m_pos + total_size > m_size)
-            resize(std::max(2 * m_size, m_pos + total_size));
+        int64_t total_size_in_bytes = sizeof(T) * vec.size();
+        if (m_pos + total_size_in_bytes > m_size)
+            resize(m_pos + total_size_in_bytes);
 
         auto* data = cast_to_const_uint8_t_data(vec.data());
-        std::copy(data, data + total_size, m_mapped_region->address_by_offset(m_pos));
-        m_pos += total_size;
+        std::copy(data, data + total_size_in_bytes, m_mapped_region->address_by_offset(m_pos));
+        m_pos += total_size_in_bytes;
         m_capacity = std::max(m_pos, m_capacity);
     }
 
@@ -131,13 +131,13 @@ namespace file {
     template <typename T>
     int64_t MappedFile::write_arithmetic(T val) {
         static_assert(std::is_arithmetic_v<T>);
-        int64_t total_size = sizeof(T);
-        if (m_pos + total_size > m_size)
-            resize(std::max(2 * m_size, m_pos + total_size));
+        int64_t total_size_in_bytes = sizeof(T);
+        if (m_pos + total_size_in_bytes > m_size)
+            resize(m_pos + total_size_in_bytes);
 
         auto* data = cast_to_const_uint8_t_data(&val);
-        std::copy(data, data + total_size, m_mapped_region->address_by_offset(m_pos));
-        return m_pos + total_size;
+        std::copy(data, data + total_size_in_bytes, m_mapped_region->address_by_offset(m_pos));
+        return m_pos + total_size_in_bytes;
     }
 
     template <typename T>
@@ -149,17 +149,17 @@ namespace file {
         // write values
         int64_t total_bytes_size = total_size_in_bytes;
         if (m_pos + total_bytes_size > m_size)
-            resize(std::max(2 * m_size, total_bytes_size));
+            resize(m_pos + total_bytes_size);
 
         auto* data = cast_to_const_uint8_t_data(source_data);
         std::copy(data, data + total_bytes_size, m_mapped_region->address_by_offset(m_pos));
         return m_pos + total_bytes_size;
     }
 
-    void MappedFile::resize(int64_t new_size) {
+    void MappedFile::resize(int64_t new_size, bool shrink_to_fit) {
         // Can't use std::filesystem::resize_file(), see file_mapping_impl.h: ~MappedFile() {...}
-        file::seek_file_to_offset(path, std::ios_base::in | std::ios_base::out, new_size);
-        m_size = new_size;
+        m_size = shrink_to_fit ? new_size : std::max(scale_current_size(), new_size);
+        file::seek_file_to_offset(path, std::ios_base::in | std::ios_base::out, m_size);
         m_mapped_region->remap(path);
     }
 
@@ -193,7 +193,7 @@ namespace file {
 
     void MappedFile::shrink_to_fit() {
         m_capacity = m_size = m_pos;
-        resize(m_size);
+        resize(m_size, true);
         m_mapped_region->remap(path);
     }
 

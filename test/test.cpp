@@ -78,7 +78,7 @@ namespace tests {
 
 
     BOOST_DATA_TEST_CASE(test_on_random_values, boost::make_iterator_range(orders), order) {
-        int elements_count = 10000;
+        int elements_count = 100000;
         bool success = run_on_random_values<int32_t, int32_t>("random_s_i32", order, elements_count);
         success &= run_on_random_values<int32_t, int64_t>("random_s_i64", order, elements_count);
         success &= run_on_random_values<int32_t, float>("random_s_f", order, elements_count);
@@ -90,7 +90,7 @@ namespace tests {
     }
 
     BOOST_DATA_TEST_CASE(multithreading_test, boost::make_iterator_range(orders), order) {
-        int elements_count = 1000;
+        int elements_count = 10000;
         ThreadPool pool(10);
         bool success = run_multithreading_test<int32_t, int32_t>(pool, "mt_s_i32", order, elements_count);
         success &= run_multithreading_test<int32_t, int64_t>(pool, "mt_s_i64", order, elements_count);

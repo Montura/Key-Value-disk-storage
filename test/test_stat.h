@@ -14,8 +14,9 @@ namespace tests {
         int64_t total_after_remove = 0;
         int64_t total_after_reopen = 0;
 
-        TestStat(int64_t N) : N(N) {
-        }
+        TestStat() : N(0) {}
+
+        explicit TestStat(int64_t N) : N(N) {}
 
         bool all_exist() const {
             return total_exist == N;

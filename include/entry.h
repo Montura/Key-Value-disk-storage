@@ -5,7 +5,6 @@
 #include <optional>
 
 #include "utils/utils.h"
-#include "utils/size_info.h"
 
 namespace btree {
     using namespace utils;
@@ -15,7 +14,6 @@ namespace btree {
         static constexpr bool V_is_arithmetic = std::is_arithmetic_v<V>;
         static constexpr bool V_is_pointer = std::is_pointer_v<V>;
         static constexpr bool V_is_identity = V_is_arithmetic || V_is_pointer;
-        using SizeInfoT = SizeInfo<K,V>;
 
         typedef typename conditional_t<V_is_identity, identity_type<V>, underlying_type<V>>::type OriginalValueType;
         static constexpr size_t size_of_original_value_type = sizeof(OriginalValueType);
@@ -48,19 +46,19 @@ namespace btree {
         Entry(const K& key, const V value) :
                 key(key),
                 data(value),
-                size_in_bytes(SizeInfoT::value_size_in_bytes(value)) {}
+                size_in_bytes(sizeof(value)) {}
 
         template <typename U = V, enable_if_t<is_string_v<U>> = true>
         Entry(const K& key, const V& value) :
                 key(key),
                 data(reinterpret_cast<const ValueType>(value.c_str())),
-                size_in_bytes(SizeInfoT::value_size_in_bytes(value)) {}
+                size_in_bytes(static_cast<int32_t>(value.size() * sizeof(typename V::value_type))) {}
 
         template <typename U = V, enable_if_t<std::is_pointer_v<U>> = true>
         Entry(const K& key, const V& value, const int32_t size) :
                 key(key),
                 data(reinterpret_cast<const ValueType>(value)),
-                size_in_bytes(SizeInfoT::value_size_in_bytes(value))
+                size_in_bytes(size)
         {
             typedef typename std::remove_pointer_t<V> data_type;
             static_assert(sizeof(data_type) == sizeof(OriginalValueType));
