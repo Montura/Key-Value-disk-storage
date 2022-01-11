@@ -36,7 +36,7 @@ namespace btree {
     template <typename K, typename V>
     class IOManager {
         using Node = BTreeNode<K, V>;
-        using EntryT = Entry<K, V>;
+        using EntryT = typename BTree<K, V>::EntryT;
 
         const int16_t t = 0;
         MappedFile file;

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <filesystem>
 
-#include "test_runner.h"
+#include "test_runner/test_runner.h"
 #include "utils/size_info.h"
 
 namespace tests {

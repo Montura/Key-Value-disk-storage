@@ -30,8 +30,8 @@ namespace test_utils {
                 for (auto& entry: blob_map) {
                     delete entry.second.value;
                 }
-                blob_map.clear();
             }
+            blob_map.clear();
         }
 
         int64_t map_size() const {
@@ -53,19 +53,26 @@ namespace test_utils {
             }
         }
 
+        template <typename ValueType>
+        static constexpr int32_t string_size_in_bytes(const std::basic_string<ValueType>& str) {
+            return static_cast<int32_t>(str.size() * sizeof(ValueType));
+        }
+
         Data<V> next_value(int key) {
+            auto it = blob_map.find(key);
+            if (it != blob_map.end())
+                return it->second;
+
             int rand = key + std::rand() % 31;
             if constexpr (is_string_v<V>) {
                 if constexpr(std::is_same_v<typename V::value_type, char>) {
                     auto str = std::to_string(rand) + "abacaba";
-                    Data<V> data { str, static_cast<int32_t>(str.size() * sizeof(typename V::value_type)) };
-                    blob_map[key] = data;
-                    return data;
+                    auto [it, success] = blob_map.emplace(key, Data<V> { str, string_size_in_bytes(str) });
+                    return it->second;
                 } else {
                     auto w_str = std::to_wstring(rand) + L"abacaba";
-                    Data<V> data { w_str, static_cast<int32_t>(w_str.size() * sizeof(typename V::value_type)) };
-                    blob_map[key] = data;
-                    return data;
+                    auto [it, success] = blob_map.emplace(key, Data<V> { w_str, string_size_in_bytes(w_str) });
+                    return it->second;
                 }
             } else {
                 if constexpr(std::is_pointer_v<V>) {
@@ -75,14 +82,12 @@ namespace test_utils {
                         arr[k] = 2;
                     }
                     arr[len] = 0;
-                    Data<V> data { arr, len };
-                    blob_map[key] = data;
-                    return data;
+                    auto [it, success] = blob_map.emplace(key, Data<V> { arr, len });
+                    return it->second;
                 } else {
                     auto val = static_cast<V>(rand);
-                    Data<V> data { val, sizeof(val) };
-                    blob_map[key] = data;
-                    return data;
+                    auto [it, success] = blob_map.emplace(key, Data<V> { val, sizeof(val) });
+                    return it->second;
                 }
             }
         }

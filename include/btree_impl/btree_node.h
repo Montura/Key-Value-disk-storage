@@ -16,7 +16,7 @@ namespace btree {
         std::vector<int64_t> child_pos;
 
         using Node = BTreeNode;
-        using EntryT = Entry<K, V>;
+        using EntryT = typename BTree<K,V>::EntryT;
         using IOManagerT = IOManager<K, V>;
 
         explicit BTreeNode();
@@ -41,7 +41,7 @@ namespace btree {
         int32_t find_key_bin_search(IOManagerT& io_manager, const K& key) const;
         std::tuple<BTreeNode, EntryT, int32_t> find_leaf_node_with_key(IOManagerT& io_manager, const K& key) const;
 
-        Entry<K, V> get_entry(IOManagerT& io_manager, const int32_t idx) const;
+        EntryT get_entry(IOManagerT& io_manager, const int32_t idx) const;
         BTreeNode get_child(IOManagerT& io_manager, const int32_t idx) const;
 
         bool remove_from_leaf(IOManagerT& io_manager, const int32_t idx);

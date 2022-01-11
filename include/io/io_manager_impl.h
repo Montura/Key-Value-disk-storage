@@ -56,7 +56,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    Entry <K, V> IOManager<K, V>::read_entry(const int64_t pos) {
+    typename BTree<K,V>::EntryT IOManager<K, V>::read_entry(const int64_t pos) {
         file.set_pos(pos);
 
         K key = file.read_next_primitive<K>();

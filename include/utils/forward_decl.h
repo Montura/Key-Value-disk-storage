@@ -5,7 +5,7 @@ namespace btree {
     class IOManager;
 
     template <typename K, typename V>
-    class Entry;
+    class BTree;
 
     template <typename K, typename V>
     struct BTreeNode;

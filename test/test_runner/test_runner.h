@@ -4,7 +4,7 @@
 #include <chrono>
 
 #include "utils/test_stat.h"
-#include "utils/thread_pool.hpp"
+#include "utils/thread_pool.h"
 #include "test_value_generator.h"
 
 namespace tests {

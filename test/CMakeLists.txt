@@ -30,15 +30,26 @@ if (NOT Boost_FOUND)
   message(FATAL_ERROR "Failed to find boost library")
 endif()
 
-include_directories(../include)
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${KEY_VALUE_STORAGE_INCLUDE_DIR})
+include_directories(
+        .
+        ../include
+        ${Boost_INCLUDE_DIRS}
+        ${KEY_VALUE_STORAGE_INCLUDE_DIR})
 
 message(${Boost_IOSTREAMS_LIBRARY})
 message(${Boost_THREAD_LIBRARY})
 message(key-value-storage-lib found at: ${KEY_VALUE_STORAGE_INCLUDE_DIR})
 
-set(SOURCE_FILES test.cpp)
+set(SOURCE_FILES
+        test_runner/test_runner.h
+        test_runner/test_value_generator.h
+        utils/size_info.h
+        utils/test_stat.h
+        utils/thread_pool.h
+        mapped_file_tests.h
+        storage_tests.h
+        test.cpp
+)
 
 add_executable(key-value-storage-test ${SOURCE_FILES})
 
@@ -52,6 +63,7 @@ target_compile_definitions(key-value-storage-test PRIVATE
     USE_BOOST_PREBUILT_STATIC_LIBRARY=false
     UNIT_TESTS
 #    MEM_CHECK
+#    DEBUG
     )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")

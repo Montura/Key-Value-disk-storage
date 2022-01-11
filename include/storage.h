@@ -11,10 +11,14 @@ namespace btree {
 
     private:
         using VolumeT = std::conditional_t<SupportMultithreading, VolumeMT<K,V>, Volume<K,V>>;
-        std::map<std::string, std::unique_ptr<VolumeT>> volume_map;
+        std::unordered_map<std::string, std::unique_ptr<VolumeT>> volume_map;
 
     public:
         explicit StorageBase() {}
+
+        ~StorageBase() {
+            volume_map.clear();
+        }
 
         VolumeWrapper open_volume(const std::string& path, const int16_t user_t) {
             auto it = volume_map.find(path);
