@@ -62,9 +62,11 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
    - [Boost Iostreams Library](https://www.boost.org/doc/libs/1_76_0/libs/iostreams/doc/index.html)
    - [Boost Thread Library](https://www.boost.org/doc/libs/1_78_0/doc/html/thread.html)
 ```
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target key-value-storage-test
-./build/test/key-value-storage-test --log_level=success
+$ git clone https://github.com/Montura/experiments.git
+$ cd experiments
+$ cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+$ cmake --build build --target key-value-storage-test
+$ ./build/test/key-value-storage-test --log_level=success
 ```
 
 ### Usage exapmle
