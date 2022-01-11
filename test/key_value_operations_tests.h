@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef UNIT_TESTS
+
 #include <iostream>
 #include <filesystem>
 
@@ -7,7 +9,7 @@
 #include "utils/size_info.h"
 
 namespace tests {
-namespace storage_tests {
+namespace key_value_op_tests {
     namespace fs = std::filesystem;
     using namespace btree;
     using namespace test_utils;
@@ -199,3 +201,4 @@ namespace storage_tests {
     };
 }
 }
+#endif // UNIT_TESTS

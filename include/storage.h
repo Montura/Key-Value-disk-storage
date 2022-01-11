@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <unordered_set>
 
 #include "volume.h"
 
@@ -10,24 +11,36 @@ namespace btree {
         class VolumeWrapper;
 
     private:
+        typedef std::unordered_set<StorageBase*> StorageMap;
+        inline static StorageMap storage_map;
+
         using VolumeT = std::conditional_t<SupportMultithreading, VolumeMT<K,V>, Volume<K,V>>;
         std::unordered_map<std::string, std::unique_ptr<VolumeT>> volume_map;
 
     public:
-        explicit StorageBase() {}
+        explicit StorageBase() {
+            storage_map.insert(this);
+        }
 
         ~StorageBase() {
             volume_map.clear();
+            storage_map.erase(this);
         }
 
         VolumeWrapper open_volume(const std::string& path, const int16_t user_t) {
-            auto it = volume_map.find(path);
-            if (it != volume_map.end()) {
-                return VolumeWrapper(it->second.get());
-            } else {
-                auto [pos, success] = volume_map.emplace(path, std::make_unique<VolumeT>(path, user_t));
-                return VolumeWrapper(pos->second.get());
+            for (const auto& storage : storage_map) {
+                auto& curr_volume_map = storage->volume_map;
+                auto it = curr_volume_map.find(path);
+                if (it != curr_volume_map.end()) {
+                    if (this != storage) {
+                        throw std::logic_error("Volume " + it->first + " is already opened in another storage!");
+                    } else {
+                        return VolumeWrapper(it->second.get());
+                    }
+                }
             }
+            auto [pos, success] = volume_map.emplace(path, std::make_unique<VolumeT>(path, user_t));
+            return VolumeWrapper(pos->second.get());
         }
 
         bool close_volume(const VolumeWrapper& v) {

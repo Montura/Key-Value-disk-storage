@@ -1,9 +1,11 @@
+#pragma once
+
 #ifdef UNIT_TESTS
 
 #include "io/mapped_file.h"
 
 namespace tests {
-
+    using namespace btree;
 namespace {
     namespace {
         template <typename T>

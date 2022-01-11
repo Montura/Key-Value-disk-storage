@@ -1,10 +1,11 @@
 #ifdef UNIT_TESTS
 
-#include "storage_tests.h"
+#include "key_value_operations_tests.h"
 #include "mapped_file_tests.h"
+#include "volume_tests.h"
 
 namespace tests {
-    using namespace storage_tests;
+    using namespace key_value_op_tests;
 
     BOOST_AUTO_TEST_SUITE(key_value_operations_test)
 
