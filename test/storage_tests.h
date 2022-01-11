@@ -38,12 +38,11 @@ namespace storage_tests {
         std::string db_name = "../" + name + ".txt";
 
         Storage<K, V> s;
-        const K key = 0;
         ValueGenerator<V> g;
 
+        const K key = 0;
         Data<V> data = g.next_value(key);
-        V val = data.value;
-        uint32_t file_size = SizeInfo<K,V>::file_size_in_bytes(order, key, val, data.len);
+        uint32_t file_size = SizeInfo<K,V>::file_size_in_bytes(order, key, data.value, data.len);
 
         auto on_exit = [&](const auto& volume, const uint32_t size_in_bytes) -> bool {
             s.close_volume(volume);
@@ -58,7 +57,7 @@ namespace storage_tests {
         }
         {
             auto volume = s.open_volume(db_name, order);
-            success &= g.check(key, volume.get(key));
+            success &= g.check(key, volume);
             success &= on_exit(volume, file_size);
         }
         {
@@ -75,22 +74,21 @@ namespace storage_tests {
     bool run_test_set_get_one(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
         Storage<K, V> s;
+        ValueGenerator<V> g;
 
         const K key = 0;
-        ValueGenerator<V> g;
         Data<V> data = g.next_value(key);
-        bool success = false;
+
+        bool success = true;
         {
             auto volume = s.open_volume(db_name, order);
             set(volume, key, data);
-            auto actual_val = volume.get(key);
-            success = g.check(key, actual_val);
+            success &= g.check(key, volume);
             s.close_volume(volume);
         }
         {
             auto volume = s.open_volume(db_name, order);
-            auto actual_val = volume.get(key);
-            success &= g.check(key, actual_val);
+            success &= g.check(key, volume);
             s.close_volume(volume);
         }
 
@@ -102,27 +100,28 @@ namespace storage_tests {
     bool run_test_remove_one(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
         Storage<K, V> s;
+        ValueGenerator<V> g;
 
         const K key = 0;
-        ValueGenerator<V> g;
         Data<V> data = g.next_value(key);
-        uint32_t total_size = SizeInfo<K, V>::header_size_in_bytes();
 
-        bool success = false;
+        bool success = true;
         {
             auto volume = s.open_volume(db_name, order);
             set(volume, key, data);
-            success = volume.remove(key);
+            success &= volume.remove(key);
+            if (success) {
+                g.remove(key);
+            }
             s.close_volume(volume);
         }
-        success &= (fs::file_size(db_name) == total_size);
+        success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
         {
             auto volume = s.open_volume(db_name, order);
-            auto actual_val = volume.get(key);
-            success &= (actual_val == std::nullopt);
+            success &= g.check(key, volume);
             s.close_volume(volume);
         }
-        success &= (fs::file_size(db_name) == total_size);
+        success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
 
         fs::remove(db_name);
         return success;
@@ -132,22 +131,21 @@ namespace storage_tests {
     bool run_test_repeatable_operations_on_a_unique_key(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
         Storage<K, V> s;
+        ValueGenerator<V> g;
 
         const K key = 0;
-        ValueGenerator<V> g;
         Data<V> data = g.next_value(key);
-        uint32_t header_size = SizeInfo<K,V>::header_size_in_bytes();
 
         auto volume = s.open_volume(db_name, order);
         bool success = true;
         for (int i = 0; i < 100; ++i) {
             set(volume, key, data);
-            success &= g.check(key, volume.get(key));
+            success &= g.check(key, volume);
             success &= volume.remove(key);
         }
 
         s.close_volume(volume);
-        success &= fs::file_size(db_name) == header_size;
+        success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
 
         fs::remove(db_name);
         return success;
@@ -157,17 +155,16 @@ namespace storage_tests {
     bool run_test_set_on_the_same_key(std::string const& name, int const order) {
         std::string db_name = "../" + name + ".txt";
         Storage<K, V> s;
+        ValueGenerator<V> g;
+
+        const K key = 0;
 
         auto volume = s.open_volume(db_name, order);
         bool success = true;
-        const K key = 0;
-
-        ValueGenerator<V> g;
         for (int i = 0; i < 1000; ++i) {
             Data<V> data = g.next_value(key);
             set(volume, key, data);
-            auto actual_val = volume.get(key);
-            success &= g.check(key, actual_val);
+            success &= g.check(key, volume);
         }
         s.close_volume(volume);
 

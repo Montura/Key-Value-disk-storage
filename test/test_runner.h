@@ -79,7 +79,7 @@ namespace tests {
             for (int i = 0; i < n; ++i) {
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value()) {
-                    success &= g.check(i, actual_value);
+                    success &= g.check_value(i, actual_value);
                     stat.total_found++;
                 } else {
                     success &= (actual_value == std::nullopt);
@@ -130,7 +130,7 @@ namespace tests {
             for (int i = 0; i < n; ++i) {
                 auto actual_value = btree.get(i);
                 if (actual_value.has_value()) {
-                    success &= g.check(i, actual_value);
+                    success &= g.check_value(i, actual_value);
                     stat.total_after_reopen++;
                 } else {
                     success &= (actual_value == std::nullopt);
@@ -200,7 +200,7 @@ namespace tests {
             for (int i = from; i < to; ++i) {
                 auto actual_value = volume.get(i);
                 if (actual_value.has_value()) {
-                    if (g.check(i, actual_value))
+                    if (g.check_value(i, actual_value))
                         stat.total_found++;
                 } else {
                     stat.total_not_found++;

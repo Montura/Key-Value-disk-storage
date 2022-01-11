@@ -3,6 +3,7 @@
 #include <cassert>
 #include <optional>
 
+#include "storage.h"
 #include "utils/utils.h"
 
 namespace tests {
@@ -75,7 +76,7 @@ namespace test_utils {
                 }
             } else {
                 if constexpr(std::is_pointer_v<V>) {
-                    int32_t len = 5 + std::min(rand, 1000); // don't allocate mo
+                    int32_t len = rand % 1000 + 1; // don't allocate more than 1kb for test values
                     auto arr = new char[len + 1];
                     for (int k = 0; k < len; ++k) {
                         arr[k] = 2;
@@ -93,22 +94,33 @@ namespace test_utils {
             }
         }
 
-        bool check(int32_t key, const std::optional<V>& actual_value) {
-            Data<V> expected = blob_map.find(key)->second;
+        template <typename K>
+        bool check(K key, const typename btree::Storage<K,V>::VolumeWrapper& volume) {
+            auto it = blob_map.find(key);
+            if (it == blob_map.end()) {
+                return volume.get(key) == std::nullopt;
+            }
+
+            return check_value(key, volume.get(key));
+        }
+
+        bool check_value(int32_t key, const std::optional<V>& actual_value) {
+            Data<V> expected_value = blob_map.find(key)->second;
+            if (expected_value.len == 0)
+                return actual_value == std::nullopt;
+
             if constexpr(std::is_pointer_v<V>) {
-                auto* actual = actual_value.value();
-                size_t len = expected.len;
+                V expected = expected_value.value;
+                V actual = actual_value.value();
                 bool res = true;
-                for (size_t k = 0; k < len; ++k) {
-                    res &= (expected.value[k] == actual[k]);
+                for (size_t k = 0, len = expected_value.len; k < len; ++k) {
+                    res &= (expected[k] == actual[k]);
                 }
                 return res;
             } else {
-                return expected.value == actual_value.value();
+                return expected_value.value == actual_value.value();
             }
         }
     };
-
-
 }
 }
