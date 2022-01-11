@@ -5,9 +5,7 @@
 
 #include "utils/test_stat.h"
 #include "utils/thread_pool.hpp"
-#include "test_utils.h"
-#include "storage.h"
-
+#include "test_value_generator.h"
 
 namespace tests {
     using std::cout;
@@ -31,8 +29,14 @@ namespace tests {
 
     public:
 
-        static bool run(const std::string& db_name, const int order, const int n, std::tuple<K, K, K>& keys_to_remove) {
-            TestRunner<K, V> runner(n);
+        static bool run(const std::string& db_name, const int order, const int n) {
+            std::tuple<int, int, int> keys_to_remove  = std::make_tuple(
+                std::rand() % 7 + 1,
+                std::rand() % 13 + 1,
+                std::rand() % 17 + 1
+            );
+
+            TestRunner<K, V> runner {n};
 
             bool success = runner.test_set(db_name, order, n);
             success &= runner.test_get(db_name, order, n);

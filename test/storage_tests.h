@@ -181,8 +181,7 @@ namespace storage_tests {
 #endif
         bool success = true;
 //        for (int i = 0; i < rounds; ++i) {
-        auto keys_to_remove = generate_rand_keys();
-        success &= TestRunner<K, V>::run(db_name, order, n, keys_to_remove);
+        success &= TestRunner<K, V>::run(db_name, order, n);
 //        }
         fs::remove(db_name);
         return success;

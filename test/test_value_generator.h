@@ -10,13 +10,6 @@ namespace tests {
 namespace test_utils {
     using namespace utils;
 
-    std::tuple<int, int, int> generate_rand_keys() {
-        int r1 = std::rand() % 7 + 1;
-        int r2 = std::rand() % 13 + 1;
-        int r3 = std::rand() % 17 + 1;
-        return std::make_tuple(r1, r2, r3);
-    }
-
     template <typename V>
     struct Data {
         V value;
