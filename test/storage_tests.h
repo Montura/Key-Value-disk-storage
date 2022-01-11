@@ -4,7 +4,7 @@
 #include <filesystem>
 
 #include "test_runner.h"
-#include "size_info.h"
+#include "utils/size_info.h"
 
 namespace tests {
 namespace storage_tests {
@@ -13,11 +13,11 @@ namespace storage_tests {
     using namespace test_utils;
 
     template <typename VolumeT, typename K, typename V>
-    void set(VolumeT& volume, const K& key, const V& val) {
+    void set(VolumeT& volume, const K& key, const Data<V>& data) {
         if constexpr(std::is_pointer_v<V>) {
-            volume.set(key, val, SizeInfo<K,V>::value_size_in_bytes(val));
+            volume.set(key, data.value, data.len);
         } else {
-            volume.set(key, val);
+            volume.set(key, data.value);
         }
     }
 
@@ -40,29 +40,31 @@ namespace storage_tests {
         Storage<K, V> s;
         const K key = 0;
         ValueGenerator<V> g;
-        const V val = g.next_value(key);
 
-        auto on_exit = [&](const auto& volume, bool after_remove = false) -> bool {
-            uint32_t total_size = SizeInfo<K,V>::file_size_in_bytes(order, key, val, after_remove);
+        Data<V> data = g.next_value(key);
+        V val = data.value;
+        uint32_t file_size = SizeInfo<K,V>::file_size_in_bytes(order, key, val, data.len);
+
+        auto on_exit = [&](const auto& volume, const uint32_t size_in_bytes) -> bool {
             s.close_volume(volume);
-            return (fs::file_size(db_name) == total_size);
+            return (fs::file_size(db_name) == size_in_bytes);
         };
 
         bool success = true;
         {
             auto volume = s.open_volume(db_name, order);
-            set(volume, key, val);
-            success &= on_exit(volume);
+            set(volume, key, data);
+            success &= on_exit(volume, file_size);
         }
         {
             auto volume = s.open_volume(db_name, order);
             success &= g.check(key, volume.get(key));
-            success &= on_exit(volume);
+            success &= on_exit(volume, file_size);
         }
         {
             auto volume = s.open_volume(db_name, order);
             success &= volume.remove(key);
-            success &= on_exit(volume, true);
+            success &= on_exit(volume, SizeInfo<K,V>::header_size_in_bytes());
         }
 
         fs::remove(db_name);
@@ -76,11 +78,11 @@ namespace storage_tests {
 
         const K key = 0;
         ValueGenerator<V> g;
-        const V expected_val = g.next_value(key);
+        Data<V> data = g.next_value(key);
         bool success = false;
         {
             auto volume = s.open_volume(db_name, order);
-            set(volume, key, expected_val);
+            set(volume, key, data);
             auto actual_val = volume.get(key);
             success = g.check(key, actual_val);
             s.close_volume(volume);
@@ -103,13 +105,13 @@ namespace storage_tests {
 
         const K key = 0;
         ValueGenerator<V> g;
-        const V expected_val = g.next_value(key);
+        Data<V> data = g.next_value(key);
         uint32_t total_size = SizeInfo<K, V>::header_size_in_bytes();
 
         bool success = false;
         {
             auto volume = s.open_volume(db_name, order);
-            set(volume, key, expected_val);
+            set(volume, key, data);
             success = volume.remove(key);
             s.close_volume(volume);
         }
@@ -133,13 +135,13 @@ namespace storage_tests {
 
         const K key = 0;
         ValueGenerator<V> g;
-        const V expected_val = g.next_value(key);
+        Data<V> data = g.next_value(key);
         uint32_t header_size = SizeInfo<K,V>::header_size_in_bytes();
 
         auto volume = s.open_volume(db_name, order);
         bool success = true;
         for (int i = 0; i < 100; ++i) {
-            set(volume, key, expected_val);
+            set(volume, key, data);
             success &= g.check(key, volume.get(key));
             success &= volume.remove(key);
         }
@@ -162,8 +164,8 @@ namespace storage_tests {
 
         ValueGenerator<V> g;
         for (int i = 0; i < 1000; ++i) {
-            V expected_val = g.next_value(key);
-            set(volume, key, expected_val);
+            Data<V> data = g.next_value(key);
+            set(volume, key, data);
             auto actual_val = volume.get(key);
             success &= g.check(key, actual_val);
         }

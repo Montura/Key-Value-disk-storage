@@ -3,10 +3,10 @@
 #include <map>
 #include <chrono>
 
-#include "test_stat.h"
+#include "utils/test_stat.h"
+#include "utils/thread_pool.hpp"
 #include "test_utils.h"
 #include "storage.h"
-#include "thread_pool.hpp"
 
 
 namespace tests {
@@ -54,11 +54,11 @@ namespace tests {
 
             for (int i = 0; i < n; ++i) {
                 K key = i;
-                V value = g.next_value(key);
+                Data<V> data = g.next_value(key);
                 if constexpr(std::is_pointer_v<V>) {
-                    btree.set(key, value, get_len_by_idx(i));
+                    btree.set(key, data.value, data.len);
                 } else {
-                    btree.set(key, value);
+                    btree.set(key, data.value);
                 }
             }
 
@@ -209,15 +209,15 @@ namespace tests {
             return stat;
         }
 
-        static TestStat test_set_keys(VolumeT& btree, const std::map<K,V>& verify_map, const int from, const int to) {
+        static TestStat test_set_keys(VolumeT& btree, const std::map<K,Data<V>>& verify_map, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {
                 K key = i;
-                V value = verify_map.find(i)->second;
+                Data<V> data = verify_map.find(i)->second;
                 if constexpr(std::is_pointer_v<V>) {
-                    btree.set(key, value, get_len_by_idx(i));
+                    btree.set(key, data.value, data.len);
                 } else {
-                    btree.set(key, value);
+                    btree.set(key, data.value);
                 }
             }
             return stat;
