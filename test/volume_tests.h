@@ -4,17 +4,16 @@
 
 #include "storage.h"
 
-namespace tests {
+namespace tests::volume_test {
+    std::string const output_folder = "../../volume_test_output/";
+    std::string const path = output_folder + "test_storage.txt";
+    int const order = 2;
+    int const key = 0;
+    int const value = 123456789;
+
     using StorageT = btree::Storage<int, int>;
 
-    namespace {
-        std::string path = "../test_storage.txt";
-        const int order = 2;
-        const int key = 0;
-        const int value = 123456789;
-    }
-
-    BOOST_AUTO_TEST_SUITE(volume_tests)
+    BOOST_AUTO_TEST_SUITE(volume_tests, *CleanBeforeTest(volume_test::output_folder))
 
     BOOST_AUTO_TEST_CASE(olue_open_close) {
         StorageT s1;
@@ -52,6 +51,5 @@ namespace tests {
     }
 
     BOOST_AUTO_TEST_SUITE_END()
-
 }
 #endif // UNIT_TESTS

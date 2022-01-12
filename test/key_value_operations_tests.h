@@ -8,8 +8,9 @@
 #include "test_runner/test_runner.h"
 #include "utils/size_info.h"
 
-namespace tests {
-namespace key_value_op_tests {
+namespace tests::key_value_op_tests {
+    std::string const output_folder = "../../key_value_op_test_output/";
+
     namespace fs = std::filesystem;
     using namespace btree;
     using namespace test_utils;
@@ -23,8 +24,29 @@ namespace key_value_op_tests {
         }
     }
 
+    std::string db_name(const std::string& name, const int tree_order) {
+        return output_folder + name + "_" + std::to_string(tree_order) + ".txt";
+    }
+
+    template <typename TestClass, typename ... Args>
+    bool run(const std::string& name_part, const int order, Args& ... args) {
+        TestClass t;
+        auto name = name_part + "_st";
+        bool success = false;
+        success = t.template run<int32_t, int32_t>(db_name(name + "_i32", order), order, args...);
+        success &= t.template run<int32_t, int64_t>(db_name(name + "_i64", order), order, args...);
+        success &= t.template run<int32_t, float>(db_name(name + "_f", order), order, args...);
+        success &= t.template run<int32_t, double>(db_name(name + "_d", order), order, args...);
+        success &= t.template run<int32_t, std::string>(db_name(name + "_str", order), order, args...);
+        success &= t.template run<int32_t, std::wstring>(db_name(name + "_wstr", order), order, args...);
+        success &= t.template run<int32_t, const char*>(db_name(name + "_blob", order), order, args...);
+        return success;
+    }
+
+
+struct TestEmptyFile {
     template <typename K, typename V>
-    bool run_test_emtpy_file(std::string const& db_name, int const order) {
+    bool run(std::string const& db_name, int const order) {
         {
             Storage<K, V> s;
             s.open_volume(db_name, order);
@@ -32,9 +54,11 @@ namespace key_value_op_tests {
         bool success = fs::file_size(db_name) == 0;
         return success;
     }
+};
 
+struct TestFileSizeWithOneEntry {
     template <typename K, typename V>
-    bool run_test_file_size_with_one_entry(std::string const& db_name, int const order) {
+    bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -66,9 +90,11 @@ namespace key_value_op_tests {
 
         return success;
     }
+};
 
+struct TestSetGetOneKey {
     template <typename K, typename V>
-    bool run_test_set_get_one(std::string const& db_name, int const order) {
+    bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -90,9 +116,11 @@ namespace key_value_op_tests {
 
         return success;
     }
+};
 
+struct TestRemoveOneKey {
     template <typename K, typename V>
-    bool run_test_remove_one(std::string const& db_name, int const order) {
+    bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -119,9 +147,11 @@ namespace key_value_op_tests {
 
         return success;
     }
+};
 
+struct TestRepeatableOperationsOnOneKey {
     template <typename K, typename V>
-    bool run_test_repeatable_operations_on_a_unique_key(std::string const& db_name, int const order) {
+    bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -141,9 +171,11 @@ namespace key_value_op_tests {
 
         return success;
     }
+};
 
+struct TestMultipleSetOnTheSameKey {
     template <typename K, typename V>
-    bool run_test_set_on_the_same_key(std::string const& db_name, int const order) {
+    bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -160,28 +192,20 @@ namespace key_value_op_tests {
 
         return success;
     }
+};
 
+struct TestRandomValues {
     template <typename K, typename V>
-    bool run_on_random_values(std::string const& db_name, int const order, int const n) {
-//        int rounds = 3;
-#ifdef DEBUG
-        std::cout << "Run " << rounds << " iterations on " << n << " elements: " << std::endl;
-#endif
-        bool success = true;
-//        for (int i = 0; i < rounds; ++i) {
-        success &= TestRunner<K, V>::run(db_name, order, n);
-//        }
-        return success;
+    bool run(std::string const& db_name, int const order, int const n) {
+        return TestRunner<K, V>::run(db_name, order, n);
     };
+};
 
+struct TestMultithreading {
     template <typename K, typename V>
-    bool run_multithreading_test(ThreadPool& pool, std::string const& db_name, int const order, int const n) {
-#ifdef DEBUG
-        std::cout << "Run multithreading test on " << n << " elements on 10 threads: " << std::endl;
-#endif
-        bool success = TestRunnerMT<K, V>::run(pool, db_name, order, n);
-        return success;
+    bool run(std::string const& db_name, int const order, int const n, ThreadPool& pool) {
+        return TestRunnerMT<K, V>::run(pool, db_name, order, n);
     };
-}
+};
 }
 #endif // UNIT_TESTS

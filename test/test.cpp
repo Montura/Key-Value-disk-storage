@@ -1,123 +1,61 @@
 #ifdef UNIT_TESTS
 
+#include "utils/boost_fixture.h"
 #include "key_value_operations_tests.h"
 #include "mapped_file_tests.h"
 #include "volume_tests.h"
-#include "utils/boost_fixture.h"
 
 namespace tests {
-    using namespace key_value_op_tests;
-    namespace utf = boost::unit_test;
+    using namespace mapped_file_test;
+    using namespace volume_test;
 
-    namespace {
-        std::string_view const output_folder = "../../key-value-test_output/";
-        std::string_view const postfix = ".txt";
+namespace key_value_op_tests {
 
-        std::string db_name(const std::string& name, const int tree_order) {
-            return output_folder.data() + name + "_" + std::to_string(tree_order) + postfix.data();
-        }
-    }
+    BOOST_AUTO_TEST_SUITE(key_value_operations_test, *CleanBeforeTest(output_folder))
 
-    BOOST_AUTO_TEST_SUITE(key_value_operations_test, * utf::fixture<MyFixture>(output_folder.data()))
-
-    int const orders[] = { 2, 5, 13, 31, 50, 79, 100};
+    int const orders[] = { 2, 5, 13, 31, 50, 79, 100 };
 
     BOOST_DATA_TEST_CASE(test_empty_file, boost::make_iterator_range(orders), order) {
-        bool success = run_test_emtpy_file<int32_t, int64_t>(db_name("empty_s_i32", order), order);
-        success &= run_test_emtpy_file<int32_t, int64_t>(db_name("empty_s_i64", order), order);
-        success &= run_test_emtpy_file<int32_t, float>(db_name("empty_s_f", order), order);
-        success &= run_test_emtpy_file<int32_t, double>(db_name("empty_s_d", order), order);
-        success &= run_test_emtpy_file<int32_t, std::string>(db_name("empty_s_str", order), order);
-        success &= run_test_emtpy_file<int32_t, std::wstring>(db_name("empty_s_wstr", order), order);
-        success &= run_test_emtpy_file<int32_t, const char*>(db_name("empty_s_blob", order), order);
-        BOOST_REQUIRE_MESSAGE(success, "TEST_EMPTY_FILE");
+        BOOST_REQUIRE_MESSAGE(run<TestEmptyFile>("empty", order), "TEST_EMPTY_FILE");
     }
 
-     BOOST_DATA_TEST_CASE(file_size_after_set_one_element, boost::make_iterator_range(orders), order) {
-        bool success = run_test_file_size_with_one_entry<int32_t, int32_t>(db_name("one_s_i32", order), order);
-        success &= run_test_file_size_with_one_entry<int32_t, int64_t>(db_name("one_s_i64", order), order);
-        success &= run_test_file_size_with_one_entry<int32_t, float>(db_name("one_s_f", order), order);
-        success &= run_test_set_get_one<int32_t, double>(db_name("one_s_d", order), order);
-        success &= run_test_file_size_with_one_entry<int32_t, std::string>(db_name("one_s_str", order), order);
-        success &= run_test_file_size_with_one_entry<int32_t, std::wstring>(db_name("one_s_wstr", order), order);
-        success &= run_test_file_size_with_one_entry<int32_t, const char*>(db_name("one_s_blob", order), order);
-        BOOST_REQUIRE_MESSAGE(success, "TEST_FILE_SIZE");
+    BOOST_DATA_TEST_CASE(file_size_after_set_one_element, boost::make_iterator_range(orders), order) {
+        BOOST_REQUIRE_MESSAGE(run<TestFileSizeWithOneEntry>("one_entry", order), "TEST_FILE_SIZE");
     }
 
     BOOST_DATA_TEST_CASE(set_get_one_element, boost::make_iterator_range(orders), order) {
-        bool success = run_test_set_get_one<int32_t, int32_t>(db_name("get_one_s_i32", order), order);
-        success &= run_test_set_get_one<int32_t, int64_t>(db_name("get_one_s_i64", order), order);
-        success &= run_test_set_get_one<int32_t, float>(db_name("get_one_s_f", order), order);
-        success &= run_test_set_get_one<int32_t, double>(db_name("get_one_s_d", order), order);
-        success &= run_test_set_get_one<int32_t, std::string>(db_name("get_one_s_str", order), order);
-        success &= run_test_set_get_one<int32_t, std::wstring>(db_name("get_one_s_wstr", order), order);
-        success &= run_test_set_get_one<int32_t, const char*>(db_name("get_one_s_blob", order), order);
-        BOOST_REQUIRE_MESSAGE(success, "TEST_SET_GET_ONE_ELEMENT");
+        BOOST_REQUIRE_MESSAGE(run<TestSetGetOneKey>("set_get_one_entry", order), "TEST_SET_GET_ONE_ELEMENT");
     }
 
     BOOST_DATA_TEST_CASE(remove_one_element, boost::make_iterator_range(orders), order) {
-        bool success = run_test_remove_one<int32_t, int32_t>(db_name("remove_one_s_i32", order), order);
-        success &= run_test_remove_one<int32_t, int64_t>(db_name("remove_one_s_i64", order), order);
-        success &= run_test_remove_one<int32_t, float>(db_name("remove_one_s_f", order), order);
-        success &= run_test_remove_one<int32_t, double>(db_name("remove_one_s_d", order), order);
-        success &= run_test_remove_one<int32_t, std::string>(db_name("remove_one_s_str", order), order);
-        success &= run_test_remove_one<int32_t, std::wstring>(db_name("remove_one_s_wstr", order), order);
-        success &= run_test_remove_one<int32_t, const char*>(db_name("remove_one_s_blob", order), order);
-        BOOST_REQUIRE_MESSAGE(success, "TEST_REMOVE_ONE_ELEMENT");
+        BOOST_REQUIRE_MESSAGE(run<TestRemoveOneKey>("remove_one", order), "TEST_REMOVE_ONE_ELEMENT");
     }
 
     BOOST_DATA_TEST_CASE(repeatable_operations_on_a_unique_key, boost::make_iterator_range(orders), order) {
-        bool success = run_test_repeatable_operations_on_a_unique_key<int32_t, int32_t>(db_name("repeatable_set_s_i32", order), order);
-        success &= run_test_repeatable_operations_on_a_unique_key<int32_t, int64_t>(db_name("repeatable_set_s_i64", order), order);
-        success &= run_test_repeatable_operations_on_a_unique_key<int32_t, float>(db_name("repeatable_set_s_f", order), order);
-        success &= run_test_repeatable_operations_on_a_unique_key<int32_t, double>(db_name("repeatable_set_s_d", order), order);
-        success &= run_test_repeatable_operations_on_a_unique_key<int32_t, std::string>(db_name("repeatable_set_s_str", order), order);
-        success &= run_test_repeatable_operations_on_a_unique_key<int32_t, std::wstring>(db_name("repeatable_set_s_wstr", order), order);
-        success &= run_test_repeatable_operations_on_a_unique_key<int32_t, const char*>(db_name("repeatable_set_s_blob", order), order);
-        BOOST_REQUIRE_MESSAGE(success, "TEST_REPEATABLE_OPERATIONS");
+        BOOST_REQUIRE_MESSAGE(run<TestRepeatableOperationsOnOneKey>("repeatable_ops", order),
+                "TEST_REPEATABLE_OPERATIONS");
     }
 
-    BOOST_DATA_TEST_CASE(set_various_values_on_the_same_key, boost::make_iterator_range(orders), order) {
-        bool success = run_test_set_on_the_same_key<int32_t, int32_t>(db_name("various_set_s_i32", order), order);
-        success &= run_test_set_on_the_same_key<int32_t, int64_t>(db_name("various_set_s_i64", order), order);
-        success &= run_test_set_on_the_same_key<int32_t, float>(db_name("various_set_s_f", order), order);
-        success &= run_test_set_on_the_same_key<int32_t, double>(db_name("various_set_s_d", order), order);
-        success &= run_test_set_on_the_same_key<int32_t, std::string>(db_name("various_set_s_str", order), order);
-        success &= run_test_set_on_the_same_key<int32_t, std::wstring>(db_name("various_set_s_wstr", order), order);
-        success &= run_test_set_on_the_same_key<int32_t, const char*>(db_name("various_set_s_blob", order), order);
-        BOOST_REQUIRE_MESSAGE(success, "TEST_SET_VARIOUS_VALUES");
+    BOOST_DATA_TEST_CASE(multiple_set_on_the_same_key, boost::make_iterator_range(orders), order) {
+        BOOST_REQUIRE_MESSAGE(run<TestMultipleSetOnTheSameKey>("multiple_set", order),
+                "TEST_SET_VARIOUS_VALUES");
     }
-
 
     BOOST_DATA_TEST_CASE(test_on_random_values, boost::make_iterator_range(orders), order) {
         int elements_count = 10000;
-        bool success = run_on_random_values<int32_t, int32_t>(db_name("random_s_i32", order), order, elements_count);
-        success &= run_on_random_values<int32_t, int64_t>(db_name("random_s_i64", order), order, elements_count);
-        success &= run_on_random_values<int32_t, float>(db_name("random_s_f", order), order, elements_count);
-        success &= run_on_random_values<int32_t, double>(db_name("random_s_d", order), order, elements_count);
-        success &= run_on_random_values<int32_t, std::string>(db_name("random_s_str", order), order, elements_count);
-        success &= run_on_random_values<int32_t, std::wstring>(db_name("random_s_wstr", order), order, elements_count);
-        success &= run_on_random_values<int32_t, const char*>(db_name("random_s_blob", order), order, elements_count);
-        BOOST_REQUIRE_MESSAGE(success, "TEST_RANDOM_VALUES");
+        BOOST_REQUIRE_MESSAGE(run<TestRandomValues>("random", order, elements_count), "TEST_RANDOM_VALUES");
     }
 
     BOOST_DATA_TEST_CASE(multithreading_test, boost::make_iterator_range(orders), order) {
         int elements_count = 10000;
         ThreadPool pool(10);
-        bool success = run_multithreading_test<int32_t, int32_t>(pool, db_name("mt_s_i32", order), order, elements_count);
-        success &= run_multithreading_test<int32_t, int64_t>(pool, db_name("mt_s_i64", order), order, elements_count);
-        success &= run_multithreading_test<int32_t, float>(pool, db_name("mt_s_f", order), order, elements_count);
-        success &= run_multithreading_test<int32_t, double>(pool, db_name("mt_s_d", order), order, elements_count);
-        success &= run_multithreading_test<int32_t, std::string>(pool, db_name("mt_s_str", order), order, elements_count);
-        success &= run_multithreading_test<int32_t, std::wstring>(pool, db_name("mt_s_wstr", order), order, elements_count);
-        success &= run_multithreading_test<int32_t, const char*>(pool, db_name("mt_s_blob", order), order, elements_count);
-        BOOST_REQUIRE_MESSAGE(success, "TEST_MULTITHREADING");
+        BOOST_REQUIRE_MESSAGE(run<TestMultithreading>("mt", order, elements_count, pool),
+                "TEST_MULTITHREADING");
     }
 
     BOOST_AUTO_TEST_SUITE_END()
-
 }
-
+}
 #else
 
 #if defined(MEM_CHECK) && !defined(UNIT_TESTS) && !defined(BOOST_ALL_NO_LIB)
