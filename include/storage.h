@@ -5,17 +5,16 @@
 
 #include "volume.h"
 
-namespace btree {
+namespace btree::storage {
     template <typename K, typename V, bool SupportMultithreading>
-    struct StorageBase final {
-        class VolumeWrapper;
+    class StorageBase final {
+        class VolumeT;
 
-    private:
         typedef std::unordered_set<StorageBase*> StorageMap;
         inline static StorageMap storage_map;
 
-        using VolumeT = std::conditional_t<SupportMultithreading, VolumeMT<K,V>, Volume<K,V>>;
-        std::unordered_map<std::string, std::unique_ptr<VolumeT>> volume_map;
+        using VolumeType = std::conditional_t<SupportMultithreading, volume::VolumeMT<K, V>, volume::Volume<K, V>>;
+        std::unordered_map<std::string, std::unique_ptr<VolumeType>> volume_map;
 
     public:
         explicit StorageBase() {
@@ -27,31 +26,32 @@ namespace btree {
             storage_map.erase(this);
         }
 
-        VolumeWrapper open_volume(const std::string& path, const int16_t user_t) {
-            for (const auto& storage : storage_map) {
+        VolumeT open_volume(const std::string& path, const int16_t user_t) {
+            for (const auto& storage: storage_map) {
                 auto& curr_volume_map = storage->volume_map;
                 auto it = curr_volume_map.find(path);
                 if (it != curr_volume_map.end()) {
                     if (this != storage) {
                         throw std::logic_error("Volume " + it->first + " is already opened in another storage!");
                     } else {
-                        return VolumeWrapper(it->second.get());
+                        return VolumeT(it->second.get());
                     }
                 }
             }
-            auto [pos, success] = volume_map.emplace(path, std::make_unique<VolumeT>(path, user_t));
-            return VolumeWrapper(pos->second.get());
+            auto[pos, success] = volume_map.emplace(path, std::make_unique<VolumeType>(path, user_t));
+            return VolumeT(pos->second.get());
         }
 
-        bool close_volume(const VolumeWrapper& v) {
+        bool close_volume(const VolumeT& v) {
             return volume_map.erase(v.path());
         }
 
-        class VolumeWrapper {
-            VolumeT* const ptr;
+    private:
+        class VolumeT {
+            VolumeType* const ptr;
 
         public:
-            explicit VolumeWrapper(VolumeT* ptr) : ptr(ptr) {}
+            explicit VolumeT(VolumeType* ptr) : ptr(ptr) {}
 
             bool exist(const K& key) const { return ptr->exist(key); }
 
@@ -66,10 +66,11 @@ namespace btree {
             std::string path() const { return ptr->path; }
         };
     };
+}
+namespace btree {
+    template <typename K, typename V>
+    using Storage = storage::StorageBase<K, V, false>;
 
     template <typename K, typename V>
-    using Storage = StorageBase<K, V, false>;
-
-    template <typename K, typename V>
-    using StorageMT = StorageBase<K, V, true>;
+    using StorageMT = storage::StorageBase<K, V, true>;
 }

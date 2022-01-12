@@ -3,26 +3,40 @@
 #include <cassert>
 #include <optional>
 #include <random>
+#include <utility>
 
 #include "storage.h"
 #include "utils/utils.h"
 
-namespace tests {
-namespace test_utils {
+namespace tests::test_utils {
     using namespace utils;
 
     template <typename V>
     struct Data {
         V value;
         int32_t len;
+
+        template <typename U = V, enable_if_t<std::is_arithmetic_v<U>> = true>
+        Data(const U& val) : value(val), len(sizeof(val)) {}
+
+        template <typename U = V, enable_if_t<std::is_pointer_v<U>> = true>
+        Data(const U& ptr, int32_t size) : value(ptr), len(size) {}
+
+        template <typename U = V, enable_if_t<is_string_v<U>> = true>
+        Data(const U& str) : value(str), len(string_size_in_bytes(str)) {}
+
+        template <typename ValueType>
+        static constexpr int32_t string_size_in_bytes(const std::basic_string<ValueType>& str) {
+            return static_cast<int32_t>(str.size() * sizeof(ValueType));
+        }
     };
 
     template <typename V>
     class ValueGenerator {
-        std::map<int, Data<V>> blob_map;
+        std::map<int32_t, Data<V>> blob_map;
+    public:
         std::mt19937 m_rand;
 
-    public:
         ~ValueGenerator() {
             clear();
         }
@@ -55,21 +69,16 @@ namespace test_utils {
             }
         }
 
-        template <typename ValueType>
-        static constexpr int32_t string_size_in_bytes(const std::basic_string<ValueType>& str) {
-            return static_cast<int32_t>(str.size() * sizeof(ValueType));
-        }
-
-        Data<V> next_value(int key) {
+        Data<V> next_value(int32_t key) {
             int rand = key + m_rand() % 31;
             if constexpr (is_string_v<V>) {
                 if constexpr(std::is_same_v<typename V::value_type, char>) {
                     auto str = std::to_string(rand) + "abacaba";
-                    auto [it, success] = blob_map.emplace(key, Data<V> { str, string_size_in_bytes(str) });
+                    auto [it, success] = blob_map.emplace(key, str);
                     return it->second;
                 } else {
                     auto w_str = std::to_wstring(rand) + L"abacaba";
-                    auto [it, success] = blob_map.emplace(key, Data<V> { w_str, string_size_in_bytes(w_str) });
+                    auto [it, success] = blob_map.emplace(key, w_str);
                     return it->second;
                 }
             } else {
@@ -85,18 +94,19 @@ namespace test_utils {
                         arr[k] = 2;
                     }
                     arr[len] = 0;
-                    auto [it, success] = blob_map.emplace(key, Data<V> { arr, len });
+                    auto [it, success] = blob_map.emplace(std::piecewise_construct,
+                            std::forward_as_tuple(key), std::forward_as_tuple(arr, len));
                     return it->second;
                 } else {
                     auto val = static_cast<V>(rand);
-                    auto [it, success] = blob_map.emplace(key, Data<V> { val, sizeof(val) });
+                    auto [it, success] = blob_map.emplace(key, val);
                     return it->second;
                 }
             }
         }
 
-        template <typename K>
-        bool check(K key, const typename btree::Storage<K,V>::VolumeWrapper& volume) {
+        template <typename VolumeT>
+        bool check(int32_t key, const VolumeT& volume) {
             auto it = blob_map.find(key);
             if (it == blob_map.end()) {
                 return volume.get(key) == std::nullopt;
@@ -123,5 +133,4 @@ namespace test_utils {
             }
         }
     };
-}
 }
