@@ -15,7 +15,7 @@ namespace btree::volume {
         using ValueType = typename BTree<K,V>::ValueType;
         const std::string path;
 
-        explicit Volume(const std::string& path, const int16_t order) : path(path), io(path, order), btree(order, io) {}
+        explicit Volume(const std::string& path, const int16_t order) : io(path, order), btree(order, io), path(path) {}
 
         bool exist(const K key) {
             return btree.exist(io, key);
@@ -48,7 +48,7 @@ namespace btree::volume {
         using ValueType = typename BTree<K,V>::ValueType;
         const std::string path;
 
-        VolumeMT(const std::string& path, int16_t order) : path(path), io(path, order), btree(order, io) {}
+        VolumeMT(const std::string& path, int16_t order) : io(path, order), btree(order, io), path(path) {}
 
         bool exist(const K key) {
             std::scoped_lock lock(mutex_);

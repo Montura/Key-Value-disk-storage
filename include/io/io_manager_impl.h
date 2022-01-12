@@ -11,9 +11,9 @@ namespace btree {
         file.set_pos(0);
 
         file.write_next_primitive(t);
-        file.write_next_primitive<uint8_t>(sizeof(K));
-        file.write_next_primitive<uint8_t>(get_value_type_code<V>());
-        file.write_next_primitive<uint8_t>(get_element_size<V>());
+        file.template write_next_primitive<uint8_t>(sizeof(K));
+        file.template write_next_primitive<uint8_t>(get_value_type_code<V>());
+        file.template write_next_primitive<uint8_t>(get_element_size<V>());
         file.write_next_primitive(INITIAL_ROOT_POS_IN_HEADER);
         return file.get_pos();
     }
@@ -59,8 +59,8 @@ namespace btree {
     typename BTree<K,V>::EntryT IOManager<K, V>::read_entry(const int64_t pos) {
         file.set_pos(pos);
 
-        K key = file.read_next_primitive<K>();
-        auto [value, size] = file.read_next_data<typename EntryT::ValueType>();
+        K key = file.template read_next_primitive<K>();
+        auto [value, size] = file.template read_next_data<typename EntryT::ValueType>();
         return { key, value, size };
     }
 
@@ -68,7 +68,7 @@ namespace btree {
     K IOManager<K, V>::read_key(const int64_t pos) {
         file.set_pos(pos);
 
-        return file.read_next_primitive<K>();
+        return file.template read_next_primitive<K>();
     }
 
     template <typename K, typename V>
