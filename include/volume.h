@@ -12,6 +12,7 @@ namespace btree::volume {
         IOManager <K, V> io;
         BTree <K, V> btree;
     public:
+        using ValueType = typename BTree<K,V>::ValueType;
         const std::string path;
 
         explicit Volume(const std::string& path, const int16_t order) : path(path), io(path, order), btree(order, io) {}
@@ -20,7 +21,7 @@ namespace btree::volume {
             return btree.exist(io, key);
         }
 
-        void set(const K key, const V& value) {
+        void set(const K key, const ValueType value) {
             btree.set(io, key, value);
         }
 
@@ -44,6 +45,7 @@ namespace btree::volume {
         BTree<K, V> btree;
         std::mutex mutex_;
     public:
+        using ValueType = typename BTree<K,V>::ValueType;
         const std::string path;
 
         VolumeMT(const std::string& path, int16_t order) : path(path), io(path, order), btree(order, io) {}
@@ -53,7 +55,7 @@ namespace btree::volume {
             return btree.exist(io, key);
         }
 
-        void set(const K key, const V& value) {
+        void set(const K key, const ValueType value) {
             std::scoped_lock lock(mutex_);
             btree.set(io, key, value);
         }

@@ -49,13 +49,13 @@ namespace btree::storage {
     private:
         class VolumeT {
             VolumeType* const ptr;
-
+            using ValueType = typename VolumeType::ValueType;
         public:
             explicit VolumeT(VolumeType* ptr) : ptr(ptr) {}
 
             bool exist(const K key) const { return ptr->exist(key); }
 
-            void set(const K key, const V& value) { ptr->set(key, value); }
+            void set(const K key, const ValueType value) { ptr->set(key, value); }
 
             void set(const K key, const V& value, const int32_t size) { ptr->set(key, value, size); }
 

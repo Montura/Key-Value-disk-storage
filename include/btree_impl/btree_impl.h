@@ -14,7 +14,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    void BTree<K, V>::set(IOManagerT& io, const K key, const V& value) {
+    void BTree<K, V>::set(IOManagerT& io, const K key, ValueType value) {
         EntryT e{ key, value };
         if (!root.is_valid() || !root.set(io, e))
             insert(io, e);
