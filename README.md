@@ -59,7 +59,7 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
               ----------–-----
         </details>
      
-   * can be used in multithreading environment(see below)
+   * can be used in multithreading environment [coarse-grained synchronization] (see below)
    * thread safety is guaranteed for `set|get|remove` operations on the same `volume`
 
 ### Build
@@ -145,7 +145,7 @@ $ cd experiments
      </details>
 
    * <details> 
-      <summary>multi-threading usage [coarse-grained synchronization]</summary> 
+      <summary>multi-threading usage</summary> 
 
       * [mt_usage()](test/test.cpp#L125)
    
@@ -193,6 +193,16 @@ $ cd experiments
 </details>
 
 ### Problems:
+   * Faced with the same error as in issue about [dotCover crashing - Can't set eof error](https://youtrack.jetbrains.com/issue/PROF-752)
+      * ``` [WIN32 error] = 1224, The requested operation cannot be performed on a file with a user-mapped section open.```
+      * Problem in my case: 
+         * caused by [`SetEndOfFile`](https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setendoffile)
+            ```
+            CreateFileMapping is called to create a file mapping object for hFile,
+            UnmapViewOfFile must be called first to unmap all views and call CloseHandle to close
+            the file mapping object before you can call SetEndOfFile.
+            ```
+         * Solution: to destory `boost::interprocess::mapped_region` object before call `std::filesystem::resilze_file(path)`
    * Try to verify memory leaks `-DMEM_CHECK` by overriding global `new` and `delete` in [mem_util.h](test/utils/mem_util.h) in 2 ways:
       * `CustomAllocator` for `unordered_map`
          * crashes with linkes boost libraries on `delete`
