@@ -38,6 +38,7 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
       * header
       * nodes
       * entries
+   * can be [used in multithreading environment](#usage-exapmle)
 
  #### Header (13 bytes):
      - T                        |=> takes 2 bytes (tree degree)
@@ -102,8 +103,8 @@ $ ./build/test/key-value-storage-test --log_level=success
    $ build_x86\test\Release\key-value-storage-test.exe --log_level=success
    ```
 
-### Usage exapmle
-* an exapmle is in test/test.cpp
+### Usage example
+* [single thread usage](test/test.cpp#L70)
 
 ```cpp
 {
@@ -143,7 +144,7 @@ $ ./build/test/key-value-storage-test --log_level=success
 #### MultiThreading usage
 * Support **coarse-grained synchronization**:
    * Thread safety is guaranteed for SET|GET|REMOVE operations on the same "VOLUME"
-* an exapmle is in test/test.cpp
+* [multithreading usage](test/test.cpp#L125)
 ```cpp
 btree::StorageMT<int, int> int_storage;
 auto volume = int_storage.open_volume("../mt_int_storage.txt", 100);
