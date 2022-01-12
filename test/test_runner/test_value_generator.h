@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <optional>
+#include <random>
 
 #include "storage.h"
 #include "utils/utils.h"
@@ -19,6 +20,7 @@ namespace test_utils {
     template <typename V>
     class ValueGenerator {
         std::map<int, Data<V>> blob_map;
+        std::mt19937 m_rand;
 
     public:
         ~ValueGenerator() {
@@ -59,11 +61,7 @@ namespace test_utils {
         }
 
         Data<V> next_value(int key) {
-            auto it = blob_map.find(key);
-            if (it != blob_map.end())
-                return it->second;
-
-            int rand = key + std::rand() % 31;
+            int rand = key + m_rand() % 31;
             if constexpr (is_string_v<V>) {
                 if constexpr(std::is_same_v<typename V::value_type, char>) {
                     auto str = std::to_string(rand) + "abacaba";
@@ -76,6 +74,11 @@ namespace test_utils {
                 }
             } else {
                 if constexpr(std::is_pointer_v<V>) {
+                    auto old_value_it = blob_map.find(key);
+                    if (old_value_it != blob_map.end()) {
+                        delete old_value_it->second.value;
+                        blob_map.erase(old_value_it);
+                    }
                     int32_t len = rand % 1000 + 1; // don't allocate more than 1kb for test values
                     auto arr = new char[len + 1];
                     for (int k = 0; k < len; ++k) {
