@@ -58,7 +58,7 @@ namespace key_value_op_tests {
 }
 #else
 
-#if defined(MEM_CHECK) && !defined(UNIT_TESTS) && !defined(BOOST_ALL_NO_LIB)
+#if defined(MEM_CHECK)
     #include <cstdlib>
     #include "utils/mem_util.h"
 #endif
@@ -153,14 +153,12 @@ void mt_usage() {
 }
 
 int main() {
-#if defined(MEM_CHECK) && !defined(UNIT_TESTS) && !defined(BOOST_ALL_NO_LIB)
+#if defined(MEM_CHECK)
     atexit(at_exit_handler);
-
-    int* a = new int[5];
-    delete[] a;
-    return 0;
 #endif
-    usage();
-    mt_usage();
+    {
+        usage();
+        mt_usage();
+    }
 }
 #endif // UNIT_TESTS

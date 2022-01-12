@@ -4,12 +4,19 @@
 #include <iostream>
 
 #include "utils/boost_include.h"
+#include "utils/mem_util.h"
 
 namespace tests {
     namespace fs = std::filesystem;
 
     struct MyFixture {
-        MyFixture (const std::string path) {
+        const std::string path;
+
+        MyFixture (const std::string& path) : path(path) {
+            BOOST_TEST_MESSAGE( "Enter " + path + " test suite");
+#ifdef MEM_CHECK
+         atexit(at_exit_handler);
+#endif
             const std::filesystem::path& p = fs::current_path();
             fs::current_path(p);
             fs::create_directories(path);
@@ -21,10 +28,15 @@ namespace tests {
                 std::cout << ex.what() << std::endl;
             }
         }
-//        ~MyFixture() { BOOST_TEST_MESSAGE( "teardown fixture" ); }
+        ~MyFixture() {
+            BOOST_TEST_MESSAGE( "Leave " + path + " test suite");
+#ifdef MEM_CHECK
+            BOOST_TEST_MESSAGE( "Mem stat for " + path + " test suite:");
+#endif
+        }
     };
 
     namespace b_decorator = boost::unit_test::decorator;
-    using FixtureT = b_decorator::fixture_t(*)(const std::string& str);
+    using FixtureT = b_decorator::fixture_t(*)(const std::string& path);
     FixtureT CleanBeforeTest = boost::unit_test::fixture<MyFixture>;
 }
