@@ -24,21 +24,17 @@ namespace key_value_op_tests {
     }
 
     template <typename K, typename V>
-    bool run_test_emtpy_file(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
+    bool run_test_emtpy_file(std::string const& db_name, int const order) {
         {
             Storage<K, V> s;
             s.open_volume(db_name, order);
         }
         bool success = fs::file_size(db_name) == 0;
-        fs::remove(db_name);
         return success;
     }
 
     template <typename K, typename V>
-    bool run_test_file_size_with_one_entry(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
-
+    bool run_test_file_size_with_one_entry(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -68,13 +64,11 @@ namespace key_value_op_tests {
             success &= on_exit(volume, SizeInfo<K,V>::header_size_in_bytes());
         }
 
-        fs::remove(db_name);
         return success;
     }
 
     template <typename K, typename V>
-    bool run_test_set_get_one(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
+    bool run_test_set_get_one(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -94,13 +88,11 @@ namespace key_value_op_tests {
             s.close_volume(volume);
         }
 
-        fs::remove(db_name);
         return success;
     }
 
     template <typename K, typename V>
-    bool run_test_remove_one(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
+    bool run_test_remove_one(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -125,13 +117,11 @@ namespace key_value_op_tests {
         }
         success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
 
-        fs::remove(db_name);
         return success;
     }
 
     template <typename K, typename V>
-    bool run_test_repeatable_operations_on_a_unique_key(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
+    bool run_test_repeatable_operations_on_a_unique_key(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -149,13 +139,11 @@ namespace key_value_op_tests {
         s.close_volume(volume);
         success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
 
-        fs::remove(db_name);
         return success;
     }
 
     template <typename K, typename V>
-    bool run_test_set_on_the_same_key(std::string const& name, int const order) {
-        std::string db_name = "../" + name + ".txt";
+    bool run_test_set_on_the_same_key(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -170,13 +158,11 @@ namespace key_value_op_tests {
         }
         s.close_volume(volume);
 
-        fs::remove(db_name);
         return success;
     }
 
     template <typename K, typename V>
-    bool run_on_random_values(std::string const& name, int const order, int const n) {
-        std::string db_name = "../" + name + ".txt";
+    bool run_on_random_values(std::string const& db_name, int const order, int const n) {
 //        int rounds = 3;
 #ifdef DEBUG
         std::cout << "Run " << rounds << " iterations on " << n << " elements: " << std::endl;
@@ -185,18 +171,15 @@ namespace key_value_op_tests {
 //        for (int i = 0; i < rounds; ++i) {
         success &= TestRunner<K, V>::run(db_name, order, n);
 //        }
-        fs::remove(db_name);
         return success;
     };
 
     template <typename K, typename V>
-    bool run_multithreading_test(ThreadPool& pool, std::string const& name, int const order, int const n) {
-        std::string db_name = "../" + name + ".txt";
+    bool run_multithreading_test(ThreadPool& pool, std::string const& db_name, int const order, int const n) {
 #ifdef DEBUG
         std::cout << "Run multithreading test on " << n << " elements on 10 threads: " << std::endl;
 #endif
         bool success = TestRunnerMT<K, V>::run(pool, db_name, order, n);
-        fs::remove(db_name);
         return success;
     };
 }
