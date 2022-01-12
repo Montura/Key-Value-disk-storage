@@ -2,7 +2,6 @@
 
 This is the C++17 template based header library under Windows/Linux/MacOs to store KEY|VALUES on disk.
 
-
 #### Verified:
 * tested on value types:
     *  `int32_t`
@@ -25,9 +24,22 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
       * *For now all modifications are written to the end of the same file -> file size accordingly grows (drawback)*
    * Specify mapped region usage [behavior](https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L199) to reduce [overhead in memory mapped file I/O](https://www.usenix.org/sites/default/files/conference/protected-files/hotstorage17_slides_choi.pdf)
 
-### Volume structure:
+### Storage 
+   * an object for storing `volumes`: ```Storage<K, V> s;```
+   * `volume` can be opened from `storage`: ``` auto volume = s.open_volume(path, tree_order);```
+      * *tree_order* is provided by user and depends on expected keys count
+   * `volume` lifetime:
+      * explicilty ```s.close_volume(volume);```
+      * all `volumes` are closed when `storage` lifetime ends 
+   * `volumes` can't be *shared* between different `storages`
 
- #### Header (6 bytes):
+### Volume:
+   * this is a disk file with content:
+      * header
+      * nodes
+      * entries
+
+ #### Header (13 bytes):
      - T                        |=> takes 2 bytes (tree degree)
      - KEY_SIZE                 |=> takes 1 byte
      - VALUE_TYPE               |=> takes 1 byte 
@@ -162,6 +174,14 @@ int n = 100000;
 }
 
 ```
+
+#### Problems:
+   * Try to verify memory leaks `-DMEM_CHECK` by overriding global `new` and `delete` in [mem_util.h](test/utils/mem_util.h) in 2 ways:
+      * `CustomAllocator` for `unordered_map`
+         * crashes with linkes boost libraries on `delete`
+         * works fine without boost (used for testing algo [in branch without IO operations](https://github.com/Montura/experiments/tree/mmap))
+      * `static uint32_t array[n]` of allocates address
+         * works without crashes with `boost libs` but repors about leaks got from boost
 
 #### Links:
    * Overview of data structures for *Key|Value* storage:
