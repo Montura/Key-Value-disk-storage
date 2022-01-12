@@ -8,10 +8,11 @@
 
 namespace btree::volume {
     template <typename K, typename V>
-    struct Volume final {
-        const std::string path;
+    class Volume final {
         IOManager <K, V> io;
         BTree <K, V> btree;
+    public:
+        const std::string path;
 
         explicit Volume(const std::string& path, const int16_t order) : path(path), io(path, order), btree(order, io) {}
 
@@ -38,13 +39,13 @@ namespace btree::volume {
 
     /** Volume with coarse-grained locks for multithreading usage */
     template <typename K, typename V>
-    struct VolumeMT final {
-        const std::string path;
+    class VolumeMT final {
         IOManager<K, V> io;
         BTree<K, V> btree;
-
         std::mutex mutex_;
     public:
+        const std::string path;
+
         VolumeMT(const std::string& path, int16_t order) : path(path), io(path, order), btree(order, io) {}
 
         bool exist(const K key) {
