@@ -21,7 +21,8 @@ namespace file {
 }
     using namespace utils;
 
-    MappedFile::MappedFile(const std::string& path, const int64_t bytes_num) :
+    template <typename K, typename V>
+    MappedFile<K,V>::MappedFile(const std::string& path, const int64_t bytes_num) :
             m_pos(0), m_mapped_region(new MappedRegion()), path(path)
     {
         bool file_exists = fs::exists(path);
@@ -35,8 +36,8 @@ namespace file {
             m_mapped_region->remap(path);
     }
 
-
-    MappedFile::~MappedFile() {
+    template <typename K, typename V>
+    MappedFile<K,V>::~MappedFile() {
 /**  _MSC_VER
  * 1. Faced with the same error as in: https://youtrack.jetbrains.com/issue/PROF-752
     - [WIN32 error] = 1224, The requested operation cannot be performed on a file with a user-mapped section open.
@@ -55,30 +56,34 @@ namespace file {
         fs::resize_file(path, m_capacity);
     }
 
-    MappedFile::MappedRegion::MappedRegion() {}
+    template <typename K, typename V>
+    MappedFile<K,V>::MappedRegion::MappedRegion() : mapped_region_begin(nullptr) {}
 
-    uint8_t* MappedFile::MappedRegion::address_by_offset(const int64_t offset) const {
+    template <typename K, typename V>
+    uint8_t* MappedFile<K,V>::MappedRegion::address_by_offset(const int64_t offset) const {
         return mapped_region_begin + offset;
     }
 
-    void MappedFile::MappedRegion::remap(const std::string& file_path) {
+    template <typename K, typename V>
+    void MappedFile<K,V>::MappedRegion::remap(const std::string& file_path) {
         auto file_mapping = bip::file_mapping(file_path.data(), bip::read_write);
         auto tmp_mapped_region = bip::mapped_region(file_mapping, bip::read_write);
         mapped_region.swap(tmp_mapped_region);
         mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
     }
 
-    template <typename T>
-    void MappedFile::write_next_data(const T& val, const int32_t total_size_in_bytes) {
-        if constexpr(std::is_pointer_v<T>)
+    template <typename K, typename V>
+    void MappedFile<K,V>::write_next_data(ValueType val, const int32_t total_size_in_bytes) {
+        if constexpr(std::is_pointer_v<ValueType>)
             m_pos = write_blob(val, total_size_in_bytes);
         else
             m_pos = write_arithmetic(val);
         m_capacity = std::max(m_pos, m_capacity);
     }
 
+    template <typename K, typename V>
     template <typename ValueType>
-    std::pair<ValueType, int32_t> MappedFile::read_next_data() {
+    std::pair<ValueType, int32_t> MappedFile<K,V>::read_next_data() {
         if constexpr(std::is_pointer_v<ValueType>) {
             auto len = read_next_primitive<int32_t>();
             auto* value_begin = m_mapped_region->address_by_offset(m_pos);
@@ -90,23 +95,26 @@ namespace file {
         }
     }
 
+    template <typename K, typename V>
     template <typename T>
-    void MappedFile::write_next_primitive(const T val) {
+    void MappedFile<K,V>::write_next_primitive(const T val) {
         static_assert(std::is_arithmetic_v<T>);
         m_pos = write_arithmetic(val);
         m_capacity = std::max(m_pos, m_capacity);
     }
 
+    template <typename K, typename V>
     template <typename T>
-    T MappedFile::read_next_primitive() {
+    T MappedFile<K,V>::read_next_primitive() {
         static_assert(std::is_arithmetic_v<T>);
         auto* value_begin = m_mapped_region->address_by_offset(m_pos);
         m_pos += sizeof(T);
         return *(reinterpret_cast<T*>(value_begin));
     }
 
+    template <typename K, typename V>
     template <typename T>
-    void MappedFile::write_node_vector(const std::vector<T>& vec) {
+    void MappedFile<K,V>::write_node_vector(const std::vector<T>& vec) {
         int64_t total_size_in_bytes = sizeof(T) * vec.size();
         if (m_pos + total_size_in_bytes > m_size)
             resize(m_pos + total_size_in_bytes);
@@ -117,8 +125,9 @@ namespace file {
         m_capacity = std::max(m_pos, m_capacity);
     }
 
+    template <typename K, typename V>
     template <typename T>
-    void MappedFile::read_node_vector(std::vector<T>& vec) {
+    void MappedFile<K,V>::read_node_vector(std::vector<T>& vec) {
         int64_t total_size = sizeof(T) * vec.size();
 
         auto* data = cast_to_uint8_t_data(vec.data());
@@ -128,8 +137,9 @@ namespace file {
         m_pos += total_size;
     }
 
+    template <typename K, typename V>
     template <typename T>
-    int64_t MappedFile::write_arithmetic(T val) {
+    int64_t MappedFile<K,V>::write_arithmetic(T val) {
         static_assert(std::is_arithmetic_v<T>);
         int64_t total_size_in_bytes = sizeof(T);
         if (m_pos + total_size_in_bytes > m_size)
@@ -140,8 +150,9 @@ namespace file {
         return m_pos + total_size_in_bytes;
     }
 
+    template <typename K, typename V>
     template <typename T>
-    int64_t MappedFile::write_blob(T source_data, const int32_t total_size_in_bytes) {
+    int64_t MappedFile<K,V>::write_blob(T source_data, const int32_t total_size_in_bytes) {
         // write size
         int32_t len = total_size_in_bytes;
         m_pos = write_arithmetic(len);
@@ -156,48 +167,58 @@ namespace file {
         return m_pos + total_bytes_size;
     }
 
-    void MappedFile::resize(int64_t new_size, bool shrink_to_fit) {
+    template <typename K, typename V>
+    void MappedFile<K,V>::resize(int64_t new_size, bool shrink_to_fit) {
         // Can't use std::filesystem::resize_file(), see file_mapping_impl.h: ~MappedFile() {...}
         m_size = shrink_to_fit ? new_size : std::max(scale_current_size(), new_size);
         file::seek_file_to_offset(path, std::ios_base::in | std::ios_base::out, m_size);
         m_mapped_region->remap(path);
     }
 
-    void MappedFile::set_pos(int64_t pos) {
+    template <typename K, typename V>
+    void MappedFile<K,V>::set_pos(int64_t pos) {
         m_pos = pos > 0 ? pos : 0;
     }
 
-    int16_t MappedFile::read_int16() {
+    template <typename K, typename V>
+    int16_t MappedFile<K,V>::read_int16() {
         return read_next_primitive<int16_t>();
     }
 
-    int32_t MappedFile::read_int32() {
+    template <typename K, typename V>
+    int32_t MappedFile<K,V>::read_int32() {
         return read_next_primitive<int32_t>();
     }
 
-    int64_t MappedFile::read_int64() {
+    template <typename K, typename V>
+    int64_t MappedFile<K,V>::read_int64() {
         return read_next_primitive<int64_t>();
     }
 
-    int64_t MappedFile::get_pos() const {
+    template <typename K, typename V>
+    int64_t MappedFile<K,V>::get_pos() const {
         return m_pos;
     }
 
-    uint8_t MappedFile::read_byte() {
+    template <typename K, typename V>
+    uint8_t MappedFile<K,V>::read_byte() {
         return read_next_primitive<uint8_t>();
     }
 
-    void MappedFile::set_file_pos_to_end() {
+    template <typename K, typename V>
+    void MappedFile<K,V>::set_file_pos_to_end() {
         m_pos = m_capacity;
     }
 
-    void MappedFile::shrink_to_fit() {
+    template <typename K, typename V>
+    void MappedFile<K,V>::shrink_to_fit() {
         m_capacity = m_size = m_pos;
         resize(m_size, true);
         m_mapped_region->remap(path);
     }
 
-    bool MappedFile::is_empty() const {
+    template <typename K, typename V>
+    bool MappedFile<K,V>::is_empty() const {
         return m_size == 0;
     }
 }

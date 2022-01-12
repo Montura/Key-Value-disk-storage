@@ -4,8 +4,10 @@
 #include <fstream>
 
 #include "utils/boost_include.h"
+#include "utils/utils.h"
 
 namespace btree {
+    template <typename K, typename V>
     class MappedFile {
         class MappedRegion {
             bip::mapped_region mapped_region;
@@ -15,6 +17,8 @@ namespace btree {
             uint8_t* address_by_offset(const int64_t offset) const;
             void remap(const std::string& path);
         };
+
+        using ValueType = utils::conditional_t<std::is_arithmetic_v<V>, const V, const uint8_t*>;
 
         int64_t m_pos;
         int64_t m_size;
@@ -36,8 +40,7 @@ namespace btree {
         template <typename T>
         T read_next_primitive();
 
-        template <typename T>
-        void write_next_data(const T& val, const int32_t total_size_in_bytes);
+        void write_next_data(ValueType val, const int32_t total_size_in_bytes);
 
         /** Warning: do not write vector size */
         template <typename T>

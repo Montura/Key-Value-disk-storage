@@ -39,7 +39,7 @@ namespace btree {
         using EntryT = typename BTree<K, V>::EntryT;
 
         const int16_t t = 0;
-        MappedFile file;
+        MappedFile<K,V> file;
 
         static constexpr uint8_t ROOT_POS_IN_HEADER = sizeof(t) + 3;
     public:

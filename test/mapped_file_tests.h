@@ -36,51 +36,51 @@ namespace {
 
     constexpr int ITERATIONS = 10000;
 
-    template <typename T>
+    template <typename K, typename V>
     bool run_test_arithmetics(const std::string& name_postfix) {
         std::string path = get_absolute_file_name(name_postfix);
         bool success = true;
         {
-            MappedFile file(path, 32);
+            MappedFile<K,V> file(path, 32);
 
             // write
             for (int i = 0; i < ITERATIONS; ++i) {
-                T tmp = static_cast<T>(i);
+                V tmp = static_cast<V>(i);
                 file.write_next_primitive(tmp);
             }
 
             // read
             file.set_pos(0);
             for (int i = 0; i < ITERATIONS; ++i) {
-                T tmp = file.read_next_primitive<T>();
-                success &= (tmp == static_cast<T>(i));
+                V tmp = file.template read_next_primitive<V>();
+                success &= (tmp == static_cast<V>(i));
             }
         }
-        success &= (fs::file_size(path) == sizeof(T) * ITERATIONS);
+        success &= (fs::file_size(path) == sizeof(V) * ITERATIONS);
         return success;
     }
 
-    template <typename T, typename V = typename T::value_type>
-    bool run_test_basic_strings(const Data<T>& data, to_string_ptr<V> conv, const std::string& postfix) {
+    template <typename K, typename V, typename ValueType = typename V::value_type>
+    bool run_test_basic_strings(const Data<V>& data, to_string_ptr<ValueType> conv, const std::string& postfix) {
         std::string path = get_absolute_file_name(postfix + "_" + std::to_string(data.len));
         int64_t total_write_size = 0;
         int64_t total_read_size = 0;
         bool success = true;
         {
-            MappedFile file(path, 32);
+            MappedFile<K,V> file(path, 32);
 
             // write
             for (auto i = 0; i < ITERATIONS; ++i) {
-                Data<T> tmp_data(data.value + conv(i));
-                file.write_next_data(tmp_data.value.data(), tmp_data.len);
+                Data<V> tmp_data(data.value + conv(i));
+                file.write_next_data(cast_to_const_uint8_t_data(tmp_data.value.data()), tmp_data.len);
             }
             total_write_size = file.get_pos();
 
             // read
             file.set_pos(0);
             for (int i = 0; i < ITERATIONS; ++i) {
-                T tmp = data.value + conv(i);
-                auto[value, size] = file.read_next_data<const uint8_t*>();
+                V tmp = data.value + conv(i);
+                auto[value, size] = file.template read_next_data<const uint8_t*>();
                 success &= compare(tmp, value, size);
             }
             total_read_size = file.get_pos();
@@ -91,25 +91,26 @@ namespace {
         return success;
     }
 
+    template <typename K, typename V>
     bool run_test_modify_and_save() {
         std::string path = get_absolute_file_name("modify");
         bool success = true;
         {
-            MappedFile file(path, 32);
+            MappedFile<K,V> file(path, 32);
             for (int32_t i = 0; i < ITERATIONS; ++i) {
                 file.write_next_primitive(i);
             }
         }
         {
-            MappedFile file(path, 32);
+            MappedFile<K,V> file(path, 32);
             for (int32_t i = 0; i < ITERATIONS; ++i) {
                 file.write_next_primitive(i * 2);
             }
         }
         {
-            MappedFile file(path, 32);
+            MappedFile<K,V> file(path, 32);
             for (int32_t i = 0; i < ITERATIONS; ++i) {
-                auto actual = file.read_next_primitive<int32_t>();
+                auto actual = file.template read_next_primitive<K>();
                 auto expected = i * 2;
                 success &= (actual == expected);
             }
@@ -117,22 +118,23 @@ namespace {
         return success;
     }
 
+    template <typename K, typename V>
     bool run_test_array() {
         std::string path = get_absolute_file_name("array");
         const int n = 1000000;
-        std::vector<int> out(n, 1);
+        std::vector<K> out(n, 1);
         bool success = false;
         {
-            MappedFile file(path, 32);
-            int size_in_bytes = n * sizeof(int);
-            file.write_next_data(out.data(), size_in_bytes);
+            MappedFile<K,V> file(path, 32);
+            int size_in_bytes = n * sizeof(K);
+            file.write_next_data(cast_to_const_uint8_t_data(out.data()), size_in_bytes);
         }
 
         {
-            MappedFile file(path, 32);
-            auto [data_ptr, size_in_bytes] = file.read_next_data<const uint8_t*>();
-            auto* int_data = reinterpret_cast<const int*>(data_ptr);
-            std::vector<int> in(int_data, int_data + size_in_bytes / sizeof(int));
+            MappedFile<K,V> file(path, 32);
+            auto [data_ptr, size_in_bytes] = file.template read_next_data<const uint8_t*>();
+            auto* int_data = reinterpret_cast<const K*>(data_ptr);
+            std::vector<K> in(int_data, int_data + size_in_bytes / sizeof(K));
             success = (in == out);
         }
         return success;
@@ -142,12 +144,12 @@ namespace {
     BOOST_AUTO_TEST_SUITE(mapped_file_test, *CleanBeforeTest(output_folder.data()))
 
     BOOST_AUTO_TEST_CASE(test_arithmetics_values) {
-        bool success = run_test_arithmetics<int32_t>("_i32");
-        success &= run_test_arithmetics<uint32_t>("_ui32");
-        success &= run_test_arithmetics<int64_t>("_i64");
-        success &= run_test_arithmetics<uint64_t>("_ui64");
-        success &= run_test_arithmetics<float>("_f");
-        success &= run_test_arithmetics<double>("_d");
+        bool success = run_test_arithmetics<int32_t, int32_t>("_i32");
+        success &= run_test_arithmetics<int32_t, uint32_t>("_ui32");
+        success &= run_test_arithmetics<int32_t, int64_t>("_i64");
+        success &= run_test_arithmetics<int32_t, uint64_t>("_ui64");
+        success &= run_test_arithmetics<int32_t, float>("_f");
+        success &= run_test_arithmetics<int32_t, double>("_d");
         BOOST_REQUIRE_MESSAGE(success, "TEST_ARITHMETICS");
     }
 
@@ -158,23 +160,25 @@ namespace {
         bool success = true;
         for (auto& str: strs) {
             Data<std::string> data(str);
-            success &= run_test_basic_strings<std::string>(data, conv_to_str, "_str");
+            success &= run_test_basic_strings<int32_t, std::string>(data, conv_to_str, "_str");
         }
 
         for (auto& w_str: wstrs) {
             Data<std::wstring> data(w_str);
-            success &= run_test_basic_strings<std::wstring>(data, conv_to_wstr, "_wstr");
+            success &= run_test_basic_strings<int32_t, std::wstring>(data, conv_to_wstr, "_wstr");
         }
 
         BOOST_REQUIRE_MESSAGE(success, "TEST_STRING");
     }
 
     BOOST_AUTO_TEST_CASE(test_mody_and_save) {
-        BOOST_REQUIRE_MESSAGE(run_test_modify_and_save(), "TEST_MODIFY_AND_SAVE");
+        bool success = run_test_modify_and_save<int32_t, int32_t>();
+        BOOST_REQUIRE_MESSAGE(success, "TEST_MODIFY_AND_SAVE");
     }
 
     BOOST_AUTO_TEST_CASE(test_array) {
-        BOOST_REQUIRE_MESSAGE(run_test_array(), "TEST_ARRAY");
+        bool success = run_test_array<int32_t, std::vector<int32_t>>();
+        BOOST_REQUIRE_MESSAGE(success, "TEST_ARRAY");
     }
 
     BOOST_AUTO_TEST_SUITE_END()
