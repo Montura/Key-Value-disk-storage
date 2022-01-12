@@ -127,44 +127,29 @@ void mt_usage() {
     auto volume = int_storage.open_volume("../mt_int_storage.txt", 100);
 
     int n = 100000;
-    std::vector<int> keys(n), values(n);
-    for (int i = 0; i < n; ++i) {
-        keys[i] = i; values[i] = -i;
-    }
-
-    ThreadPool tp { 10 };
-    auto ranges = generate_ranges(n, 10); // ten not-overlapped intervals
-    // pass volume to ThreadPool
-
-    std::vector<std::future<bool>> futures;
-    for (auto& range : ranges) {
-        futures.emplace_back(
-                tp.submit([&volume, &keys, &values, &range]() -> bool {
-                    for (int i = range.first; i < range.second; ++i)
-                        volume.set(keys[i], values[i]);
-                    return true;
-                })
-        );
-    }
-    for (auto& future : futures) {
-        future.get();
-    }
-    futures.clear();
-
-    // check
-    for (int i = 0; i < n; ++i)
-        assert(volume.get(i).value() == -i);
-
-    tp.post([&volume, &keys, &n]() {
-        for (int i = 0; i < n; ++i) {
-            volume.set(keys[i], 0);
+    {
+        ThreadPool tp { 10 };
+        auto ranges = generate_ranges(n, 10); // ten not-overlapped intervals
+        for (auto& range: ranges) {
+            tp.post([&volume, &range]() {
+                for (int i = range.first; i < range.second; ++i)
+                    volume.set(i, -i);
+            });
         }
-    });
-    tp.join();
-
-    // check
-    for (int i = 0; i < n; ++i)
-        assert(volume.get(i).value() == 0);
+        tp.wait();
+        for (int i = 0; i < n; ++i)
+            assert(volume.get(i).value() == -i);
+    }
+    {
+        ThreadPool tp { 10 };
+        tp.post([&volume, &n]() {
+            for (int i = 0; i < n; ++i)
+                volume.set(i, 0);
+        });
+        tp.wait();
+        for (int i = 0; i < n; ++i)
+            assert(volume.get(i).value() == 0);
+    }
 }
 
 int main() {
@@ -175,9 +160,7 @@ int main() {
     delete[] a;
     return 0;
 #endif
-//    usage();
-//    mt_usage();
-
-
+    usage();
+    mt_usage();
 }
 #endif // UNIT_TESTS
