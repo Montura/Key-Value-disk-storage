@@ -193,7 +193,7 @@ $ cd experiments
 </details>
 
 ### Problems:
-   * Faced with the same error as in issue about [dotCover crashing - Can't set eof error](https://youtrack.jetbrains.com/issue/PROF-752)
+   * Try to resize file on Winows and faced with the same error as in issue: [dotCover crashing - Can't set eof error](https://youtrack.jetbrains.com/issue/PROF-752)
       * ``` [WIN32 error] = 1224, The requested operation cannot be performed on a file with a user-mapped section open.```
       * Problem in my case: 
          * caused by [`SetEndOfFile`](https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setendoffile)
