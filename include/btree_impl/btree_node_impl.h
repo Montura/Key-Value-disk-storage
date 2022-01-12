@@ -144,7 +144,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    int32_t BTreeNode<K, V>::find_key_bin_search(IOManagerT& io, const K& key) const {
+    int32_t BTreeNode<K, V>::find_key_bin_search(IOManagerT& io, const K key) const {
         int32_t left = 0;
         int32_t right = used_keys - 1;
         int32_t mid = 0;
@@ -174,7 +174,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    typename BTree<K,V>::EntryT BTreeNode<K, V>::find(IOManagerT& io, const K& key) const {
+    typename BTree<K,V>::EntryT BTreeNode<K, V>::find(IOManagerT& io, const K key) const {
         const auto&[curr, entry, idx] = find_leaf_node_with_key(io, key);
         if (entry.key == key)
             return entry;
@@ -201,7 +201,7 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    bool BTreeNode<K, V>::remove(IOManagerT& io, const K& key) {
+    bool BTreeNode<K, V>::remove(IOManagerT& io, const K key) {
         auto writeOnExit = [&io](const Node& node, const auto pos, bool success) -> bool {
             io.write_node(node, pos);
             return success;
@@ -430,7 +430,7 @@ namespace btree {
 
     template <typename K, typename V>
     std::tuple<BTreeNode<K,V>, typename BTree<K,V>::EntryT, int32_t>
-    BTreeNode<K,V>::find_leaf_node_with_key(IOManagerT& io, const K& key) const {
+    BTreeNode<K,V>::find_leaf_node_with_key(IOManagerT& io, const K key) const {
         Node curr = *this;
 
         while (!curr.is_leaf) {

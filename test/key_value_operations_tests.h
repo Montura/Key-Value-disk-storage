@@ -16,7 +16,7 @@ namespace tests::key_value_op_tests {
     using namespace test_utils;
 
     template <typename VolumeT, typename K, typename V>
-    void set(VolumeT& volume, const K& key, const Data<V>& data) {
+    void set(VolumeT& volume, const K key, const Data<V>& data) {
         if constexpr(std::is_pointer_v<V>) {
             volume.set(key, data.value, data.len);
         } else {

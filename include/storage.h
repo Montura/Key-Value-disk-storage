@@ -53,15 +53,15 @@ namespace btree::storage {
         public:
             explicit VolumeT(VolumeType* ptr) : ptr(ptr) {}
 
-            bool exist(const K& key) const { return ptr->exist(key); }
+            bool exist(const K key) const { return ptr->exist(key); }
 
-            void set(const K& key, const V& value) { ptr->set(key, value); }
+            void set(const K key, const V& value) { ptr->set(key, value); }
 
-            void set(const K& key, const V& value, const int32_t size) { ptr->set(key, value, size); }
+            void set(const K key, const V& value, const int32_t size) { ptr->set(key, value, size); }
 
-            std::optional <V> get(const K& key) const { return ptr->get(key); }
+            std::optional<V> get(const K key) const { return ptr->get(key); }
 
-            bool remove(const K& key) { return ptr->remove(key); }
+            bool remove(const K key) { return ptr->remove(key); }
 
             std::string path() const { return ptr->path; }
         };

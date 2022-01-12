@@ -13,7 +13,7 @@ namespace tests {
             return btree::IOManager<K,V>::INITIAL_ROOT_POS_IN_HEADER;
         }
 
-        static constexpr int32_t file_size_in_bytes(const int t, const K& key, const V& val, const int32_t value_size) {
+        static constexpr int32_t file_size_in_bytes(const int t, const K key, const V& val, const int32_t value_size) {
             return header_size_in_bytes() + node_size(t) + full_entry_size_in_bytes(key, val, value_size);
         }
 
@@ -22,7 +22,7 @@ namespace tests {
             return btree::BTreeNode<K,V>::get_node_size_in_bytes(t);
         }
 
-        static constexpr int32_t full_entry_size_in_bytes(const K& key, const V& val, const int32_t value_size) {
+        static constexpr int32_t full_entry_size_in_bytes(const K key, const V& val, const int32_t value_size) {
             int32_t key_size = sizeof(K);
             if constexpr (std::is_pointer_v<V> || is_string_v<V>) {
                 int32_t value_len = 4; // sizeof(int32_t) for storing the length of value

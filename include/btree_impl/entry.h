@@ -39,19 +39,19 @@ namespace btree::entry {
                 size_in_bytes(0) {}
 
         template <typename U = V, enable_if_t<std::is_arithmetic_v<U>> = true>
-        Entry(const K& key, const V value) :
+        Entry(const K key, const V value) :
                 key(key),
                 data(value),
                 size_in_bytes(sizeof(value)) {}
 
         template <typename U = V, enable_if_t<is_string_v<U>> = true>
-        Entry(const K& key, const V& value) :
+        Entry(const K key, const V& value) :
                 key(key),
                 data(reinterpret_cast<const ValueType>(value.c_str())),
                 size_in_bytes(static_cast<int32_t>(value.size() * sizeof(typename V::value_type))) {}
 
         template <typename U = V, enable_if_t<std::is_pointer_v<U>> = true>
-        Entry(const K& key, const V& value, const int32_t size) :
+        Entry(const K key, const V& value, const int32_t size) :
                 key(key),
                 data(reinterpret_cast<const ValueType>(value)),
                 size_in_bytes(size)
@@ -60,7 +60,7 @@ namespace btree::entry {
             static_assert(sizeof(data_type) == sizeof(OriginalValueType));
         }
 
-        Entry(const K& key, const ValueType value, const int size) :
+        Entry(const K key, const ValueType value, const int size) :
                 key(key),
                 data(value),
                 size_in_bytes(size) {}

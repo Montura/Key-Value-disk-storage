@@ -14,14 +14,14 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    void BTree<K, V>::set(IOManagerT& io, const K& key, const V& value) {
+    void BTree<K, V>::set(IOManagerT& io, const K key, const V& value) {
         EntryT e{ key, value };
         if (!root.is_valid() || !root.set(io, e))
             insert(io, e);
     }
 
     template <typename K, typename V>
-    void BTree<K, V>::set(IOManagerT& io, const K& key, const V& value, const int32_t size) {
+    void BTree<K, V>::set(IOManagerT& io, const K key, const V& value, const int32_t size) {
         if (size != 0) {
             EntryT e{ key, value, size };
             if (!root.is_valid() || !root.set(io, e))
@@ -30,19 +30,19 @@ namespace btree {
     }
 
     template <typename K, typename V>
-    std::optional<V> BTree<K, V>::get(IOManagerT& io, const K& key) const {
+    std::optional<V> BTree<K, V>::get(IOManagerT& io, const K key) const {
         EntryT res = root.is_valid() ? root.find(io, key) : EntryT{};
         return res.value();
     }
 
     template <typename K, typename V>
-    bool BTree<K, V>::exist(IOManagerT& io, const K& key) const {
+    bool BTree<K, V>::exist(IOManagerT& io, const K key) const {
         bool success = root.is_valid() && root.find(io, key).is_valid();
         return success;
     }
 
     template <typename K, typename V>
-    bool BTree<K, V>::remove(IOManagerT& io, const K& key) {
+    bool BTree<K, V>::remove(IOManagerT& io, const K key) {
         bool success = root.is_valid() && root.remove(io, key);
 
         if (success && root.used_keys == 0) {

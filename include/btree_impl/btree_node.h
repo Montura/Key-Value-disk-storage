@@ -22,9 +22,9 @@ namespace btree {
         BTreeNode(const int16_t& t, bool isLeaf);
 
         bool set(IOManagerT& io_manager, const EntryT& e);
-        bool remove(IOManagerT& io_manager, const K& key);
+        bool remove(IOManagerT& io_manager, const K key);
 
-        EntryT find(IOManagerT& io_manager, const K& key) const;
+        EntryT find(IOManagerT& io_manager, const K key) const;
         K get_key(IOManagerT& io_manager, const int32_t idx) const;
 
         static constexpr int32_t get_node_size_in_bytes(const int16_t t);
@@ -37,8 +37,8 @@ namespace btree {
         static constexpr int32_t max_key_num(const int16_t t);
         static constexpr int32_t max_child_num(const int16_t t);
 
-        int32_t find_key_bin_search(IOManagerT& io_manager, const K& key) const;
-        std::tuple<BTreeNode, EntryT, int32_t> find_leaf_node_with_key(IOManagerT& io_manager, const K& key) const;
+        int32_t find_key_bin_search(IOManagerT& io_manager, const K key) const;
+        std::tuple<BTreeNode, EntryT, int32_t> find_leaf_node_with_key(IOManagerT& io_manager, const K key) const;
 
         EntryT get_entry(IOManagerT& io_manager, const int32_t idx) const;
         BTreeNode get_child(IOManagerT& io_manager, const int32_t idx) const;
