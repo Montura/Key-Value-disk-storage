@@ -5,7 +5,13 @@
 #include "io/mapped_file.h"
 
 namespace tests::mapped_file_test {
-    std::string const output_folder = "../../mapped_file_test_output/";
+    constexpr std::string_view output_folder = "../../output_mapped_file_test/";
+    constexpr std::string_view test = "mapped_file_test_";
+
+    std::string get_absolute_file_name(const std::string& name_part) {
+        auto name = test.data() + name_part + ".txt";
+        return output_folder.data() + name;
+    }
 
 namespace {
     using namespace btree;
@@ -32,7 +38,7 @@ namespace {
 
     template <typename T>
     bool run_test_arithmetics(const std::string& name_postfix) {
-        std::string path = output_folder + "mapped_file_test" + name_postfix + ".txt";
+        std::string path = get_absolute_file_name(name_postfix);
         bool success = true;
         {
             MappedFile file(path, 32);
@@ -56,8 +62,7 @@ namespace {
 
     template <typename T, typename V = typename T::value_type>
     bool run_test_basic_strings(const Data<T>& data, to_string_ptr<V> conv, const std::string& postfix) {
-        std::string path =
-                output_folder + "mapped_file_test_" + postfix + "_" + std::to_string(data.len) + ".txt";
+        std::string path = get_absolute_file_name(postfix + "_" + std::to_string(data.len));
         int64_t total_write_size = 0;
         int64_t total_read_size = 0;
         bool success = true;
@@ -66,8 +71,7 @@ namespace {
 
             // write
             for (auto i = 0; i < ITERATIONS; ++i) {
-                T tmp = data.value + conv(i);
-                Data<T> tmp_data(tmp);
+                Data<T> tmp_data(data.value + conv(i));
                 file.write_next_data(tmp_data.value.data(), tmp_data.len);
             }
             total_write_size = file.get_pos();
@@ -88,7 +92,7 @@ namespace {
     }
 
     bool run_test_modify_and_save() {
-        std::string path = output_folder + "mapped_file_modify_test.txt";
+        std::string path = get_absolute_file_name("modify");
         bool success = true;
         {
             MappedFile file(path, 32);
@@ -114,18 +118,18 @@ namespace {
     }
 
     bool run_test_array() {
-        std::string fmap = output_folder + "mapped_file_array.txt";
+        std::string path = get_absolute_file_name("array");
         const int n = 1000000;
         std::vector<int> out(n, 1);
         bool success = false;
         {
-            MappedFile file(fmap, 32);
+            MappedFile file(path, 32);
             int size_in_bytes = n * sizeof(int);
             file.write_next_data(out.data(), size_in_bytes);
         }
 
         {
-            MappedFile file(fmap, 32);
+            MappedFile file(path, 32);
             auto [data_ptr, size_in_bytes] = file.read_next_data<const uint8_t*>();
             auto* int_data = reinterpret_cast<const int*>(data_ptr);
             std::vector<int> in(int_data, int_data + size_in_bytes / sizeof(int));
@@ -135,7 +139,7 @@ namespace {
     }
 }
 
-    BOOST_AUTO_TEST_SUITE(mapped_file_test, *CleanBeforeTest(output_folder))
+    BOOST_AUTO_TEST_SUITE(mapped_file_test, *CleanBeforeTest(output_folder.data()))
 
     BOOST_AUTO_TEST_CASE(test_arithmetics_values) {
         bool success = run_test_arithmetics<int32_t>("_i32");

@@ -9,7 +9,7 @@
 #include "utils/size_info.h"
 
 namespace tests::key_value_op_tests {
-    std::string const output_folder = "../../key_value_op_test_output/";
+    constexpr std::string_view output_folder = "../../output_key_value_op_test/";
 
     namespace fs = std::filesystem;
     using namespace btree;
@@ -25,7 +25,7 @@ namespace tests::key_value_op_tests {
     }
 
     std::string db_name(const std::string& name, const int tree_order) {
-        return output_folder + name + "_" + std::to_string(tree_order) + ".txt";
+        return output_folder.data() + name + "_" + std::to_string(tree_order) + ".txt";
     }
 
     template <typename TestClass, typename ... Args>

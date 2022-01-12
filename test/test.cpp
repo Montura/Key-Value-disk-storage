@@ -11,7 +11,7 @@ namespace tests {
 
 namespace key_value_op_tests {
 
-    BOOST_AUTO_TEST_SUITE(key_value_operations_test, *CleanBeforeTest(output_folder))
+    BOOST_AUTO_TEST_SUITE(key_value_operations_test, *CleanBeforeTest(output_folder.data()))
 
     int const orders[] = { 2, 5, 13, 31, 50, 79, 100 };
 
