@@ -14,6 +14,7 @@ include_directories(.)
 set(SOURCE_FILES
         test_runner/test_runner.h
         test_runner/test_value_generator.h
+        utils/boost_fixture.h
         utils/size_info.h
         utils/test_stat.h
         utils/thread_pool.h

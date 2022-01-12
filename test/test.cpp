@@ -3,45 +3,22 @@
 #include "key_value_operations_tests.h"
 #include "mapped_file_tests.h"
 #include "volume_tests.h"
+#include "utils/boost_fixture.h"
 
 namespace tests {
     using namespace key_value_op_tests;
     namespace utf = boost::unit_test;
 
     namespace {
-        std::string const output_folder = "../../key-value-test_output/";
-        std::string const postfix = ".txt";
+        std::string_view const output_folder = "../../key-value-test_output/";
+        std::string_view const postfix = ".txt";
 
-        std::string const db_name(const std::string& name, const int order) {
-            return output_folder + name + "_" + std::to_string(order) + postfix;
+        std::string db_name(const std::string& name, const int tree_order) {
+            return output_folder.data() + name + "_" + std::to_string(tree_order) + postfix.data();
         }
     }
 
-    struct F {
-        F()  {
-            const std::filesystem::path& p = fs::current_path();
-            fs::current_path(p);
-            fs::create_directories(output_folder);
-
-#if DEBUG
-            BOOST_TEST_MESSAGE( "Setup key_value_op_tests test suite" );
-#endif
-            try {
-                std::uintmax_t count = 0;
-                for (auto& de : std::filesystem::directory_iterator(output_folder)) {
-                    count += std::filesystem::remove_all(de.path());
-                }
-#if DEBUG
-                std::cout << "deleted " << count << " old files" << std::endl;
-#endif
-            } catch(const std::exception& ex) {
-                std::cerr << ex.what() << std::endl;
-            }
-        }
-//        ~F() { BOOST_TEST_MESSAGE( "teardown fixture" ); }
-    };
-
-    BOOST_AUTO_TEST_SUITE(key_value_operations_test, * utf::fixture<F>())
+    BOOST_AUTO_TEST_SUITE(key_value_operations_test, * utf::fixture<MyFixture>(output_folder.data()))
 
     int const orders[] = { 2, 5, 13, 31, 50, 79, 100};
 
