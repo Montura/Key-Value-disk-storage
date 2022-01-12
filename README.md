@@ -38,7 +38,7 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
       * header
       * nodes
       * entries
-   * can be [used in multithreading environment](#usage-exapmle)
+   * can be used in multithreading environment(see below)
 
  #### Header (13 bytes):
      - T                        |=> takes 2 bytes (tree degree)
