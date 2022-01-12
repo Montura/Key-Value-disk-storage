@@ -21,15 +21,15 @@ namespace file {
 }
     using namespace utils;
 
-    MappedFile::MappedFile(const std::string& fn, int64_t bytes_num) :
-            path(fn), m_pos(0), m_mapped_region(new MappedRegion())
+    MappedFile::MappedFile(const std::string& path, const int64_t bytes_num) :
+            m_pos(0), m_mapped_region(new MappedRegion()), path(path)
     {
-        bool file_exists = fs::exists(fn);
+        bool file_exists = fs::exists(path);
         if (!file_exists) {
             file::seek_file_to_offset(path, std::ios_base::out | std::ios_base::trunc, bytes_num);
             m_size = m_capacity = bytes_num;
         } else {
-            m_size = m_capacity = static_cast<int64_t>(fs::file_size(fn));
+            m_size = m_capacity = static_cast<int64_t>(fs::file_size(path));
         }
         if (m_size > 0)
             m_mapped_region->remap(path);

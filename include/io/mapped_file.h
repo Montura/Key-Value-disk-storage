@@ -6,8 +6,7 @@
 #include "utils/boost_include.h"
 
 namespace btree {
-    struct MappedFile {
-
+    class MappedFile {
         class MappedRegion {
             bip::mapped_region mapped_region;
             uint8_t* mapped_region_begin;
@@ -17,7 +16,14 @@ namespace btree {
             void remap(const std::string& path);
         };
 
-        MappedFile(const std::string& fn, int64_t bytes_num);
+        int64_t m_pos;
+        int64_t m_size;
+        int64_t m_capacity;
+        MappedRegion* m_mapped_region;
+    public:
+        const std::string path;
+
+        MappedFile(const std::string& fn, const int64_t bytes_num);
 
         ~MappedFile();
 
@@ -53,7 +59,6 @@ namespace btree {
         void shrink_to_fit();
         bool is_empty() const;
 
-        const std::string path;
     private:
         template <typename T>
         int64_t write_arithmetic(T val);
@@ -63,14 +68,9 @@ namespace btree {
 
         void resize(int64_t new_size, bool shrink_to_fit = false);
 
-        constexpr int64_t scale_current_size() {
+        constexpr int64_t scale_current_size() const {
             return static_cast<int64_t>(m_size * 1.1);
         }
-
-        int64_t m_pos;
-        int64_t m_size;
-        int64_t m_capacity;
-        MappedRegion* m_mapped_region;
     };
 }
 
