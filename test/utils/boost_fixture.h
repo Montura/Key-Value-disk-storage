@@ -14,17 +14,9 @@ namespace tests {
             fs::current_path(p);
             fs::create_directories(path);
 
-#if DEBUG
-            BOOST_TEST_MESSAGE( "Setup key_value_op_tests test suite" );
-#endif
             try {
-                std::uintmax_t count = 0;
-                for (auto& de : std::filesystem::directory_iterator(path)) {
-                    count += std::filesystem::remove_all(de.path());
-                }
-#if DEBUG
-                std::cout << "deleted " << count << " old files" << std::endl;
-#endif
+                for (auto& dir_entry : std::filesystem::directory_iterator(path))
+                    std::filesystem::remove_all(dir_entry.path());
             } catch(const std::exception& ex) {
                 std::cout << ex.what() << std::endl;
             }

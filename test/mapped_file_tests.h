@@ -14,19 +14,8 @@ namespace {
         template <typename T>
         using to_string_ptr = std::basic_string<T> (*)(int i);
 
-        template <typename T>
-        using strlen_ptr = size_t(*)(const T* s);
-
         to_string_ptr<char> conv_to_str = std::to_string;
         to_string_ptr<wchar_t> conv_to_wstr = std::to_wstring;
-
-        strlen_ptr<char> calc_str_len = std::strlen;
-        strlen_ptr<wchar_t> calc_wstr_len = std::wcslen;
-
-        template <typename T, typename V = typename T::value_type>
-        int32_t calc_size_in_bytes(const T& str, strlen_ptr<V> strlen_impl) {
-            return static_cast<int32_t>(sizeof(V) * strlen_impl(str.data()));
-        }
 
         template <typename T>
         bool compare(const T& str, const uint8_t* data, int size) {
@@ -66,9 +55,9 @@ namespace {
     }
 
     template <typename T, typename V = typename T::value_type>
-    bool run_test_basic_strings(T val, to_string_ptr<V> conv, strlen_ptr<V> len_impl, const std::string& postfix) {
+    bool run_test_basic_strings(const Data<T>& data, to_string_ptr<V> conv, const std::string& postfix) {
         std::string path =
-                output_folder + "mapped_file_test_" + postfix + "_" + std::to_string(len_impl(val.data())) + ".txt";
+                output_folder + "mapped_file_test_" + postfix + "_" + std::to_string(data.len) + ".txt";
         int64_t total_write_size = 0;
         int64_t total_read_size = 0;
         bool success = true;
@@ -77,16 +66,16 @@ namespace {
 
             // write
             for (auto i = 0; i < ITERATIONS; ++i) {
-                T tmp = val + conv(i);
-                int32_t size = calc_size_in_bytes(tmp, len_impl);
-                file.write_next_data(tmp.data(), size);
+                T tmp = data.value + conv(i);
+                Data<T> tmp_data(tmp);
+                file.write_next_data(tmp_data.value.data(), tmp_data.len);
             }
             total_write_size = file.get_pos();
 
             // read
             file.set_pos(0);
             for (int i = 0; i < ITERATIONS; ++i) {
-                T tmp = val + conv(i);
+                T tmp = data.value + conv(i);
                 auto[value, size] = file.read_next_data<const uint8_t*>();
                 success &= compare(tmp, value, size);
             }
@@ -163,11 +152,15 @@ namespace {
         std::wstring wstrs[] = { L"", L"a", L"aba", L"abacaba", L"abba", L"abacabacababa" };
 
         bool success = true;
-        for (auto& str: strs)
-            success &= run_test_basic_strings<std::string>(str, conv_to_str, calc_str_len, "_str");
+        for (auto& str: strs) {
+            Data<std::string> data(str);
+            success &= run_test_basic_strings<std::string>(data, conv_to_str, "_str");
+        }
 
-        for (auto& wstr: wstrs)
-            success &= run_test_basic_strings<std::wstring>(wstr, conv_to_wstr, calc_wstr_len, "_wstr");
+        for (auto& w_str: wstrs) {
+            Data<std::wstring> data(w_str);
+            success &= run_test_basic_strings<std::wstring>(data, conv_to_wstr, "_wstr");
+        }
 
         BOOST_REQUIRE_MESSAGE(success, "TEST_STRING");
     }

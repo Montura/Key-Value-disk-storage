@@ -30,23 +30,22 @@ namespace tests::key_value_op_tests {
 
     template <typename TestClass, typename ... Args>
     bool run(const std::string& name_part, const int order, Args& ... args) {
-        TestClass t;
         auto name = name_part + "_st";
         bool success = false;
-        success = t.template run<int32_t, int32_t>(db_name(name + "_i32", order), order, args...);
-        success &= t.template run<int32_t, int64_t>(db_name(name + "_i64", order), order, args...);
-        success &= t.template run<int32_t, float>(db_name(name + "_f", order), order, args...);
-        success &= t.template run<int32_t, double>(db_name(name + "_d", order), order, args...);
-        success &= t.template run<int32_t, std::string>(db_name(name + "_str", order), order, args...);
-        success &= t.template run<int32_t, std::wstring>(db_name(name + "_wstr", order), order, args...);
-        success &= t.template run<int32_t, const char*>(db_name(name + "_blob", order), order, args...);
+        success = TestClass::template run<int32_t, int32_t>(db_name(name + "_i32", order), order, args...);
+        success &= TestClass::template run<int32_t, int64_t>(db_name(name + "_i64", order), order, args...);
+        success &= TestClass::template run<int32_t, float>(db_name(name + "_f", order), order, args...);
+        success &= TestClass::template run<int32_t, double>(db_name(name + "_d", order), order, args...);
+        success &= TestClass::template run<int32_t, std::string>(db_name(name + "_str", order), order, args...);
+        success &= TestClass::template run<int32_t, std::wstring>(db_name(name + "_wstr", order), order, args...);
+        success &= TestClass::template run<int32_t, const char*>(db_name(name + "_blob", order), order, args...);
         return success;
     }
 
 
 struct TestEmptyFile {
     template <typename K, typename V>
-    bool run(std::string const& db_name, int const order) {
+    static bool run(std::string const& db_name, int const order) {
         {
             Storage<K, V> s;
             s.open_volume(db_name, order);
@@ -58,7 +57,7 @@ struct TestEmptyFile {
 
 struct TestFileSizeWithOneEntry {
     template <typename K, typename V>
-    bool run(std::string const& db_name, int const order) {
+    static bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -94,7 +93,7 @@ struct TestFileSizeWithOneEntry {
 
 struct TestSetGetOneKey {
     template <typename K, typename V>
-    bool run(std::string const& db_name, int const order) {
+    static bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -120,7 +119,7 @@ struct TestSetGetOneKey {
 
 struct TestRemoveOneKey {
     template <typename K, typename V>
-    bool run(std::string const& db_name, int const order) {
+    static bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -151,7 +150,7 @@ struct TestRemoveOneKey {
 
 struct TestRepeatableOperationsOnOneKey {
     template <typename K, typename V>
-    bool run(std::string const& db_name, int const order) {
+    static bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -175,7 +174,7 @@ struct TestRepeatableOperationsOnOneKey {
 
 struct TestMultipleSetOnTheSameKey {
     template <typename K, typename V>
-    bool run(std::string const& db_name, int const order) {
+    static bool run(std::string const& db_name, int const order) {
         Storage<K, V> s;
         ValueGenerator<V> g;
 
@@ -196,14 +195,14 @@ struct TestMultipleSetOnTheSameKey {
 
 struct TestRandomValues {
     template <typename K, typename V>
-    bool run(std::string const& db_name, int const order, int const n) {
+    static bool run(std::string const& db_name, int const order, int const n) {
         return TestRunner<K, V>::run(db_name, order, n);
     };
 };
 
 struct TestMultithreading {
     template <typename K, typename V>
-    bool run(std::string const& db_name, int const order, int const n, ThreadPool& pool) {
+    static bool run(std::string const& db_name, int const order, int const n, ThreadPool& pool) {
         return TestRunnerMT<K, V>::run(pool, db_name, order, n);
     };
 };

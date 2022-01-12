@@ -6,7 +6,7 @@
 #include "io/io_manager.h"
 #include "btree_impl/btree.h"
 
-namespace btree {
+namespace btree::volume {
     template <typename K, typename V>
     struct Volume final {
         const std::string path;

@@ -26,17 +26,15 @@ namespace tests {
         ValueGenerator<V> g;
 
         explicit TestRunner(int iterations) : stat(iterations) {}
-
     public:
-
         static bool run(const std::string& db_name, const int order, const int n) {
-            std::tuple<int, int, int> keys_to_remove  = std::make_tuple(
-                std::rand() % 7 + 1,
-                std::rand() % 13 + 1,
-                std::rand() % 17 + 1
-            );
-
             TestRunner<K, V> runner {n};
+
+            std::tuple<int, int, int> keys_to_remove  = std::make_tuple(
+                runner.g.m_rand() % 7 + 1,
+                runner.g.m_rand() % 13 + 1,
+                runner.g.m_rand() % 17 + 1
+            );
 
             bool success = runner.test_set(db_name, order, n);
             success &= runner.test_get(db_name, order, n);
@@ -149,13 +147,8 @@ namespace tests {
         StorageMT<K,V> storage;
         ValueGenerator<V> g;
 
-        using VolumeT = typename StorageMT<K,V>::VolumeWrapper;
-        using VerifyT = void (*)(const TestStat& stat);
-
         explicit TestRunnerMT(int iterations) {}
-
     public:
-
         static bool run(ThreadPool& pool, const std::string& db_name, const int order, const int n) {
             TestRunnerMT runner(n);
             auto volume = runner.storage.open_volume(db_name, order);
@@ -180,6 +173,7 @@ namespace tests {
                 g.next_value(i);
         }
 
+        template <typename VolumeT>
         bool test_set(ThreadPool& pool, VolumeT& volume, const int n) {
             auto future = pool.submit([&]() -> TestStat { return test_set_keys(volume, g.map(), 0, n); });
             future.get();
@@ -188,6 +182,7 @@ namespace tests {
             return (get_stat.total_found == n);
         }
 
+        template <typename VolumeT>
         bool test_remove(ThreadPool& pool, VolumeT& volume, const int n) {
             auto half = n / 2;
 
@@ -199,6 +194,7 @@ namespace tests {
             return success && (get_stat.total_found == half) && (get_stat.total_not_found == half);
         }
 
+        template <typename VolumeT>
         TestStat test_get_keys(const VolumeT& volume, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {
@@ -213,6 +209,7 @@ namespace tests {
             return stat;
         }
 
+        template <typename VolumeT>
         static TestStat test_set_keys(VolumeT& btree, const std::map<K,Data<V>>& verify_map, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {
@@ -227,6 +224,7 @@ namespace tests {
             return stat;
         }
 
+        template <typename VolumeT>
         static TestStat test_remove_keys(VolumeT& btree, const int from, const int to) {
             TestStat stat(to - from);
             for (int i = from; i < to; ++i) {

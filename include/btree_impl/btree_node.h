@@ -5,7 +5,6 @@
 #include "utils/forward_decl.h"
 
 namespace btree {
-/** Node */
     template <typename K, typename V>
     struct BTreeNode final {
         int16_t used_keys;
