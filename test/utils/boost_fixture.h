@@ -12,26 +12,29 @@ namespace tests {
     struct MyFixture {
         const std::string path;
 
-        MyFixture (const std::string& path) : path(path) {
-            BOOST_TEST_MESSAGE( "Enter " + path + " test suite");
+        explicit MyFixture(const std::string& path) : path(path) {
+            BOOST_TEST_MESSAGE("Enter " + path + " test suite");
 #ifdef MEM_CHECK
-         atexit(at_exit_handler);
+            atexit(at_exit_handler);
 #endif
             const std::filesystem::path& p = fs::current_path();
             fs::current_path(p);
             fs::create_directories(path);
 
             try {
-                for (auto& dir_entry : std::filesystem::directory_iterator(path))
+                for (auto& dir_entry: std::filesystem::directory_iterator(path))
                     std::filesystem::remove_all(dir_entry.path());
-            } catch(const std::exception& ex) {
+            } catch (const std::exception& ex) {
                 std::cout << ex.what() << std::endl;
             }
         }
         ~MyFixture() {
-            BOOST_TEST_MESSAGE( "Leave " + path + " test suite");
+            BOOST_TEST_MESSAGE("Leave " + path + " test suite");
 #ifdef MEM_CHECK
             BOOST_TEST_MESSAGE( "Mem stat for " + path + " test suite:");
+#endif
+#ifndef DEBUG
+            fs::remove_all(path);
 #endif
         }
     };

@@ -32,8 +32,8 @@ namespace tests {
 
             std::tuple<int, int, int> keys_to_remove  = std::make_tuple(
                 runner.g.m_rand() % 7 + 1,
-                runner.g.m_rand() % 13 + 1,
-                runner.g.m_rand() % 17 + 1
+                runner.g.m_rand() % 13 + 2,
+                runner.g.m_rand() % 17 + 3
             );
 
             bool success = runner.test_set(db_name, order, n);
@@ -162,7 +162,7 @@ namespace tests {
                 runner.g.clear();
             }
 #ifdef DEBUG
-            cout << "\t Passed for " + db_name << ": in" << run_pool_iterations << " pool iterations " << endl;
+            cout << "\t Passed for " + db_name << ": in " << run_pool_iterations << " pool iterations " << endl;
 #endif
             return success;
         }

@@ -30,10 +30,15 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../include/FindBoost.cmake")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  target_compile_definitions(${PROJECT_NAME} PRIVATE
+      DEBUG
+  )
+endif()
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     UNIT_TESTS
 #    MEM_CHECK
-#    DEBUG
 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
