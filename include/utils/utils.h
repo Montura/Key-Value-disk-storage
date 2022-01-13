@@ -79,16 +79,28 @@ namespace utils {
         }
     }
 
+    enum ValueTypes: uint8_t {
+        INTEGER = 0,
+        UNSIGNED_INTEGER = 1,
+        FLOATING_POINT = 2,
+        BASIC_STRING = 3,
+        BLOB = 3
+    };
+
     template <typename V>
     constexpr uint8_t get_value_type_code() {
-        if constexpr (std::is_arithmetic_v<V>) {
-            return 0;
+        if constexpr (std::is_integral_v<V>) {
+            return std::is_unsigned_v<V> ? ValueTypes::UNSIGNED_INTEGER : ValueTypes::INTEGER;
         } else {
-            if constexpr (is_string_v<V> || is_vector_v<V>) {
-                return 1;
+            if constexpr (std::is_floating_point_v<V>) {
+                return ValueTypes::FLOATING_POINT;
             } else {
-                static_assert(std::is_pointer_v<V>);
-                return 2;
+                if constexpr (is_string_v<V>) {
+                    return ValueTypes::BASIC_STRING;
+                } else {
+                    static_assert(std::is_pointer_v<V>);
+                    return ValueTypes::BLOB;
+                }
             }
         }
     }
@@ -103,8 +115,8 @@ namespace utils {
         return reinterpret_cast<const uint8_t*>(t);
     }
 
-    void validate(bool expression, const std::string& msg) {
+    void validate(bool expression, const std::string_view& err_msg, const std::string& file_path) {
         if (!expression)
-            throw std::logic_error(msg);
+            throw std::logic_error(err_msg.data() + file_path);
     }
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils/utils.h"
+#include "utils/error.h"
 
 namespace btree {
     template <typename K, typename V>
@@ -23,20 +24,16 @@ namespace btree {
         file.set_pos(0);
 
         auto t_from_file = file.read_int16();
-        validate(t == t_from_file,
-                 "The order(T) for your tree doesn't equal to the order(T) used in storage: " + file.path);
+        validate(t == t_from_file, error_msg::wrong_order_msg, file.path);
 
         auto key_size = file.read_byte();
-        validate(key_size == sizeof(K),
-                 "The sizeof(KEY) for your tree doesn't equal to the sizeof(KEY) used in storage: " + file.path);
+        validate(key_size == sizeof(K), error_msg::wrong_key_size_msg, file.path);
 
         auto value_type_code = file.read_byte();
-        validate(value_type_code == get_value_type_code<V>(),
-                 "The VALUE_TYPE for your tree doesn't equal to the VALUE_TYPE used in storage: " + file.path);
+        validate(value_type_code == get_value_type_code<V>(), error_msg::wrong_value_type_msg, file.path);
 
         auto element_size = file.read_byte();
-        validate(element_size == get_element_size<V>(),
-                 "The ELEMENT_SIZE for your tree doesn't equal to the ELEMENT_SIZE used in storage: " + file.path);
+        validate(element_size == get_element_size<V>(), error_msg::wrong_element_size_msg, file.path);
 
         auto posRoot = file.read_int32();
         return posRoot;

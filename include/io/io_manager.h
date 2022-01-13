@@ -9,12 +9,14 @@
  * - Header (6 bytes):
  *     - T                        |=> takes 2 bytes -> tree degree
  *     - KEY_SIZE                 |=> takes 1 byte
- *     - VALUE_TYPE               |=> takes 1 byte ->  VALUE_TYPE = 0 for primitives: (u)int32_t, (u)int64_t, float, double
- *                                                     VALUE_TYPE = 1 for container of values: (w)string, vectors<T>
- *                                                     VALUE_TYPE = 2 for blob
+ *     - VALUE_TYPE               |=> takes 1 byte ->  VALUE_TYPE = 0 for integer primitives: int32_t, int64_t
+ *                                                     VALUE_TYPE = 1 for unsigned integer primitives: uint32_t, uint64_t
+ *                                                     VALUE_TYPE = 2 for floating-point primitives: float, double
+ *                                                     VALUE_TYPE = 3 for container of values: (w)string
+ *                                                     VALUE_TYPE = 4 for blob
  *
  *     - ELEMENT_SIZE             |=> takes 1 byte  -> ELEMENT_SIZE = sizeof(VALUE_TYPE) for primitives
- *                                                     ELEMENT_SIZE = mask from the 8 bits (max 256 bytes) for non-primitives
+ *                                                     ELEMENT_SIZE = sizeof(VALUE_SUBTYPE) for containers or blob
  *     - ROOT POS                 |=> takes 8 bytes -> pos in file
  *
  * - Node (N bytes):
