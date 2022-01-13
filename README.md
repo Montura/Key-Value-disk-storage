@@ -240,14 +240,15 @@ $ cd experiments
       </details>
    
    * <details> 
-         <summary>Overview of BTree impls</summary> 
-         *  [B-tree library for eventual proposal to Boost](https://github.com/Beman/btree)
-         *  [B-tree based on Google's B-tree implementation](https://github.com/Kronuz/cpp-btree)
-         *  [Fine-Grained-Locked-B-Tree](https://github.com/MentallyCramped/Fine-Grained-Locked-B-Tree)
-         *  [BPlusTree](https://github.com/skyzh/BPlusTree)
-         *  [B-tree ИМТО конспект](https://neerc.ifmo.ru/wiki/index.php?title=B-%D0%B4%D0%B5%D1%80%D0%B5%D0%B2%D0%BE)
-         *  [Implement Key-Value Store by B-Tree on Linux OS environment](https://medium.com/@pthtantai97/implement-key-value-store-by-btree-5a100a03da3a)
-            * [B-Tree impl on Linux OS environment](https://github.com/phamtai97/key-value-store)
-            * [Key Value Store using B-Tree](https://github.com/billhcmus/key-value-store)
-      </details>
+      <summary>Overview of BTree impls</summary> 
+   
+      *  [B-tree library for eventual proposal to Boost](https://github.com/Beman/btree)
+      *  [B-tree based on Google's B-tree implementation](https://github.com/Kronuz/cpp-btree)
+      *  [Fine-Grained-Locked-B-Tree](https://github.com/MentallyCramped/Fine-Grained-Locked-B-Tree)
+      *  [BPlusTree](https://github.com/skyzh/BPlusTree)
+      *  [B-tree ИМТО конспект](https://neerc.ifmo.ru/wiki/index.php?title=B-%D0%B4%D0%B5%D1%80%D0%B5%D0%B2%D0%BE)
+      *  [Implement Key-Value Store by B-Tree on Linux OS environment](https://medium.com/@pthtantai97/implement-key-value-store-by-btree-5a100a03da3a)
+         * [B-Tree impl on Linux OS environment](https://github.com/phamtai97/key-value-store)
+         * [Key Value Store using B-Tree](https://github.com/billhcmus/key-value-store)
+     </details>
 
