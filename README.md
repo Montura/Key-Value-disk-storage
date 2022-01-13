@@ -194,6 +194,8 @@ $ cd experiments
 </details>
 
 ### Problems:
+   * Exceeding the limit of available VirtualAddress space on x86 on `stress test`(at 800mb+ file boost can't allocate `mapped_region`)
+      * Solution: don't map the whole file, map only fixed-size file part 
    * Try to resize file on Winows and faced with the same error as in issue: [dotCover crashing - Can't set eof error](https://youtrack.jetbrains.com/issue/PROF-752)
       * ``` [WIN32 error] = 1224, The requested operation cannot be performed on a file with a user-mapped section open.```
       * Problem in my case: 
