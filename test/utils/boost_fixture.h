@@ -7,6 +7,9 @@
 #include "utils/mem_util.h"
 
 namespace tests {
+    using std::cout;
+    using std::endl;
+
     namespace fs = std::filesystem;
 
     struct MyFixture {

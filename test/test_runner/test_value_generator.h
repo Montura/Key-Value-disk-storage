@@ -39,7 +39,17 @@ namespace tests::test_utils {
         const int max_blob_size;  // don't allocate more than max_blob_size-bytes for test values
     public:
         std::mt19937 m_rand;
-        ValueGenerator(int max_blob_size = 300) : max_blob_size(max_blob_size) {}
+        ValueGenerator(int max_blob_size = 300) :
+#ifdef _WIN32
+        // todo:
+        //  -> problem: exceeding the limit of available VirtualAddress space on x86 on stress test
+        //  (at 800mb+ file boost can't allocate mapped_region)
+        //  -> solution: don't map the whole file, map only fixed-size file part
+        max_blob_size(100)
+#else
+        max_blob_size(max_blob_size)
+#endif
+        {}
 
         ~ValueGenerator() {
             clear();
