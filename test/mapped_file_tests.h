@@ -13,7 +13,6 @@ namespace tests::mapped_file_test {
         return output_folder.data() + name;
     }
 
-namespace {
     using namespace btree;
 
     namespace {
@@ -139,48 +138,5 @@ namespace {
         }
         return success;
     }
-}
-
-    BOOST_AUTO_TEST_SUITE(mapped_file_test, *CleanBeforeTest(output_folder.data()))
-
-    BOOST_AUTO_TEST_CASE(test_arithmetics_values) {
-        bool success = run_test_arithmetics<int32_t, int32_t>("_i32");
-        success &= run_test_arithmetics<int32_t, uint32_t>("_ui32");
-        success &= run_test_arithmetics<int32_t, int64_t>("_i64");
-        success &= run_test_arithmetics<int32_t, uint64_t>("_ui64");
-        success &= run_test_arithmetics<int32_t, float>("_f");
-        success &= run_test_arithmetics<int32_t, double>("_d");
-        BOOST_REQUIRE_MESSAGE(success, "TEST_ARITHMETICS");
-    }
-
-    BOOST_AUTO_TEST_CASE(test_strings_values) {
-        std::string strs[] = { "", "a", "aba", "abacaba", "abba", "abacabacababa" };
-        std::wstring wstrs[] = { L"", L"a", L"aba", L"abacaba", L"abba", L"abacabacababa" };
-
-        bool success = true;
-        for (auto& str: strs) {
-            Data<std::string> data(str);
-            success &= run_test_basic_strings<int32_t, std::string>(data, conv_to_str, "_str");
-        }
-
-        for (auto& w_str: wstrs) {
-            Data<std::wstring> data(w_str);
-            success &= run_test_basic_strings<int32_t, std::wstring>(data, conv_to_wstr, "_wstr");
-        }
-
-        BOOST_REQUIRE_MESSAGE(success, "TEST_STRING");
-    }
-
-    BOOST_AUTO_TEST_CASE(test_mody_and_save) {
-        bool success = run_test_modify_and_save<int32_t, int32_t>();
-        BOOST_REQUIRE_MESSAGE(success, "TEST_MODIFY_AND_SAVE");
-    }
-
-    BOOST_AUTO_TEST_CASE(test_array) {
-        bool success = run_test_array<int32_t, std::vector<int32_t>>();
-        BOOST_REQUIRE_MESSAGE(success, "TEST_ARRAY");
-    }
-
-    BOOST_AUTO_TEST_SUITE_END()
 }
 #endif

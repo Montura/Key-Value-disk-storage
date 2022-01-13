@@ -41,170 +41,170 @@ namespace tests::key_value_op_tests {
         success &= TestClass::template run<int32_t, const char*>(db_name(name + "_blob", order), order, args...);
         return success;
     }
+namespace {
+    struct TestEmptyFile {
+        template <typename K, typename V>
+        static bool run(std::string const& db_name, int const order) {
+            {
+                Storage<K, V> s;
+                s.open_volume(db_name, order);
+            }
+            bool success = fs::file_size(db_name) == 0;
+            return success;
+        }
+    };
 
-
-struct TestEmptyFile {
-    template <typename K, typename V>
-    static bool run(std::string const& db_name, int const order) {
-        {
+    struct TestFileSizeWithOneEntry {
+        template <typename K, typename V>
+        static bool run(std::string const& db_name, int const order) {
             Storage<K, V> s;
-            s.open_volume(db_name, order);
+            ValueGenerator<V> g;
+
+            const K key = 0;
+            Data<V> data = g.next_value(key);
+            uint32_t file_size = SizeInfo<K, V>::file_size_in_bytes(order, key, data.value, data.len);
+
+            auto on_exit = [&](const auto& volume, const uint32_t size_in_bytes) -> bool {
+                s.close_volume(volume);
+                return (fs::file_size(db_name) == size_in_bytes);
+            };
+
+            bool success = true;
+            {
+                auto volume = s.open_volume(db_name, order);
+                set(volume, key, data);
+                success &= on_exit(volume, file_size);
+            }
+            {
+                auto volume = s.open_volume(db_name, order);
+                success &= g.check(key, volume);
+                success &= on_exit(volume, file_size);
+            }
+            {
+                auto volume = s.open_volume(db_name, order);
+                success &= volume.remove(key);
+                success &= on_exit(volume, SizeInfo<K, V>::header_size_in_bytes());
+            }
+
+            return success;
         }
-        bool success = fs::file_size(db_name) == 0;
-        return success;
-    }
-};
+    };
 
-struct TestFileSizeWithOneEntry {
-    template <typename K, typename V>
-    static bool run(std::string const& db_name, int const order) {
-        Storage<K, V> s;
-        ValueGenerator<V> g;
+    struct TestSetGetOneKey {
+        template <typename K, typename V>
+        static bool run(std::string const& db_name, int const order) {
+            Storage<K, V> s;
+            ValueGenerator<V> g;
 
-        const K key = 0;
-        Data<V> data = g.next_value(key);
-        uint32_t file_size = SizeInfo<K,V>::file_size_in_bytes(order, key, data.value, data.len);
+            const K key = 0;
+            Data<V> data = g.next_value(key);
 
-        auto on_exit = [&](const auto& volume, const uint32_t size_in_bytes) -> bool {
+            bool success = true;
+            {
+                auto volume = s.open_volume(db_name, order);
+                set(volume, key, data);
+                success &= g.check(key, volume);
+                s.close_volume(volume);
+            }
+            {
+                auto volume = s.open_volume(db_name, order);
+                success &= g.check(key, volume);
+                s.close_volume(volume);
+            }
+
+            return success;
+        }
+    };
+
+    struct TestRemoveOneKey {
+        template <typename K, typename V>
+        static bool run(std::string const& db_name, int const order) {
+            Storage<K, V> s;
+            ValueGenerator<V> g;
+
+            const K key = 0;
+            Data<V> data = g.next_value(key);
+
+            bool success = true;
+            {
+                auto volume = s.open_volume(db_name, order);
+                set(volume, key, data);
+                success &= volume.remove(key);
+                if (success) {
+                    g.remove(key);
+                }
+                s.close_volume(volume);
+            }
+            success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
+            {
+                auto volume = s.open_volume(db_name, order);
+                success &= g.check(key, volume);
+                s.close_volume(volume);
+            }
+            success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
+
+            return success;
+        }
+    };
+
+    struct TestRepeatableOperationsOnOneKey {
+        template <typename K, typename V>
+        static bool run(std::string const& db_name, int const order) {
+            Storage<K, V> s;
+            ValueGenerator<V> g;
+
+            const K key = 0;
+            Data<V> data = g.next_value(key);
+
+            auto volume = s.open_volume(db_name, order);
+            bool success = true;
+            for (int i = 0; i < 100; ++i) {
+                set(volume, key, data);
+                success &= g.check(key, volume);
+                success &= volume.remove(key);
+            }
+
             s.close_volume(volume);
-            return (fs::file_size(db_name) == size_in_bytes);
-        };
+            success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
 
-        bool success = true;
-        {
-            auto volume = s.open_volume(db_name, order);
-            set(volume, key, data);
-            success &= on_exit(volume, file_size);
+            return success;
         }
-        {
+    };
+
+    struct TestMultipleSetOnTheSameKey {
+        template <typename K, typename V>
+        static bool run(std::string const& db_name, int const order) {
+            Storage<K, V> s;
+            ValueGenerator<V> g;
+
+            const K key = 0;
+
             auto volume = s.open_volume(db_name, order);
-            success &= g.check(key, volume);
-            success &= on_exit(volume, file_size);
-        }
-        {
-            auto volume = s.open_volume(db_name, order);
-            success &= volume.remove(key);
-            success &= on_exit(volume, SizeInfo<K,V>::header_size_in_bytes());
-        }
-
-        return success;
-    }
-};
-
-struct TestSetGetOneKey {
-    template <typename K, typename V>
-    static bool run(std::string const& db_name, int const order) {
-        Storage<K, V> s;
-        ValueGenerator<V> g;
-
-        const K key = 0;
-        Data<V> data = g.next_value(key);
-
-        bool success = true;
-        {
-            auto volume = s.open_volume(db_name, order);
-            set(volume, key, data);
-            success &= g.check(key, volume);
-            s.close_volume(volume);
-        }
-        {
-            auto volume = s.open_volume(db_name, order);
-            success &= g.check(key, volume);
-            s.close_volume(volume);
-        }
-
-        return success;
-    }
-};
-
-struct TestRemoveOneKey {
-    template <typename K, typename V>
-    static bool run(std::string const& db_name, int const order) {
-        Storage<K, V> s;
-        ValueGenerator<V> g;
-
-        const K key = 0;
-        Data<V> data = g.next_value(key);
-
-        bool success = true;
-        {
-            auto volume = s.open_volume(db_name, order);
-            set(volume, key, data);
-            success &= volume.remove(key);
-            if (success) {
-                g.remove(key);
+            bool success = true;
+            for (int i = 0; i < 1000; ++i) {
+                Data<V> data = g.next_value(key);
+                set(volume, key, data);
+                success &= g.check(key, volume);
             }
             s.close_volume(volume);
+
+            return success;
         }
-        success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
-        {
-            auto volume = s.open_volume(db_name, order);
-            success &= g.check(key, volume);
-            s.close_volume(volume);
-        }
-        success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
-
-        return success;
-    }
-};
-
-struct TestRepeatableOperationsOnOneKey {
-    template <typename K, typename V>
-    static bool run(std::string const& db_name, int const order) {
-        Storage<K, V> s;
-        ValueGenerator<V> g;
-
-        const K key = 0;
-        Data<V> data = g.next_value(key);
-
-        auto volume = s.open_volume(db_name, order);
-        bool success = true;
-        for (int i = 0; i < 100; ++i) {
-            set(volume, key, data);
-            success &= g.check(key, volume);
-            success &= volume.remove(key);
-        }
-
-        s.close_volume(volume);
-        success &= (fs::file_size(db_name) == SizeInfo<K, V>::header_size_in_bytes());
-
-        return success;
-    }
-};
-
-struct TestMultipleSetOnTheSameKey {
-    template <typename K, typename V>
-    static bool run(std::string const& db_name, int const order) {
-        Storage<K, V> s;
-        ValueGenerator<V> g;
-
-        const K key = 0;
-
-        auto volume = s.open_volume(db_name, order);
-        bool success = true;
-        for (int i = 0; i < 1000; ++i) {
-            Data<V> data = g.next_value(key);
-            set(volume, key, data);
-            success &= g.check(key, volume);
-        }
-        s.close_volume(volume);
-
-        return success;
-    }
-};
-
-struct TestRandomValues {
-    template <typename K, typename V>
-    static bool run(std::string const& db_name, int const order, int const n) {
-        return TestRunner<K, V>::run(db_name, order, n);
     };
-};
 
-struct TestMultithreading {
-    template <typename K, typename V>
-    static bool run(std::string const& db_name, int const order, int const n, ThreadPool& pool) {
-        return TestRunnerMT<K, V>::run(pool, db_name, order, n);
+    struct TestRandomValues {
+        template <typename K, typename V>
+        static bool run(std::string const& db_name, int const order, int const n) {
+            return TestRunner<K, V>::run(db_name, order, n);
+        };
     };
-};
+
+    struct TestMultithreading {
+        template <typename K, typename V>
+        static bool run(std::string const& db_name, int const order, int const n, ThreadPool& pool) {
+            return TestRunnerMT<K, V>::run(pool, db_name, order, n);
+        };
+    };
+}
 }
 #endif // UNIT_TESTS
