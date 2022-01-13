@@ -53,7 +53,10 @@ namespace file {
     - https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L555
 */
         delete m_mapped_region;
-        fs::resize_file(path, m_capacity);
+        std::error_code error_code;
+        fs::resize_file(path, m_capacity, error_code);
+        if (error_code)
+            std::cerr << "Can't resize file: " + path << std::endl;
     }
 
     template <typename K, typename V>

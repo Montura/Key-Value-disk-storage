@@ -21,6 +21,7 @@ set(SOURCE_FILES
         mapped_file_tests.h
         key_value_operations_tests.h
         volume_tests.h
+        stress_test.h
         test.cpp
 )
 

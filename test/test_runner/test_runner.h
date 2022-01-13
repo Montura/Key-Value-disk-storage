@@ -1,7 +1,8 @@
+#ifdef DEBUG
 #include <iostream>
+#endif
 #include <string>
 #include <map>
-#include <chrono>
 
 #include "utils/test_stat.h"
 #include "utils/thread_pool.h"
@@ -10,11 +11,6 @@
 namespace tests {
     using std::cout;
     using std::endl;
-
-    using std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::duration;
-    using std::chrono::milliseconds;
 
     using namespace btree;
     using namespace test_utils;
