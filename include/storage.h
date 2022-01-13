@@ -8,7 +8,7 @@
 namespace btree::storage {
     template <typename K, typename V, bool SupportMultithreading>
     class StorageBase final {
-        class VolumeT;
+        class VolumeWrapper;
 
         typedef std::unordered_set<StorageBase*> StorageMap;
         inline static StorageMap storage_map;
@@ -17,6 +17,8 @@ namespace btree::storage {
         std::unordered_map<std::string, std::unique_ptr<VolumeType>> volume_map;
 
     public:
+        using VolumeT = VolumeWrapper;
+
         explicit StorageBase() {
             storage_map.insert(this);
         }
@@ -47,11 +49,11 @@ namespace btree::storage {
         }
 
     private:
-        class VolumeT {
+        class VolumeWrapper {
             VolumeType* const ptr;
             using ValueType = typename VolumeType::ValueType;
         public:
-            explicit VolumeT(VolumeType* ptr) : ptr(ptr) {}
+            explicit VolumeWrapper(VolumeType* ptr) : ptr(ptr) {}
 
             bool exist(const K key) const { return ptr->exist(key); }
 

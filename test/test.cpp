@@ -7,6 +7,8 @@
 #include "stress_test.h"
 
 namespace tests {
+    using std::cout;
+    using std::endl;
 
     BOOST_AUTO_TEST_SUITE(mapped_file_test, *CleanBeforeTest(output_folder.data()))
 
@@ -187,7 +189,48 @@ namespace tests {
 
     BOOST_AUTO_TEST_SUITE_END()
 
-    using namespace stress_test;
+    BOOST_AUTO_TEST_SUITE(stress_test, *CleanBeforeTest(output_folder.data()))
+
+        BOOST_AUTO_TEST_CASE(optimal_tree_order) {
+            auto page_size = m_boost::bip::mapped_region::get_page_size();
+            cout << "System page_size is: " << page_size << " bytes" << endl;
+
+            auto optimal_order = get_optimal_tree_order(page_size);
+            cout << "Node size: " << node_size_for_t(optimal_order) << " bytes, it fits to OS page_size" << endl;
+            cout << "Optimal tree order: " << optimal_order << std::endl;
+        }
+
+        BOOST_AUTO_TEST_CASE(i32) {
+            cout << "Run stress_test for type i32 on " << elements_count << " elements" << endl;
+            bool success = run<int, int32_t>("i32");
+            BOOST_REQUIRE_MESSAGE(success, "TEST_STRESS_INT32");
+        }
+
+        BOOST_AUTO_TEST_CASE(i64) {
+            cout << "Run stress_test for type i64 on " << elements_count << " elements" << endl;
+            bool success = run<int, int64_t>("i64");
+            BOOST_REQUIRE_MESSAGE(success, "TEST_STRESS_INT64");
+        }
+
+        BOOST_AUTO_TEST_CASE(str) {
+            cout << "Run stress_test for type str on " << elements_count << " elements" << endl;
+            bool success = run<int, std::string>("str");
+            BOOST_REQUIRE_MESSAGE(success, "TEST_STRESS_STRING");
+        }
+
+        BOOST_AUTO_TEST_CASE(wstr) {
+            cout << "Run stress_test for type wstr on " << elements_count << " elements" << endl;
+            bool success = run<int, std::wstring>("wstr");
+            BOOST_REQUIRE_MESSAGE(success, "TEST_STRESS_WSTRING");
+        }
+
+        BOOST_AUTO_TEST_CASE(blob) {
+            cout << "Run stress_test for type blob on " << elements_count << " elements" << endl;
+            bool success = run<int, const char*>("blob");
+            BOOST_REQUIRE_MESSAGE(success, "TEST_STRESS_BLOB");
+        }
+
+    BOOST_AUTO_TEST_SUITE_END()
 }
 #else
 

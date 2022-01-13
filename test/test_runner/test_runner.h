@@ -1,6 +1,3 @@
-#ifdef DEBUG
-#include <iostream>
-#endif
 #include <string>
 #include <map>
 
@@ -9,9 +6,6 @@
 #include "test_value_generator.h"
 
 namespace tests {
-    using std::cout;
-    using std::endl;
-
     using namespace btree;
     using namespace test_utils;
 

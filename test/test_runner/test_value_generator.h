@@ -16,6 +16,8 @@ namespace tests::test_utils {
         V value;
         int32_t len;
 
+        explicit Data() {};
+
         template <typename U = V, enable_if_t<std::is_arithmetic_v<U>> = true>
         Data(const U& val) : value(val), len(sizeof(val)) {}
 
@@ -34,8 +36,10 @@ namespace tests::test_utils {
     template <typename V>
     class ValueGenerator {
         std::map<int32_t, Data<V>> blob_map;
+        const int max_blob_size;  // don't allocate more than max_blob_size-bytes for test values
     public:
         std::mt19937 m_rand;
+        ValueGenerator(int max_blob_size = 300) : max_blob_size(max_blob_size) {}
 
         ~ValueGenerator() {
             clear();
@@ -88,7 +92,7 @@ namespace tests::test_utils {
                         delete old_value_it->second.value;
                         blob_map.erase(old_value_it);
                     }
-                    int32_t len = rand % 1000 + 1; // don't allocate more than 1kb for test values
+                    int32_t len = rand % max_blob_size + 1;
                     auto arr = new char[len + 1];
                     for (int k = 0; k < len; ++k) {
                         arr[k] = 2;
