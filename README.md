@@ -24,15 +24,16 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
 ### Volume:
    * this is a disk file with content:      
       * <details>
-          <summary>header (13 bytes) [click to expand header layout]</summary>
+          <summary>header layout (13 bytes)</summary>
 
               - T                        |=> takes 2 bytes (tree degree)
               - KEY_SIZE                 |=> takes 1 byte
               - VALUE_TYPE               |=> takes 1 byte 
-                 - VALUE_TYPE = 0 for primitives: (u)int32_t, (u)int64_t, float, double
-                 - VALUE_TYPE = 1 for container of values: (w)string, vectors<T>
-                 - VALUE_TYPE = 2 for blob [char*]
-
+                 - VALUE_TYPE = 0 for integer primitives: int32_t, int64_t
+                 - VALUE_TYPE = 1 for unsigned integer primitives: uint32_t, uint64_t
+                 - VALUE_TYPE = 2 for floating-point primitives: float, double
+                 - VALUE_TYPE = 3 for container of values: (w)string
+                 - VALUE_TYPE = 4 for blob                
               - ELEMENT_SIZE             |=> takes 1 byte 
                  - ELEMENT_SIZE = sizeof(VALUE_TYPE) for primitives
                  - ELEMENT_SIZE = sizeof(VALUE_SUBTYPE) for containers or blob
@@ -40,7 +41,7 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
               - ROOT POS                 |=> takes 8 bytes (pos in file)
          </details>
       * <details>
-          <summary>node (n bytes) [click to expand node layout]</summary>
+          <summary>node layout (n bytes)</summary>
    
               - FLAG                     |=> takes 1 byte                 (for "is_leaf")
               - USED_KEYS                |=> takes 2 bytes                (for the number of "active" keys in the node)
@@ -48,7 +49,7 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
               - CHILD_POS                |=> takes (2 * t) * KEY_SIZE     (for key positions in file)
         </details>
       * <details>
-          <summary>entry (m bytes) [click to expand entry layout]</summary>
+          <summary>entry layout (m bytes)</summary>
          
                  - KEY                      |=> takes KEY_SIZE bytes (4 bytes is enough for 10^8 different keys)
               ----------–-----
