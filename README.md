@@ -7,7 +7,7 @@ The repository contains the C++17 template-based header library for Windows/Linu
   * V is a value type 
   * { K key, V value }
   * storage<K, V>
-  * volume<K, V> (VolumeMT<K, V>)
+  * volume<K, V> (volumeMT<K, V>)
 
 ### Storage <K, V>
   * used to store a specific data type in the form `{ key, value }`
