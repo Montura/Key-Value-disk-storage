@@ -11,10 +11,10 @@ namespace btree::entry {
         static constexpr bool V_is_pointer = std::is_pointer_v<V>;
         static constexpr bool V_is_identity = V_is_arithmetic || V_is_pointer;
 
-        typedef typename conditional_t<V_is_identity, identity_type<V>, underlying_type<V>>::type OriginalValueType;
+        using OriginalValueType = typename conditional_t<V_is_identity, identity_type<V>, underlying_type<V>>::type;
         static constexpr size_t size_of_original_value_type = sizeof(OriginalValueType);
     public:
-        typedef conditional_t<V_is_arithmetic, V, const uint8_t*> ValueType;
+        using ValueType = conditional_t<V_is_arithmetic, V, const uint8_t*>;
 
         const K key;
         const ValueType data;
@@ -56,7 +56,7 @@ namespace btree::entry {
                 data(reinterpret_cast<const ValueType>(value)),
                 size_in_bytes(size)
         {
-            typedef typename std::remove_pointer_t<V> data_type;
+            using data_type = typename std::remove_pointer_t<V>;
             static_assert(sizeof(data_type) == sizeof(OriginalValueType));
         }
 

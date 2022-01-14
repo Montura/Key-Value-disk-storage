@@ -10,7 +10,7 @@ namespace btree::storage {
     class StorageBase final {
         class VolumeWrapper;
 
-        typedef std::unordered_set<StorageBase*> StorageMap;
+        using StorageMap = std::unordered_set<StorageBase*>;
         inline static StorageMap storage_map;
 
         using VolumeType = std::conditional_t<SupportMultithreading, volume::VolumeMT<K, V>, volume::Volume<K, V>>;
