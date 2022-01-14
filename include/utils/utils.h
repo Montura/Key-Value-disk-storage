@@ -52,25 +52,12 @@ namespace utils {
     template <typename T>
     inline constexpr bool is_string_v = is_string<T>::value;
 
-    template <typename T>
-    struct is_vector {
-        static constexpr bool value = false;
-    };
-
-    template <typename T, typename Alloc>
-    struct is_vector<std::vector<T, Alloc>> {
-        static constexpr bool value = true;
-    };
-
-    template <typename T>
-    inline constexpr bool is_vector_v = is_vector<T>::value;
-
     template <typename V>
     constexpr uint8_t get_element_size() {
         if constexpr (std::is_arithmetic_v<V>) {
             return sizeof(V);
         } else {
-            if constexpr (is_string_v<V> || is_vector_v<V>)
+            if constexpr (is_string_v<V>)
                 return sizeof(typename V::value_type);
             else {
                 static_assert(std::is_pointer_v<V>);
