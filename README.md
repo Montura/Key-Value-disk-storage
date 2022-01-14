@@ -11,15 +11,15 @@ The repository contains the C++17 template-based header library for Windows/Linu
 
 ### Storage <K, V>
   * used to store a specific data type in the form `{ key, value }`
-  * the types of `{ key, value }` are defined by storage template args : ```Storage<int, int> s;```
-  * contains a map of  `volumes` with the same `{ key, value }` types
+  * the types of `{ key, value }` are defined by the storage template args : ```Storage<int, int> s;```
+  * contains a map of `volumes` with the same `{ key, value }` types
   * storage owns `volumes` and they can't be opened by another `storage`
-  * all `volumes` are closed when `storage` lifetime expires 
+  * all `volumes` are closed automatically when `storage` lifetime expires 
   * interface:
       * `VolumeWrapper open_volume(string path, int tree_order);`
       * `void close_volume(VolumeWrapper v);`
   * `VolumeWrapper`:
-        * non-owning object  with a raw poiner to the `volume`
+        * an object with a non-owning raw poiner to the `volume`
         
 ### Volume<K, V>
   * used to answer the queries:
@@ -31,10 +31,10 @@ The repository contains the C++17 template-based header library for Windows/Linu
   * the types of `{ key, value }` are defined by `volume`'s storage
   * contains:
     * hierarchical data structure (`Btree`) -> to pass the queries to it
-    * `IOManager` object -> used in BTree to perform disk IO operations
-  * the results of modifing quereis are written to a file on disk
-  * the results of non-modifing quereis are read from the file
-  * file layout :      
+    * `IOManager` object -> to use in `BTree` to perform IO operations
+  * the results of _modifing_ quereis are written to a file on disk
+  * the results of _non-modifing_ quereis are read from the file
+  * file layout:      
       * <details>
           <summary>header layout (13 bytes)</summary>
 
@@ -53,7 +53,7 @@ The repository contains the C++17 template-based header library for Windows/Linu
               - ROOT POS                 |=> takes 8 bytes (pos in file)
          </details>
       * <details>
-          <summary>node layout (n bytes)</summary>
+          <summary>node layout</summary>
    
               - FLAG                     |=> takes 1 byte                 (for "is_leaf")
               - USED_KEYS                |=> takes 2 bytes                (for the number of "active" keys in the node)
@@ -61,14 +61,14 @@ The repository contains the C++17 template-based header library for Windows/Linu
               - CHILD_POS                |=> takes (2 * t) * KEY_SIZE     (for key positions in file)
         </details>
       * <details>
-          <summary>entry layout (m bytes)</summary>
+          <summary>entry layout</summary>
          
-                 - KEY                      |=> takes KEY_SIZE bytes (4 bytes is enough for 10^8 different keys)
+                 - KEY                   |=> takes KEY_SIZE bytes (4 bytes is enough for 10^8 different keys)
               ----------–-----
                  - VALUE                 |=> takes ELEMENT_SIZE bytes for primitive VALUE_TYPE
               or
-                 - NUMBER_OF_ELEMENTS    |=> takes 4 bytes
-                 - VALUES                |=> takes (ELEMENT_SIZE * NUMBER_OF_ELEMENTS) bytes
+                 - VALUE_SIZE            |=> takes 4 bytes
+                 - VALUE                 |=> takes (ELEMENT_SIZE * NUMBER_OF_ELEMENTS) bytes for (w)string or blob VALUE_TYPE
               ----------–-----
         </details>
 
@@ -77,7 +77,7 @@ The repository contains the C++17 template-based header library for Windows/Linu
   * thread safety is guaranteed with *coarse-grained synchronization*
   * contains:
     * `Volume<K V>` object
-    *  `mutex` object
+    * `mutex` object -> is used for synchronization
 
 ### Build
 
@@ -91,7 +91,7 @@ $ cd experiments
 ```
 
 * <details> 
-   <summary>Unix sytems</summary>
+   <summary>Unix systems</summary>
    
    ```
    $ cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
@@ -122,7 +122,7 @@ $ cd experiments
 
 ### Verified
 * tested on value types:
-    *  `int32_t`, `int64_t`, `float`,  `double`
+    *  `int32_t`, `int64_t`, `float`, `double`
     *  `std::string`, `std::wstring`
     *  `blob {const char*, size}`
 * tested on 
@@ -173,7 +173,7 @@ $ cd experiments
      </details>
 
    * <details> 
-      <summary>multi-threading usage</summary> 
+      <summary>multithreading usage</summary> 
 
       * [mt_usage()](test/test.cpp#L125)
    
@@ -209,34 +209,31 @@ $ cd experiments
      </details>
    
 ### Known problems
-   * exceeding the limit of the available VirtualAddress space on x86 in [stress test.h](test/stress_test.h) (at 800mb+ file boost can't allocate `mapped_region`)
-      * solution:  map a fixed-size file part instead of the whole file 
+   * exceeding the limit of the available VirtualAddress space on `x86` in [stress test.h](test/stress_test.h):
+      * `boost` can't allocate `mapped_region` for 800mb+ file
+      * `possible solution`:  map a fixed-size file part instead of the whole file 
    * resizing of the file on Windows causes the same error as described in the issue: [dotCover crashing - Can't set eof error](https://youtrack.jetbrains.com/issue/PROF-752)
       * ``` [WIN32 error] = 1224, The requested operation cannot be performed on a file with a user-mapped section open.```
       * my case: 
-         * caused by [`SetEndOfFile`](https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setendoffile)
-            ```
-            CreateFileMapping is called to create a file mapping object for hFile,
-            UnmapViewOfFile must be called first to unmap all views and call CloseHandle to close
-            the file mapping object before you can call SetEndOfFile.
-            ```
-         * solution: to destory `boost::interprocess::mapped_region` object before the call to `std::filesystem::resilze_file(path)`
+         * caused by [`SetEndOfFile`](https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setendoffile):
+           * ``` CreateFileMapping is called to create a file mapping object for hFile, UnmapViewOfFile must be called first to unmap all views and call CloseHandle to close the file mapping object before you can call SetEndOfFile.```
+         * `solution`: to destory `boost::interprocess::mapped_region` object before the `std::filesystem::resilze_file(path)` call
    * crash or leaks during the *explicit memory check* performed by overriding global `new` and `delete` in [mem_util.h](test/utils/mem_util.h):
-      1.  when use `unordered_map` to store allocated chuncks:
-         * crashes with the linked boost libraries on `delete` (see in debugger)
-         * works fine without boost (used for testing algo [in branch without IO operations](https://github.com/Montura/experiments/tree/mmap))
-     2.  when use `uint32_t array[n]` of store allocated chuncks:
+      1. when use `unordered_map` to store allocated chuncks:
+         * crashes with the linked `boost libs` on `delete` (seen in debugger)
+         * works fine without `boost` (used for testing algo [in branch without IO operations](https://github.com/Montura/experiments/tree/mmap))
+      2. when use `uint32_t array[n]` of store allocated chuncks:
          * works without crashes with `boost libs` but reports about leaks (from boost I suppose)
 
 ### TODO
 <details>
     <summary>todo-list</summary>
    
-   * Automatic removal of the expiring keys (see [Redis impl](https://github.com/redis/redis/blob/a92921da135e38eedd89138e15fe9fd1ffdd9b48/src/expire.c#L98))
-   * Add technique for providing atomicity and durability [Write-Ahead-Log](https://people.eecs.berkeley.edu/~kubitron/cs262/handouts/papers/a1-graefe.pdf)   
-      * The recovery log describes changes before any in-place updates of the B-tree data structure.
-      * *For now all modifications are written at the end of the same file -> file size accordingly grows (drawback)*
-   * Specify mapped region usage [behavior](https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L199) to reduce [overhead in memory mapped file I/O](https://www.usenix.org/sites/default/files/conference/protected-files/hotstorage17_slides_choi.pdf)
+   * automatic removal of the expiring keys (see [Redis impl](https://github.com/redis/redis/blob/a92921da135e38eedd89138e15fe9fd1ffdd9b48/src/expire.c#L98))
+   * a technique for providing atomicity and durability [Write-Ahead-Log](https://people.eecs.berkeley.edu/~kubitron/cs262/handouts/papers/a1-graefe.pdf)   
+      * the recovery log describes changes before any in-place updates of the `B-tree`
+      * for now all modifications are written at the end of the same file -> file size accordingly grows (drawback)
+   * to specify mapped region usage [behavior](https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L199) to reduce [overhead in memory mapped file I/O](https://www.usenix.org/sites/default/files/conference/protected-files/hotstorage17_slides_choi.pdf)
 </details>
 
 #### Links:
