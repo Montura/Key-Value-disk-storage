@@ -41,38 +41,37 @@ namespace btree::volume {
     /** Volume with coarse-grained locks for multithreading usage */
     template <typename K, typename V>
     class VolumeMT final {
-        IOManager<K, V> io;
-        BTree<K, V> btree;
+        Volume<K, V> volume;
         std::mutex mutex_;
     public:
-        using ValueType = typename BTree<K,V>::ValueType;
+        using ValueType = typename Volume<K,V>::ValueType;
         const std::string path;
 
-        VolumeMT(const std::string& path, int16_t order) : io(path, order), btree(order, io), path(path) {}
+        VolumeMT(const std::string& path, int16_t order) : volume(path, order) {}
 
         bool exist(const K key) {
             std::scoped_lock lock(mutex_);
-            return btree.exist(io, key);
+            return volume.exist(key);
         }
 
         void set(const K key, const ValueType value) {
             std::scoped_lock lock(mutex_);
-            btree.set(io, key, value);
+            volume.set(key, value);
         }
 
         void set(const K key, const V& value, const int32_t size) {
             std::scoped_lock lock(mutex_);
-            btree.set(io, key, value, size);
+            volume.set(key, value, size);
         }
 
         std::optional <V> get(const K key) {
             std::scoped_lock lock(mutex_);
-            return btree.get(io, key);
+            return volume.get(key);
         }
 
         bool remove(const K key) {
             std::scoped_lock lock(mutex_);
-            return btree.remove(io, key);
+            return volume.remove(key);
         }
     };
 }
