@@ -148,7 +148,7 @@ namespace details {
         btree::Storage<K, V> s;
         {
             auto v = s.open_volume(path, optimal_order);
-            cout << "\tstat for volume " << v.path() << endl;
+            cout << "\tstat for volume " << fs::canonical(v.path()) << endl;
             details::run_set<K, V>(v);
         }
         auto max_size = details::HRFSize::size(path);
