@@ -52,10 +52,6 @@ namespace tests::test_utils {
         {}
 
         ~ValueGenerator() {
-            clear();
-        }
-
-        void clear() {
             if constexpr(std::is_pointer_v<V>) {
                 for (auto& entry: blob_map) {
                     delete entry.second.value;

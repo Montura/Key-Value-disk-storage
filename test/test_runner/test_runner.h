@@ -137,20 +137,16 @@ namespace tests {
         StorageMT<K,V> storage;
         ValueGenerator<V> g;
 
-        explicit TestRunnerMT(int iterations) {}
+        explicit TestRunnerMT() {}
     public:
         static bool run(ThreadPool& pool, const std::string& db_name, const int order, const int n) {
-            TestRunnerMT runner(n);
+            TestRunnerMT runner;
             auto volume = runner.storage.open_volume(db_name, order);
             bool success = true;
 
-            int run_pool_iterations = 10;
-            for (int i = 0; i < run_pool_iterations; ++i) {
-                runner.fill_map_with_random_values(n);
-                success &= runner.test_set(pool, volume, n);
-                success &= runner.test_remove(pool, volume, n / 2);
-                runner.g.clear();
-            }
+            runner.fill_map_with_random_values(n);
+            success &= runner.test_set(pool, volume, n);
+            success &= runner.test_remove(pool, volume, n / 2);
 #ifdef DEBUG
             cout << "\t Passed for " + db_name << ": in " << run_pool_iterations << " pool iterations " << endl;
 #endif
