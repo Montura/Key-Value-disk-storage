@@ -14,8 +14,8 @@ namespace tests {
             boost::asio::post(pool, std::forward<Func>(f));
         }
 
-        void wait() {
-            pool.wait();
+        void join() {
+            pool.join();
         }
 
         template <typename Func>

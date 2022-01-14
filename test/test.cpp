@@ -143,7 +143,7 @@ void mt_usage() {
                     volume.set(i, -i);
             });
         }
-        tp.wait();
+        tp.join();
         for (int i = 0; i < n; ++i)
             assert(volume.get(i).value() == -i);
     }
@@ -153,7 +153,7 @@ void mt_usage() {
             for (int i = 0; i < n; ++i)
                 volume.set(i, 0);
         });
-        tp.wait();
+        tp.join();
         for (int i = 0; i < n; ++i)
             assert(volume.get(i).value() == 0);
     }
