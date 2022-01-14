@@ -148,7 +148,7 @@ namespace tests {
             success &= runner.test_set(pool, volume, n);
             success &= runner.test_remove(pool, volume, n / 2);
 #ifdef DEBUG
-            cout << "\t Passed for " + db_name << ": in " << run_pool_iterations << " pool iterations " << endl;
+            cout << "\t Passed for " + db_name << endl;
 #endif
             return success;
         }
