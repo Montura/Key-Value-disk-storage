@@ -1,28 +1,40 @@
-## Key-Value storage C++ library based on BTree structure
+## BTree-based C++ library for Key-Value pairs storage 
 
-This is the C++17 template based header library under Windows/Linux/MacOs to store KEY|VALUES on disk.
+The repository contains the C++17 template-based header library for Windows/Linux/MacOs platforms for storing KEY|VALUES paris on disk.
 
-### Verified:
-* tested on value types:
-    *  `int32_t`, `int64_t`, `float`,  `double`
-    *  `std::string`, `std::wstring`
-    *  `blob {const char*, size}`
-* tested on 
-    * MacOS (x86-64), compiler Apple clang version 13.0.0 (clang-1300.0.29.3, Mac OS Big Sur v11.5.2)
-    * Windows (x86|x86-64), Visual Studio 2019 Version 16.5.0 (cl v19.25.28610.4, Windows 10 Pro)
-    * Linux (x86-64), compiler GNU version 10.3.0 (Ubuntu v20.04)
+### Units
+  * K is a key type 
+  * V is a value type 
+  * { K key, V value }
+  * storage<K, V>
+  * volume<K, V> (VolumeMT<K, V>)
 
-### Storage 
-   * an object for storing `volumes`: ```Storage<K, V> s;```
-   * `volume` can be opened from `storage`: ``` auto volume = s.open_volume(path, tree_order);```
-      * *tree_order* is provided by user and depends on expected keys count
-   * `volume` lifetime:
-      * explicilty ```s.close_volume(volume);```
-      * all `volumes` are closed when `storage` lifetime ends 
-   * `volumes` can't be *shared* between different `storages`
-
-### Volume:
-   * this is a disk file with content:      
+### Storage <K, V>
+  * used to store a specific data type in the form `{ key, value }`
+  * the types of `{ key, value }` are defined by storage template args : ```Storage<int, int> s;```
+  * contains a map of  `volumes` with the same `{ key, value }` types
+  * storage owns `volumes` and they can't be opened by another `storage`
+  * all `volumes` are closed when `storage` lifetime expires 
+  * interface:
+      * `VolumeWrapper open_volume(string path, int tree_order);`
+      * `void close_volume(VolumeWrapper v);`
+  * `VolumeWrapper`:
+        * non-owning object  with a raw poiner to the `volume`
+        
+### Volume<K, V>
+  * used to answer the queries:
+    * `bool exist(K key);` 
+    * `void set(K key, V value);`
+    * `void set(K key, V value, int size);`
+    * `V get(K key);` 
+    * `void get(K key);` 
+  * the types of `{ key, value }` are defined by `volume`'s storage
+  * contains:
+    * hierarchical data structure (`Btree`) -> to pass the queries to it
+    * `IOManager` object -> used in BTree to perform disk IO operations
+  * the results of modifing quereis are written to a file on disk
+  * the results of non-modifing quereis are read from the file
+  * file layout :      
       * <details>
           <summary>header layout (13 bytes)</summary>
 
@@ -59,13 +71,18 @@ This is the C++17 template based header library under Windows/Linux/MacOs to sto
                  - VALUES                |=> takes (ELEMENT_SIZE * NUMBER_OF_ELEMENTS) bytes
               ----------–-----
         </details>
-     
-   * can be used in multithreading environment [coarse-grained synchronization] (see below)
-   * thread safety is guaranteed for `set|get|remove` operations on the same `volume`
+
+### VolumeMT<K, V>
+  * used to answer the queries in multithreading environment
+  * thread safety is guaranteed with *coarse-grained synchronization*
+  * contains:
+    * `Volume<K V>` object
+    *  `mutex` object
 
 ### Build
 
-#### Requirements:
+#### Requirements
+   - [Boost Library](https://www.boost.org/users/history/version_1_71_0.html):  min v. 1.71.0
    - [Boost Iostreams Library](https://www.boost.org/doc/libs/1_76_0/libs/iostreams/doc/index.html)
    - [Boost Thread Library](https://www.boost.org/doc/libs/1_78_0/doc/html/thread.html)
 ```
@@ -103,7 +120,17 @@ $ cd experiments
          ```
    </details>
 
-### Usage example
+### Verified
+* tested on value types:
+    *  `int32_t`, `int64_t`, `float`,  `double`
+    *  `std::string`, `std::wstring`
+    *  `blob {const char*, size}`
+* tested on 
+    * MacOS (x86-64), compiler Apple clang version 13.0.0 (clang-1300.0.29.3, Mac OS Big Sur v11.5.2)
+    * Windows (x86|x86-64), Visual Studio 2019 Version 16.5.0 (cl v19.25.28610.4, Windows 10 Pro)
+    * Linux (x86-64), compiler GNU version 10.3.0 (Ubuntu v20.04)
+
+### Usage examples
    * <details> 
        <summary>basic usage example</summary> 
 
@@ -181,42 +208,41 @@ $ cd experiments
       ```
      </details>
    
-### TODO: 
-<details>
-    <summary>todo-list</summary>
-   
-   * Implement automatic remove for expiring keys (see [Redis impl](https://github.com/redis/redis/blob/a92921da135e38eedd89138e15fe9fd1ffdd9b48/src/expire.c#L98))
-   * Implement recovery technique [Write-Ahead-Log](https://people.eecs.berkeley.edu/~kubitron/cs262/handouts/papers/a1-graefe.pdf) 
-      * To provide failure atomicity and durability
-      * The recovery log describes changes before any in-place updates of the B-tree data structure.
-      * *For now all modifications are written to the end of the same file -> file size accordingly grows (drawback)*
-   * Specify mapped region usage [behavior](https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L199) to reduce [overhead in memory mapped file I/O](https://www.usenix.org/sites/default/files/conference/protected-files/hotstorage17_slides_choi.pdf)
-</details>
-
-### Problems:
-   * Exceeding the limit of available VirtualAddress space on x86 on `stress test`(at 800mb+ file boost can't allocate `mapped_region`)
-      * Solution: don't map the whole file, map only fixed-size file part 
-   * Try to resize file on Winows and faced with the same error as in issue: [dotCover crashing - Can't set eof error](https://youtrack.jetbrains.com/issue/PROF-752)
+### Known problems
+   * exceeding the limit of the available VirtualAddress space on x86 in [stress test.h](test/stress_test.h) (at 800mb+ file boost can't allocate `mapped_region`)
+      * solution:  map a fixed-size file part instead of the whole file 
+   * resizing of the file on Windows causes the same error as described in the issue: [dotCover crashing - Can't set eof error](https://youtrack.jetbrains.com/issue/PROF-752)
       * ``` [WIN32 error] = 1224, The requested operation cannot be performed on a file with a user-mapped section open.```
-      * Problem in my case: 
+      * my case: 
          * caused by [`SetEndOfFile`](https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setendoffile)
             ```
             CreateFileMapping is called to create a file mapping object for hFile,
             UnmapViewOfFile must be called first to unmap all views and call CloseHandle to close
             the file mapping object before you can call SetEndOfFile.
             ```
-         * Solution: to destory `boost::interprocess::mapped_region` object before call `std::filesystem::resilze_file(path)`
-   * Try to verify memory leaks `-DMEM_CHECK` by overriding global `new` and `delete` in [mem_util.h](test/utils/mem_util.h) in 2 ways:
-      * `CustomAllocator` for `unordered_map`
-         * crashes with linkes boost libraries on `delete`
+         * solution: to destory `boost::interprocess::mapped_region` object before the call to `std::filesystem::resilze_file(path)`
+   * crash or leaks during the *explicit memory check* performed by overriding global `new` and `delete` in [mem_util.h](test/utils/mem_util.h):
+      1.  when use `unordered_map` to store allocated chuncks:
+         * crashes with the linked boost libraries on `delete` (see in debugger)
          * works fine without boost (used for testing algo [in branch without IO operations](https://github.com/Montura/experiments/tree/mmap))
-      * `static uint32_t array[n]` of allocates address
-         * works without crashes with `boost libs` but repors about leaks got from boost
+     2.  when use `uint32_t array[n]` of store allocated chuncks:
+         * works without crashes with `boost libs` but reports about leaks (from boost I suppose)
+
+### TODO
+<details>
+    <summary>todo-list</summary>
+   
+   * Automatic removal of the expiring keys (see [Redis impl](https://github.com/redis/redis/blob/a92921da135e38eedd89138e15fe9fd1ffdd9b48/src/expire.c#L98))
+   * Add technique for providing atomicity and durability [Write-Ahead-Log](https://people.eecs.berkeley.edu/~kubitron/cs262/handouts/papers/a1-graefe.pdf)   
+      * The recovery log describes changes before any in-place updates of the B-tree data structure.
+      * *For now all modifications are written at the end of the same file -> file size accordingly grows (drawback)*
+   * Specify mapped region usage [behavior](https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L199) to reduce [overhead in memory mapped file I/O](https://www.usenix.org/sites/default/files/conference/protected-files/hotstorage17_slides_choi.pdf)
+</details>
 
 #### Links:
    * <details> 
-      <summary>Overview of data structures for Key|Value storage</summary> 
-   
+      <summary>Overview of data structures for Key|Value storage</summary>
+
       * [МФТИ. Липовский Р.Г. Теория отказоустойчивых распределенных систем](https://mipt.ru/online/algoritmov-i-tekhnologiy/teoriya-ORS.php)
       * TFTDS 0. Модель распределенной системы
          * [примеры систем](https://youtu.be/HJaI4lCgPCs?t=1106)
@@ -253,4 +279,3 @@ $ cd experiments
          * [B-Tree impl on Linux OS environment](https://github.com/phamtai97/key-value-store)
          * [Key Value Store using B-Tree](https://github.com/billhcmus/key-value-store)
      </details>
-
