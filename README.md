@@ -1,6 +1,6 @@
 ## BTree-based C++ library for Key-Value pairs storage 
 
-The repository contains the C++17 template-based header library for Windows/Linux/MacOs platforms for storing KEY|VALUES paris on disk.
+The repository contains the C++17 template-based header library for Windows/Linux/MacOs platforms for storing KEY|VALUES pairs on disk.
 
 ### Units
   * K is a key type 
