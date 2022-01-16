@@ -86,7 +86,7 @@ The repository contains the C++17 template-based header library for Windows/Linu
     * `mutex` _object_ -> is used for synchronization
 
 ### StorageMT <K, V>
-  * is a `Storage <K, V>` for managing `VolumeMT<K, V>` objects
+  * is a `Storage <K, V>` for managing `VolumeMT<K, V>` _objects_
   * interface:
      * `VolumeWrapper open_volume(string path, int tree_order);`
      * `void close_volume(VolumeWrapper v);`
