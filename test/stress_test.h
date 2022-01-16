@@ -12,7 +12,7 @@
 
 namespace tests::stress_test {
     constexpr std::string_view output_folder = "../../output_stress_test/";
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_WIN64)
     constexpr auto elements_count = 5000000;
 #else
     constexpr auto elements_count = 10000000;
