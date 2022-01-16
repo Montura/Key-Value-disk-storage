@@ -49,14 +49,12 @@ namespace btree {
         }
 
         BTreeNode(BTreeNode && other) noexcept {
-//            std::cout << "move" << std::endl;
             if (this != &other) {
                 other.swap(*this);
             }
         }
 
         BTreeNode& operator=(BTreeNode && other) noexcept {
-//            std::cout << "move assignment" << std::endl;
             if (this != &other) {
                 other.swap(*this);
             }

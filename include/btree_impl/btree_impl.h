@@ -10,7 +10,7 @@ namespace btree {
         if (root_pos == IOManagerT::INVALID_POS)
             return;
 
-        root = io.read_node(root_pos);
+        root = std::move(io.read_node(root_pos));
     }
 
     template <typename K, typename V>
@@ -52,7 +52,7 @@ namespace btree {
             } else {
                 auto pos = root.child_pos[0];
                 io.write_new_pos_for_root_node(pos);
-                root = io.read_node(pos);
+                root = std::move(io.read_node(pos));
             }
         }
 
@@ -97,7 +97,7 @@ namespace btree {
                 Node node = io.read_node(pos);
                 node.insert_non_full(io, e);
 
-                root = io.read_node(newRoot.m_pos);
+                root = std::move(io.read_node(newRoot.m_pos));
                 io.write_new_pos_for_root_node(newRoot.m_pos);
             } else {
                 root.insert_non_full(io, e);
