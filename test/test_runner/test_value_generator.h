@@ -40,7 +40,7 @@ namespace tests::test_utils {
     public:
         std::mt19937 m_rand;
         ValueGenerator(int max_blob_size = 300) :
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_WIN64)
         // todo:
         //  -> problem: exceeding the limit of available VirtualAddress space on x86 on stress test
         //  (at 800mb+ file boost can't allocate mapped_region)
