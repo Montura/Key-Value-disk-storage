@@ -44,11 +44,11 @@ namespace btree {
 
         /** Warning: do not write vector size */
         template <typename T>
-        void write_node_vector(const std::vector<T>& vec);
+        void write_node_vector(const T* vec, const int16_t size);
 
         /** Warning: do not read vector size */
         template <typename T>
-        void read_node_vector(std::vector<T>& vec);
+        void read_node_vector(T* vec, const int16_t size);
 
         int64_t get_pos() const;
         void set_pos(int64_t pos);

@@ -11,8 +11,8 @@ namespace btree {
             t(0),
             is_leaf(false),
             m_pos(-1),
-            key_pos(0, -1),
-            child_pos(0, -1) {}
+            key_pos(nullptr),
+            child_pos(nullptr) {}
 
     template <typename K, typename V>
     BTreeNode<K, V>::BTreeNode(const int16_t& t, bool is_leaf) :
@@ -20,8 +20,14 @@ namespace btree {
             t(t),
             is_leaf(is_leaf),
             m_pos(-1),
-            key_pos(max_key_num(t), -1),
-            child_pos(max_child_num(t), -1) {}
+            key_pos(new int64_t[max_key_num(t)]),
+            child_pos(new int64_t[max_key_num(t) + 1]) {
+                for (int i = 0; i < max_key_num(t); ++i) {
+                    key_pos[i] = -1;
+                    child_pos[i] = -1;
+                }
+                child_pos[max_key_num(t)] = -1;
+            }
 
     template <typename K, typename V>
     bool BTreeNode<K, V>::is_full() const {
@@ -35,8 +41,8 @@ namespace btree {
 
     template <typename K, typename V>
     constexpr int32_t BTreeNode<K,V>::get_node_size_in_bytes(const int16_t t) {
-        static_assert(std::is_same_v<decltype(m_pos), typename decltype(key_pos)::value_type>);
-        static_assert(std::is_same_v<decltype(m_pos), typename decltype(child_pos)::value_type>);
+//        static_assert(std::is_same_v<decltype(m_pos), typename decltype(key_pos)::value_type>);
+//        static_assert(std::is_same_v<decltype(m_pos), typename decltype(child_pos)::value_type>);
         return static_cast<int32_t>(
                 sizeof(used_keys) +
                 sizeof(is_leaf) +

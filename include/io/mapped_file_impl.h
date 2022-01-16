@@ -118,12 +118,12 @@ namespace file {
 
     template <typename K, typename V>
     template <typename T>
-    void MappedFile<K,V>::write_node_vector(const std::vector<T>& vec) {
-        int64_t total_size_in_bytes = sizeof(T) * vec.size();
+    void MappedFile<K,V>::write_node_vector(const T* vec, const int16_t size) {
+        int64_t total_size_in_bytes = sizeof(T) * size;
         if (m_pos + total_size_in_bytes > m_size)
             resize(m_pos + total_size_in_bytes);
 
-        auto* data = cast_to_const_uint8_t_data(vec.data());
+        auto* data = cast_to_const_uint8_t_data(vec);
         std::copy(data, data + total_size_in_bytes, m_mapped_region->address_by_offset(m_pos));
         m_pos += total_size_in_bytes;
         m_capacity = std::max(m_pos, m_capacity);
@@ -131,10 +131,10 @@ namespace file {
 
     template <typename K, typename V>
     template <typename T>
-    void MappedFile<K,V>::read_node_vector(std::vector<T>& vec) {
-        int64_t total_size = sizeof(T) * vec.size();
+    void MappedFile<K,V>::read_node_vector(T* vec, const int16_t size) {
+        int64_t total_size = sizeof(T) * size;
 
-        auto* data = cast_to_uint8_t_data(vec.data());
+        auto* data = cast_to_uint8_t_data(vec);
         auto* start = m_mapped_region->address_by_offset(m_pos);
         auto* end = start + total_size;
         std::copy(start, end, data);

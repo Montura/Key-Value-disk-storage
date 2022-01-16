@@ -10,14 +10,14 @@ namespace utils {
     static_assert(sizeof(int32_t) == sizeof(size_t));
 #endif
     template <typename T>
-    void shift_right_by_one(std::vector<T>& v, const int32_t from, const int32_t to) {
+    void shift_right_by_one(T* v, const int32_t from, const int32_t to) {
         for (auto i = from; i > to; --i) {
             v[i] = v[i - 1];
         }
     }
 
     template <typename T>
-    void shift_left_by_one(std::vector<T>& v, const int32_t from, const int32_t to) {
+    void shift_left_by_one(T* v, const int32_t from, const int32_t to) {
         for (auto i = from; i < to; ++i) {
             v[i - 1] = v[i];
         }
