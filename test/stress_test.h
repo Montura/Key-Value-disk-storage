@@ -12,8 +12,11 @@
 
 namespace tests::stress_test {
     constexpr std::string_view output_folder = "../../output_stress_test/";
+#ifdef _WIN32
+    constexpr auto elements_count = 5000000;
+#elif
     constexpr auto elements_count = 10000000;
-
+#endif
 namespace details {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration_cast;
