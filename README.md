@@ -2,38 +2,29 @@
 
 The repository contains the C++17 template-based header library for Windows/Linux/MacOs platforms for storing KEY|VALUES pairs on disk.
 
-### Units
+### Terms
   * K is a key type 
   * V is a value type 
   * { K key, V value }
-  * storage<K, V>
-  * volume<K, V> (volumeMT<K, V>)
+  * Volume<K, V>
+  * StorageBase<K, V>
+  * VolumeMT<K, V>
+  * StorageMT<K, V>
 
-### Storage <K, V>
-  * used to store a specific data type in the form `{ key, value }`
-  * the types of `{ key, value }` are defined by the storage template args : ```Storage<int, int> s;```
-  * contains a map of `volumes` with the same `{ key, value }` types
-  * storage owns `volumes` and they can't be opened by another `storage`
-  * all `volumes` are closed automatically when `storage` lifetime expires 
-  * interface:
-      * `VolumeWrapper open_volume(string path, int tree_order);`
-      * `void close_volume(VolumeWrapper v);`
-  * `VolumeWrapper`:
-        * an object with a non-owning raw poiner to the `volume`
-        
 ### Volume<K, V>
-  * used to answer the queries:
+  * is used to answer the queries:
     * `bool exist(K key);` 
     * `void set(K key, V value);`
     * `void set(K key, V value, int size);`
     * `V get(K key);` 
     * `void get(K key);` 
-  * the types of `{ key, value }` are defined by `volume`'s storage
+  * is managed by `Storage<K, V>` _object_:
+    * `Storage<K, V>` _object_ defines the types of `Volume<K, V>`
   * contains:
     * hierarchical data structure (`Btree`) -> to pass the queries to it
     * `IOManager` object -> to use in `BTree` to perform IO operations
-  * the results of _modifing_ quereis are written to a file on disk
-  * the results of _non-modifing_ quereis are read from the file
+  * the results of _modifing_ queries are written to a file on disk
+  * the results of _non-modifing_ queries are read from the file
   * file layout:      
       * <details>
           <summary>header layout (13 bytes)</summary>
@@ -72,12 +63,38 @@ The repository contains the C++17 template-based header library for Windows/Linu
               ----------–-----
         </details>
 
+### Storage <K, V>
+  * *storage* template args `<K, V>` define the types of `{ key, value }`
+    * ```Storage<int, int> s;```
+  * is used to manage `Volume<K,V>` _objects_ through a `std::unique_ptr`:
+    * _storage_ owns _volume objects_ and they can't be opened by another _storage_
+    * _volume objects_ are disposed automatically when the _storage_ lifetime expires 
+  * interface:
+     * `VolumeWrapper open_volume(string path, int tree_order);`
+     * `void close_volume(VolumeWrapper v);`
+     * `VolumeWrapper`:
+       * an _object_ with a non-owning raw poiner to the `Volume<K,V>`
+  * contains:
+    * map of `Volume<K,V>` _objects_
+
 ### VolumeMT<K, V>
-  * used to answer the queries in multithreading environment
+  * is used to answer to queries in multithreading environment
+  * is managed by `StorageMT<K, V>` _object_
   * thread safety is guaranteed with *coarse-grained synchronization*
   * contains:
-    * `Volume<K V>` object
-    * `mutex` object -> is used for synchronization
+    * `Volume<K V>` _object_
+    * `mutex` _object_ -> is used for synchronization
+
+### StorageMT <K, V>
+  * is a `Storage <K, V>` for managing `VolumeMT<K, V>` objects
+  * interface:
+     * `VolumeWrapper open_volume(string path, int tree_order);`
+     * `void close_volume(VolumeWrapper v);`
+     * `VolumeWrapper`:
+       * an _object_ with a non-owning raw poiner to the `VolumeMT<K,V>`
+  * contains:
+    * map of `VolumeMT<K,V>` _objects_
+
 
 ### Build
 
