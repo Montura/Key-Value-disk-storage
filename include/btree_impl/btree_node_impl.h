@@ -138,7 +138,7 @@ namespace btree {
                     idx++;
             }
 
-            node = get_child(io, idx);
+            node = std::move(get_child(io, idx));
             node.insert_non_full(io, e);
         }
     }
@@ -224,7 +224,7 @@ namespace btree {
             fill_node(io, idx);
 
         int32_t child_idx = (idx > used_keys) ? (idx - 1) : idx;
-        child = get_child(io, child_idx);
+        child = std::move(get_child(io, child_idx));
 
         if (child.is_valid()) {
             bool success = child.remove(io, key);
@@ -286,7 +286,7 @@ namespace btree {
         Node curr = io.read_node(child_pos[idx]);
         // Keep moving to the right most node until CURR becomes a leaf
         while (!curr.is_leaf)
-            curr = io.read_node(curr.child_pos[curr.used_keys]);
+            curr = std::move(io.read_node(curr.child_pos[curr.used_keys]));
 
         return curr.key_pos[curr.used_keys - 1];
     }
@@ -296,7 +296,7 @@ namespace btree {
         Node curr = io.read_node(child_pos[idx + 1]);
         // Keep moving the left most node until CURR becomes a leaf
         while (!curr.is_leaf)
-            curr = io.read_node(curr.child_pos[0]);
+            curr = std::move(io.read_node(curr.child_pos[0]));
 
         return curr.key_pos[0];
     }
@@ -438,7 +438,7 @@ namespace btree {
             EntryT tmp = curr.get_entry(io, idx);
             if (tmp.key == key)
                 return std::make_tuple(curr, tmp, idx);
-            curr = curr.get_child(io, idx);
+            curr = std::move(curr.get_child(io, idx));
         }
 
         int idx = curr.find_key_bin_search(io, key);
