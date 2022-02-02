@@ -39,7 +39,7 @@ namespace tests::test_utils {
         const int max_blob_size;  // don't allocate more than max_blob_size-bytes for test values
     public:
         std::mt19937 m_rand;
-        ValueGenerator(int max_blob_size = 300) :
+        ValueGenerator(int max_blob_size = 300, int seed_value = 0):
 #if defined(_WIN32) && !defined(_WIN64)
         // todo:
         //  -> problem: exceeding the limit of available VirtualAddress space on x86 on stress test
@@ -49,7 +49,9 @@ namespace tests::test_utils {
 #else
         max_blob_size(max_blob_size)
 #endif
-        {}
+        {
+            m_rand.seed(seed_value);
+        }
 
         ~ValueGenerator() {
             if constexpr(std::is_pointer_v<V>) {

@@ -174,7 +174,7 @@ $ cd experiments
          btree::Storage<int, const char*> blob_storage;
          auto volume = blob_storage.open_volume("../blob_storage.txt", 2);
          int len = 10;
-         auto blob = std::make_unique<char*>(new char[len + 1]);
+         auto blob = std::make_unique<char[]>(new char[len + 1]);
          for (int i = 0; i < len; ++i) {
              (*blob)[i] = (char)(i + 1);
          }
@@ -214,7 +214,7 @@ $ cd experiments
       }
       {
         ThreadPool tp { 10 };
-        tp.post([&volume, &n]() {
+        tp.post([&volume, n]() {
             for (int i = 0; i < n; ++i)
                 volume.set(i, 0);
         });

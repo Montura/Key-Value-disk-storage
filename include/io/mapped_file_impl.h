@@ -9,15 +9,12 @@ namespace fs = std::filesystem;
 
 namespace btree {
 namespace file {
-    void seek_file_to_offset(const std::string& path, const std::ios_base::openmode file_open_mode, const int64_t offset) {
-        std::filebuf buf;
-        auto* p_file_buf = buf.open(path, file_open_mode);
-        if (!p_file_buf)
+    void create_file(const std::string& path, const int64_t size) {
+        std::ofstream ofs(path);
+        if (!ofs.is_open())
             throw std::runtime_error("Wrong path is provided for mapped file, path = " + path);
-        buf.pubseekoff(offset, std::ios_base::beg);
-        if (offset > 0) // if file is not empty it needs EOF
-            buf.sputc(0);
-        buf.close();
+        ofs.close();
+        fs::resize_file(path, size);
     }
 }
     using namespace utils;
@@ -28,7 +25,7 @@ namespace file {
     {
         bool file_exists = fs::exists(path);
         if (!file_exists) {
-            file::seek_file_to_offset(path, std::ios_base::out | std::ios_base::trunc, bytes_num);
+            file::create_file(path, bytes_num);
             m_size = m_capacity = bytes_num;
         } else {
             m_size = m_capacity = static_cast<int64_t>(fs::file_size(path));
@@ -53,11 +50,10 @@ namespace file {
  * 4. See impl of BOOST_MAPPED_REGION dtor:
     - https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L555
 */
-        delete m_mapped_region;
         std::error_code error_code;
         fs::resize_file(path, m_capacity, error_code);
         if (error_code)
-            std::cerr << "Can't resize file: " + path << std::endl;
+            std::cerr << "Can't resize file: " << path << std::endl;
     }
 
     template <typename K, typename V>
@@ -111,8 +107,11 @@ namespace file {
     template <typename T>
     T MappedFile<K,V>::read_next_primitive() {
         static_assert(std::is_arithmetic_v<T>);
+        size_t value_end_pos = m_pos + sizeof(T);
+        if (value_end_pos > m_size)
+            throw std::runtime_error("Try to read from invalid mapped region");
         auto* value_begin = m_mapped_region->address_by_offset(m_pos);
-        m_pos += sizeof(T);
+        m_pos = value_end_pos;
         return *(reinterpret_cast<T*>(value_begin));
     }
 
@@ -175,7 +174,7 @@ namespace file {
     void MappedFile<K,V>::resize(int64_t new_size, bool shrink_to_fit) {
         // Can't use std::filesystem::resize_file(), see file_mapping_impl.h: ~MappedFile() {...}
         m_size = shrink_to_fit ? new_size : std::max(scale_current_size(), new_size);
-        file::seek_file_to_offset(path, std::ios_base::in | std::ios_base::out, m_size);
+        fs::resize_file(path, m_size);
         m_mapped_region->remap(path);
     }
 
