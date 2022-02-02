@@ -12,7 +12,7 @@ namespace file {
     void create_file(const std::string& path, const int64_t size) {
         std::ofstream ofs(path);
         if (!ofs.is_open())
-            throw std::runtime_error("Wrong path is provided for mapped file, path = " + path);
+            throw std::runtime_error("Can't create file for mapping, path = " + path);
         ofs.close();
         fs::resize_file(path, size);
     }
@@ -110,7 +110,7 @@ namespace file {
         static_assert(std::is_arithmetic_v<T>);
         int64_t value_end_pos = m_pos + sizeof(T);
         if (value_end_pos > m_size)
-            throw std::runtime_error("Try to read from invalid mapped region");
+            throw std::runtime_error("Attempted to read from memory outside the mapped region");
         auto* value_begin = m_mapped_region->address_by_offset(m_pos);
         m_pos = value_end_pos;
         return *(reinterpret_cast<T*>(value_begin));
