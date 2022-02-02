@@ -107,7 +107,7 @@ namespace file {
     template <typename T>
     T MappedFile<K,V>::read_next_primitive() {
         static_assert(std::is_arithmetic_v<T>);
-        size_t value_end_pos = m_pos + sizeof(T);
+        int64_t value_end_pos = m_pos + sizeof(T);
         if (value_end_pos > m_size)
             throw std::runtime_error("Try to read from invalid mapped region");
         auto* value_begin = m_mapped_region->address_by_offset(m_pos);
