@@ -50,6 +50,7 @@ namespace file {
  * 4. See impl of BOOST_MAPPED_REGION dtor:
     - https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L555
 */
+        m_mapped_region.reset(nullptr);
         std::error_code error_code;
         fs::resize_file(path, m_capacity, error_code);
         if (error_code)
@@ -172,8 +173,8 @@ namespace file {
 
     template <typename K, typename V>
     void MappedFile<K,V>::resize(int64_t new_size, bool shrink_to_fit) {
-        // Can't use std::filesystem::resize_file(), see file_mapping_impl.h: ~MappedFile() {...}
         m_size = shrink_to_fit ? new_size : std::max(scale_current_size(), new_size);
+        m_mapped_region.reset(new MappedRegion());
         fs::resize_file(path, m_size);
         m_mapped_region->remap(path);
     }
@@ -217,7 +218,6 @@ namespace file {
     void MappedFile<K,V>::shrink_to_fit() {
         m_capacity = m_size = m_pos;
         resize(m_size, true);
-        m_mapped_region->remap(path);
     }
 
     template <typename K, typename V>
