@@ -1,11 +1,10 @@
 #pragma once
 
-#include <filesystem>
 #include <iostream>
+#include <memory>
 
 #include "utils/utils.h"
 
-namespace fs = std::filesystem;
 
 namespace btree {
 namespace file {
@@ -20,7 +19,7 @@ namespace file {
     using namespace utils;
 
     MappedFile::MappedFile(const std::string& path, const int64_t bytes_num) :
-            m_pos(0), m_mapped_region(new MappedRegion()), path(path)
+            m_pos(0), m_mapped_region(new MappedRegion(0, path)), path(path)
     {
         bool file_exists = fs::exists(path);
         if (!file_exists) {
@@ -56,17 +55,22 @@ namespace file {
             std::cerr << "Can't resize file: " << path << std::endl;
     }
 
-    MappedFile::MappedRegion::MappedRegion() : mapped_region_begin(nullptr) {}
+    MappedRegion::MappedRegion(int64_t file_pos, const std::string& path)
+        : path(path), mapped_region_begin(nullptr), m_pos(0), file_pos(file_pos) {}
 
-    uint8_t* MappedFile::MappedRegion::address_by_offset(const int64_t offset) const {
+    uint8_t* MappedRegion::address_by_offset(int64_t offset) const {
         return mapped_region_begin + offset;
     }
 
-    void MappedFile::MappedRegion::remap(const std::string& file_path) {
-        auto file_mapping = bip::file_mapping(file_path.data(), bip::read_write);
-        auto tmp_mapped_region = bip::mapped_region(file_mapping, bip::read_write);
+    void MappedRegion::remap(const std::string& file_path, bip::mode_t mode, bip::offset_t file_offset, size_t size) {
+        auto file_mapping = bip::file_mapping(file_path.data(), mode);
+        auto tmp_mapped_region = bip::mapped_region(file_mapping, mode, file_offset, size);
         mapped_region.swap(tmp_mapped_region);
         mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
+    }
+    
+    size_t MappedRegion::pos() const {
+        return m_pos;
     }
 
     template <typename T>
@@ -79,16 +83,21 @@ namespace file {
     }
 
     template <typename ValueType>
-    std::pair<ValueType, int32_t> MappedFile::read_next_data() {
+    std::pair<ValueType, int32_t> MappedRegion::read_next_data() {
         if constexpr(std::is_pointer_v<ValueType>) {
             auto len = read_next_primitive<int32_t>();
-            auto* value_begin = m_mapped_region->address_by_offset(m_pos);
+            auto* value_begin = address_by_offset(m_pos);
             m_pos += len;
             return std::make_pair(cast_to_const_uint8_t_data(value_begin), len);
         } else {
             static_assert(std::is_arithmetic_v<ValueType>);
             return std::make_pair(read_next_primitive<ValueType>(), static_cast<int32_t>(sizeof(ValueType)));
         }
+    }
+
+    template <typename ValueType>
+    std::pair<ValueType, int32_t> MappedFile::read_next_data(MappedRegion* region) {
+        return region->template read_next_data<ValueType>();
     }
 
     template <typename T>
@@ -99,14 +108,21 @@ namespace file {
     }
 
     template <typename T>
-    T MappedFile::read_next_primitive() {
+    T MappedRegion::read_next_primitive() {
         static_assert(std::is_arithmetic_v<T>);
         int64_t value_end_pos = m_pos + sizeof(T);
-        if (value_end_pos > m_size)
-            throw std::runtime_error("Attempted to read from memory outside the mapped region");
-        auto* value_begin = m_mapped_region->address_by_offset(m_pos);
+        if (value_end_pos > mapped_region.get_size()) {
+            remap(path, bip::read_write, m_pos, 100);
+//            throw std::runtime_error("Attempted to read from memory outside the mapped region");
+        }
+        auto* value_begin = address_by_offset(m_pos);
         m_pos = value_end_pos;
         return *(reinterpret_cast<T*>(value_begin));
+    }
+
+    template <typename T>
+    T MappedFile::read_next_primitive(MappedRegion* region) {
+        return region->template read_next_primitive<T>();
     }
 
     template <typename T>
@@ -162,33 +178,32 @@ namespace file {
 
     void MappedFile::resize(int64_t new_size, bool shrink_to_fit) {
         m_size = shrink_to_fit ? new_size : std::max(scale_current_size(), new_size);
-        m_mapped_region.reset(new MappedRegion());
+        m_mapped_region = std::make_unique<MappedRegion>(m_pos, path);
         fs::resize_file(path, m_size);
         m_mapped_region->remap(path);
     }
 
-    void MappedFile::set_pos(int64_t pos) {
+    std::unique_ptr<MappedRegion> MappedFile::set_pos(int64_t pos) {
         m_pos = pos > 0 ? pos : 0;
+        std::unique_ptr<MappedRegion> region(new MappedRegion(pos, path));
+        region->remap(path, bip::read_write, m_pos, 32);
+        return region;
     }
 
-    int16_t MappedFile::read_int16() {
-        return read_next_primitive<int16_t>();
+    int16_t MappedFile::read_int16(MappedRegion* region) {
+        return region->read_next_primitive<int16_t>();
     }
 
-    int32_t MappedFile::read_int32() {
-        return read_next_primitive<int32_t>();
-    }
-
-    int64_t MappedFile::read_int64() {
-        return read_next_primitive<int64_t>();
+    int32_t MappedFile::read_int32(MappedRegion* region) {
+        return region->read_next_primitive<int32_t>();
     }
 
     int64_t MappedFile::get_pos() const {
         return m_pos;
     }
 
-    uint8_t MappedFile::read_byte() {
-        return read_next_primitive<uint8_t>();
+    uint8_t MappedFile::read_byte(MappedRegion* region) {
+        return region->read_next_primitive<uint8_t>();
     }
 
     void MappedFile::set_file_pos_to_end() {
