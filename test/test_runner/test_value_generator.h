@@ -33,9 +33,9 @@ namespace tests::test_utils {
         }
     };
 
-    template <typename V>
+    template <typename K, typename V>
     class ValueGenerator {
-        std::map<int32_t, Data<V>> blob_map;
+        std::map<K, Data<V>> blob_map;
         const int max_blob_size;  // don't allocate more than max_blob_size-bytes for test values
     public:
         std::mt19937 m_rand;
@@ -66,11 +66,11 @@ namespace tests::test_utils {
             return blob_map.size();
         }
 
-        const std::map<int32_t, Data<V>>& map() const {
+        const std::map<K, Data<V>>& map() const {
             return blob_map;
         }
 
-        void remove(int32_t key) {
+        void remove(K key) {
             auto it = blob_map.find(key);
 
             if (it != blob_map.end()) {
@@ -81,8 +81,8 @@ namespace tests::test_utils {
             }
         }
 
-        Data<V> next_value(int32_t key) {
-            int rand = key + m_rand() % 31;
+        Data<V> next_value(K key) {
+            int rand = m_rand() % 31;
             if constexpr (is_string_v<V>) {
                 if constexpr(std::is_same_v<typename V::value_type, char>) {
                     auto str = std::to_string(rand) + "abacaba";
@@ -118,7 +118,7 @@ namespace tests::test_utils {
         }
 
         template <typename VolumeT>
-        bool check(int32_t key, const VolumeT& volume) {
+        bool check(K key, const VolumeT& volume) {
             auto it = blob_map.find(key);
             if (it == blob_map.end()) {
                 return volume.get(key) == std::nullopt;
@@ -127,7 +127,7 @@ namespace tests::test_utils {
             return check_value(key, volume.get(key));
         }
 
-        bool check_value(int32_t key, const std::optional<V>& actual_value) {
+        bool check_value(K key, const std::optional<V>& actual_value) {
             Data<V> expected_value = blob_map.find(key)->second;
             if (expected_value.len == 0)
                 return actual_value == std::nullopt;

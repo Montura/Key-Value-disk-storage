@@ -48,20 +48,20 @@ BOOST_AUTO_TEST_SUITE(key_value_op_tests, *CleanBeforeTest(output_folder.data())
     BOOST_DATA_TEST_CASE(test_on_random_values, boost::make_iterator_range(orders), order) {
         BOOST_REQUIRE_MESSAGE(run<TestRandomValues>("random", order), "TEST_RANDOM_VALUES");
     }
-    BOOST_DATA_TEST_CASE(multithreading_test, boost::make_iterator_range(orders), order) {
-        BOOST_REQUIRE_MESSAGE(run<TestMultithreading>("mt", order), "TEST_MULTITHREADING");
-    }
+//    BOOST_DATA_TEST_CASE(multithreading_test, boost::make_iterator_range(orders), order) {
+//        BOOST_REQUIRE_MESSAGE(run<TestMultithreading>("mt", order), "TEST_MULTITHREADING");
+//    }
 BOOST_AUTO_TEST_SUITE_END()
 
 
-BOOST_AUTO_TEST_SUITE(stress_test, *CleanBeforeTest(output_folder.data()))
-    BOOST_AUTO_TEST_CASE(optimal_tree_order) { get_optimal_tree_order(); }
-    BOOST_AUTO_TEST_CASE(i32) { BOOST_REQUIRE_MESSAGE(run<int32_t>("i32"), "TEST_STRESS_INT32"); }
-    BOOST_AUTO_TEST_CASE(i64) { BOOST_REQUIRE_MESSAGE(run<int64_t>("i64"), "TEST_STRESS_INT64"); }
-    BOOST_AUTO_TEST_CASE(str) { BOOST_REQUIRE_MESSAGE(run<std::string>("str"), "TEST_STRESS_STRING"); }
-    BOOST_AUTO_TEST_CASE(wstr) { BOOST_REQUIRE_MESSAGE(run<std::wstring>("wstr"), "TEST_STRESS_WSTRING"); }
-    BOOST_AUTO_TEST_CASE(blob) { BOOST_REQUIRE_MESSAGE(run<const char*>("blob"), "TEST_STRESS_BLOB"); }
-BOOST_AUTO_TEST_SUITE_END()
+//BOOST_AUTO_TEST_SUITE(stress_test, *CleanBeforeTest(output_folder.data()))
+//    BOOST_AUTO_TEST_CASE(optimal_tree_order) { get_optimal_tree_order(); }
+//    BOOST_AUTO_TEST_CASE(i32) { BOOST_REQUIRE_MESSAGE(run<int32_t>("i32"), "TEST_STRESS_INT32"); }
+//    BOOST_AUTO_TEST_CASE(i64) { BOOST_REQUIRE_MESSAGE(run<int64_t>("i64"), "TEST_STRESS_INT64"); }
+//    BOOST_AUTO_TEST_CASE(str) { BOOST_REQUIRE_MESSAGE(run<std::string>("str"), "TEST_STRESS_STRING"); }
+//    BOOST_AUTO_TEST_CASE(wstr) { BOOST_REQUIRE_MESSAGE(run<std::wstring>("wstr"), "TEST_STRESS_WSTRING"); }
+//    BOOST_AUTO_TEST_CASE(blob) { BOOST_REQUIRE_MESSAGE(run<const char*>("blob"), "TEST_STRESS_BLOB"); }
+//BOOST_AUTO_TEST_SUITE_END()
 }
 #else
 
@@ -76,88 +76,88 @@ BOOST_AUTO_TEST_SUITE_END()
 using namespace tests;
 void usage() {
     {
-        btree::Storage<int, int> int_storage;
+        btree::Storage<std::string, int> int_storage;
         auto volume = int_storage.open_volume("../int_storage.txt", 2);
         int val = -1;
-        volume.set(0, val);
-        std::optional<int> opt = volume.get(0);
+        volume.set("aaa", val);
+        std::optional<int> opt = volume.get("aaa");
         assert(opt.value() == val);
     }
-    {
-        btree::Storage<int, std::string> str_storage;
-        auto volume = str_storage.open_volume("../str_storage.txt", 2);
-        std::string val = "abacaba";
-        volume.set(0, val);
-        std::optional<std::string> opt = volume.get(0);
-        assert(opt.value() == val);
-    }
-    {
-        btree::Storage<int, const char*> blob_storage;
-        auto volume = blob_storage.open_volume("../blob_storage.txt", 2);
-        int len = 10;
-        auto blob = std::make_unique<char[]>(len + 1);
-        for (int i = 0; i < len; ++i) {
-            blob[i] = (char)(i + 1);
-        }
-        volume.set(0, blob.get(), len);
-
-        std::optional<const char*> opt = volume.get(0);
-        auto ptr = opt.value();
-        for (int i = 0; i < len; ++i) {
-            assert(ptr[i] == blob[i]);
-        }
-    }
+//    {
+//        btree::Storage<int, std::string> str_storage;
+//        auto volume = str_storage.open_volume("../str_storage.txt", 2);
+//        std::string val = "abacaba";
+//        volume.set(0, val);
+//        std::optional<std::string> opt = volume.get(0);
+//        assert(opt.value() == val);
+//    }
+//    {
+//        btree::Storage<int, const char*> blob_storage;
+//        auto volume = blob_storage.open_volume("../blob_storage.txt", 2);
+//        int len = 10;
+//        auto blob = std::make_unique<char[]>(len + 1);
+//        for (int i = 0; i < len; ++i) {
+//            blob[i] = (char)(i + 1);
+//        }
+//        volume.set(0, blob.get(), len);
+//
+//        std::optional<const char*> opt = volume.get(0);
+//        auto ptr = opt.value();
+//        for (int i = 0; i < len; ++i) {
+//            assert(ptr[i] == blob[i]);
+//        }
+//    }
 }
 
 #include <iostream>
 
-std::vector<std::pair<int, int>> generate_ranges(int max_n, int pairs_count) {
-    std::vector<std::pair<int, int>> pairs;
+//std::vector<std::pair<int, int>> generate_ranges(int max_n, int pairs_count) {
+//    std::vector<std::pair<int, int>> pairs;
+//
+//    int step = max_n / pairs_count;
+//    pairs.emplace_back(0, step);
+//
+//    for (int i = 1; i < pairs_count; ++i) {
+//        auto end = pairs[i - 1].second;
+//        pairs.emplace_back(end, end + step);
+//    }
+//    pairs[pairs_count - 1].second = max_n;
+//
+//    for (auto& pair : pairs)
+//        std::cout << "{" << pair.first << ", " << pair.second << "}" << " ";
+//    std::cout << std::endl;
+//    return pairs;
+//}
 
-    int step = max_n / pairs_count;
-    pairs.emplace_back(0, step);
-
-    for (int i = 1; i < pairs_count; ++i) {
-        auto end = pairs[i - 1].second;
-        pairs.emplace_back(end, end + step);
-    }
-    pairs[pairs_count - 1].second = max_n;
-
-    for (auto& pair : pairs)
-        std::cout << "{" << pair.first << ", " << pair.second << "}" << " ";
-    std::cout << std::endl;
-    return pairs;
-}
-
-void mt_usage() {
-    btree::StorageMT<int, int> int_storage;
-    auto volume = int_storage.open_volume("../mt_int_storage.txt", 100);
-
-    int n = 100000;
-    {
-        ThreadPool tp { 10 };
-        auto ranges = generate_ranges(n, 10); // ten not-overlapped intervals
-        for (auto& range: ranges) {
-            tp.post([&volume, &range]() {
-                for (int i = range.first; i < range.second; ++i)
-                    volume.set(i, -i);
-            });
-        }
-        tp.join();
-        for (int i = 0; i < n; ++i)
-            assert(volume.get(i).value() == -i);
-    }
-    {
-        ThreadPool tp { 10 };
-        tp.post([&volume, n]() {
-            for (int i = 0; i < n; ++i)
-                volume.set(i, 0);
-        });
-        tp.join();
-        for (int i = 0; i < n; ++i)
-            assert(volume.get(i).value() == 0);
-    }
-}
+//void mt_usage() {
+//    btree::StorageMT<int, int> int_storage;
+//    auto volume = int_storage.open_volume("../mt_int_storage.txt", 100);
+//
+//    int n = 100000;
+//    {
+//        ThreadPool tp { 10 };
+//        auto ranges = generate_ranges(n, 10); // ten not-overlapped intervals
+//        for (auto& range: ranges) {
+//            tp.post([&volume, &range]() {
+//                for (int i = range.first; i < range.second; ++i)
+//                    volume.set(i, -i);
+//            });
+//        }
+//        tp.join();
+//        for (int i = 0; i < n; ++i)
+//            assert(volume.get(i).value() == -i);
+//    }
+//    {
+//        ThreadPool tp { 10 };
+//        tp.post([&volume, n]() {
+//            for (int i = 0; i < n; ++i)
+//                volume.set(i, 0);
+//        });
+//        tp.join();
+//        for (int i = 0; i < n; ++i)
+//            assert(volume.get(i).value() == 0);
+//    }
+//}
 
 int main() {
 #if defined(MEM_CHECK)
@@ -165,7 +165,7 @@ int main() {
 #endif
     {
         usage();
-        mt_usage();
+//        mt_usage();
     }
 }
 #endif // UNIT_TESTS

@@ -47,9 +47,9 @@ namespace details {
         template <typename K, typename V>
         static bool run(std::string const& db_name, int const order) {
             Storage<K, V> s;
-            ValueGenerator<V> g;
+            ValueGenerator<K, V> g;
 
-            const K key = 0;
+            const K key = "";
             Data<V> data = g.next_value(key);
             uint32_t file_size = SizeInfo<K, V>::file_size_in_bytes(order, key, data.value, data.len);
 
@@ -83,9 +83,9 @@ namespace details {
         template <typename K, typename V>
         static bool run(std::string const& db_name, int const order) {
             Storage<K, V> s;
-            ValueGenerator<V> g;
+            ValueGenerator<K, V> g;
 
-            const K key = 0;
+            const K key = "";
             Data<V> data = g.next_value(key);
 
             bool success = true;
@@ -109,9 +109,9 @@ namespace details {
         template <typename K, typename V>
         static bool run(std::string const& db_name, int const order) {
             Storage<K, V> s;
-            ValueGenerator<V> g;
+            ValueGenerator<K, V> g;
 
-            const K key = 0;
+            const K key = "";
             Data<V> data = g.next_value(key);
 
             bool success = true;
@@ -140,9 +140,9 @@ namespace details {
         template <typename K, typename V>
         static bool run(std::string const& db_name, int const order) {
             Storage<K, V> s;
-            ValueGenerator<V> g;
+            ValueGenerator<K, V> g;
 
-            const K key = 0;
+            const K key = "";
             Data<V> data = g.next_value(key);
 
             auto volume = s.open_volume(db_name, order);
@@ -164,10 +164,9 @@ namespace details {
         template <typename K, typename V>
         static bool run(std::string const& db_name, int const order) {
             Storage<K, V> s;
-            ValueGenerator<V> g;
+            ValueGenerator<K, V> g;
 
-            const K key = 0;
-
+            const K key = "";
             auto volume = s.open_volume(db_name, order);
             bool success = true;
             for (int i = 0; i < 1000; ++i) {
@@ -189,28 +188,28 @@ namespace details {
         };
     };
 
-    struct TestMultithreading {
-        static constexpr int elements_count = 10000;
-        static constexpr int workers_count = 10;
-        template <typename K, typename V>
-        static bool run(std::string const& db_name, int const order) {
-            ThreadPool pool(workers_count);
-            return TestRunnerMT<K, V>::run(pool, db_name, order, elements_count);
-        };
-    };
+//    struct TestMultithreading {
+//        static constexpr int elements_count = 10000;
+//        static constexpr int workers_count = 10;
+//        template <typename K, typename V>
+//        static bool run(std::string const& db_name, int const order) {
+//            ThreadPool pool(workers_count);
+//            return TestRunnerMT<K, V>::run(pool, db_name, order, elements_count);
+//        };
+//    };
 }
     using namespace details;
     template <typename TestClass>
     bool run(const std::string& name_part, const int order) {
         auto name = name_part + "_st";
         bool success = false;
-        success = TestClass::template run<int32_t, int32_t>(db_name(name + "_i32", order), order);
-        success &= TestClass::template run<int32_t, int64_t>(db_name(name + "_i64", order), order);
-        success &= TestClass::template run<int32_t, float>(db_name(name + "_f", order), order);
-        success &= TestClass::template run<int32_t, double>(db_name(name + "_d", order), order);
-        success &= TestClass::template run<int32_t, std::string>(db_name(name + "_str", order), order);
-        success &= TestClass::template run<int32_t, std::wstring>(db_name(name + "_wstr", order), order);
-        success &= TestClass::template run<int32_t, const char*>(db_name(name + "_blob", order), order);
+        success = TestClass::template run<std::string, int32_t>(db_name(name + "_i32", order), order);
+        success &= TestClass::template run<std::string, int64_t>(db_name(name + "_i64", order), order);
+        success &= TestClass::template run<std::string, float>(db_name(name + "_f", order), order);
+        success &= TestClass::template run<std::string, double>(db_name(name + "_d", order), order);
+        success &= TestClass::template run<std::string, std::string>(db_name(name + "_str", order), order);
+        success &= TestClass::template run<std::string, std::wstring>(db_name(name + "_wstr", order), order);
+        success &= TestClass::template run<std::string, const char*>(db_name(name + "_blob", order), order);
         return success;
     }
 }

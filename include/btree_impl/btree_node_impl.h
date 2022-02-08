@@ -87,7 +87,7 @@ namespace btree {
     template <typename K, typename V>
     K BTreeNode<K, V>::get_key(IOManagerT& io, const int32_t idx) const {
         if (idx < 0 || idx > used_keys - 1)
-            return IOManagerT::INVALID_POS;
+            return EntryT::INVALID_KEY;
 
         return io.read_key(key_pos[idx]);
     }

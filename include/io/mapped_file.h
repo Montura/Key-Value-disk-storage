@@ -7,7 +7,6 @@
 #include "utils/utils.h"
 
 namespace btree {
-    template <typename K, typename V>
     class MappedFile {
         class MappedRegion {
             bip::mapped_region mapped_region;
@@ -18,7 +17,7 @@ namespace btree {
             void remap(const std::string& path);
         };
 
-        using ValueType = utils::conditional_t<std::is_arithmetic_v<V>, const V, const uint8_t*>;
+//        using ValueType = utils::conditional_t<std::is_arithmetic_v<V>, const V, const uint8_t*>;
 
         int64_t m_pos;
         int64_t m_size;
@@ -40,7 +39,8 @@ namespace btree {
         template <typename T>
         T read_next_primitive();
 
-        void write_next_data(ValueType val, const int32_t total_size_in_bytes);
+        template <typename T>
+        void write_next_data(T val, const int32_t total_size_in_bytes);
 
         /** Warning: do not write vector size */
         template <typename T>

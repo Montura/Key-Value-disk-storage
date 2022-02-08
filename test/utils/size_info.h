@@ -23,7 +23,7 @@ namespace tests {
         }
 
         static constexpr int32_t full_entry_size_in_bytes(const K key, const V& val, const int32_t value_size) {
-            int32_t key_size = sizeof(K);
+            int32_t key_size = 4 + key.size(); // std::string
             if constexpr (std::is_pointer_v<V> || is_string_v<V>) {
                 int32_t value_len = 4; // sizeof(int32_t) for storing the length of value
                 return key_size + value_len + value_size;

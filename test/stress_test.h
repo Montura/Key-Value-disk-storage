@@ -84,7 +84,7 @@ namespace details {
     void run_set(typename Storage<K, V>::VolumeT& volume) {
         std::vector<duration<double, std::milli>> time_points(elements_count);
 
-        ValueGenerator<V> g;
+        ValueGenerator<K, V> g;
         const int total_rands = 1000;
         Data<V> values[total_rands];
         for (int i = 0; i < total_rands; ++i)

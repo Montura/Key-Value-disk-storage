@@ -41,7 +41,7 @@ namespace details {
         std::string path = get_absolute_file_name(name_postfix);
         bool success = true;
         {
-            MappedFile<K, V> file(path, 32);
+            MappedFile file(path, 32);
 
             // write
             for (int i = 0; i < ITERATIONS; ++i) {
@@ -67,7 +67,7 @@ namespace details {
         int64_t total_read_size = 0;
         bool success = true;
         {
-            MappedFile<K, V> file(path, 32);
+            MappedFile file(path, 32);
 
             // write
             for (auto i = 0; i < ITERATIONS; ++i) {
@@ -98,19 +98,19 @@ namespace details {
         std::string path = details::get_absolute_file_name("modify");
         bool success = true;
         {
-            MappedFile<K, V> file(path, 32);
+            MappedFile file(path, 32);
             for (int32_t i = 0; i < details::ITERATIONS; ++i) {
                 file.write_next_primitive(i);
             }
         }
         {
-            MappedFile<K, V> file(path, 32);
+            MappedFile file(path, 32);
             for (int32_t i = 0; i < details::ITERATIONS; ++i) {
                 file.write_next_primitive(i * 2);
             }
         }
         {
-            MappedFile<K, V> file(path, 32);
+            MappedFile file(path, 32);
             for (int32_t i = 0; i < details::ITERATIONS; ++i) {
                 auto actual = file.template read_next_primitive<K>();
                 auto expected = i * 2;
@@ -129,13 +129,13 @@ namespace details {
         std::vector<K> out(n, 1);
         bool success = false;
         {
-            MappedFile<K, V> file(path, 32);
+            MappedFile file(path, 32);
             int size_in_bytes = n * sizeof(K);
             file.write_next_data(cast_to_const_uint8_t_data(out.data()), size_in_bytes);
         }
 
         {
-            MappedFile<K, V> file(path, 32);
+            MappedFile file(path, 32);
             auto[data_ptr, size_in_bytes] = file.template read_next_data<const uint8_t*>();
             auto* int_data = reinterpret_cast<const K*>(data_ptr);
             std::vector<K> in(int_data, int_data + size_in_bytes / sizeof(K));

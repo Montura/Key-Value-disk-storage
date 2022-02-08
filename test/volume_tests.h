@@ -8,7 +8,7 @@
 namespace tests::volume_test {
     constexpr std::string_view output_folder = "../../output_volume_test/";
     constexpr int order = 2;
-    constexpr int key = 0;
+    const std::string key = "0";
     constexpr int value = 123456789;
 
 namespace details {
@@ -28,7 +28,7 @@ namespace details {
         return false;
     }
 
-    using StorageT = btree::Storage<int, int>;
+    using StorageT = btree::Storage<std::string, int>;
 }
 
     bool test_volume_open_close() {
@@ -50,7 +50,7 @@ namespace details {
         {
             details::StorageT s;
             auto v = s.open_volume(path, 100);
-            v.set(0, 0);
+            v.set("0", 0);
             s.close_volume(v);
             try {
                 s.open_volume(path, 10);
@@ -66,9 +66,9 @@ namespace details {
         const auto& path = details::get_file_name("volume_key_size_validation");
         bool success = false;
         {
-            btree::Storage<int32_t, int32_t> s_int32;
+            btree::Storage<std::string, int32_t> s_int32;
             auto v = s_int32.open_volume(path, order);
-            v.set(0, 0);
+            v.set("0", 0);
             s_int32.close_volume(v);
             success = details::open_to_fail<int64_t, int32_t>(path, error_msg::wrong_key_size_msg);
         }
@@ -79,19 +79,19 @@ namespace details {
         const auto& path = details::get_file_name("volume_value_validation");
         bool success = false;
         {
-            btree::Storage<int32_t, int32_t> s_int32;
+            btree::Storage<std::string, int32_t> s_int32;
             auto v = s_int32.open_volume(path, order);
-            v.set(0, 0);
+            v.set("0", 0);
             s_int32.close_volume(v);
-            success  = details::open_to_fail<int32_t, uint32_t>(path, error_msg::wrong_value_type_msg);
-            success &= details::open_to_fail<int32_t, uint64_t>(path, error_msg::wrong_value_type_msg);
-            success &= details::open_to_fail<int32_t, float>(path, error_msg::wrong_value_type_msg);
-            success &= details::open_to_fail<int32_t, double>(path, error_msg::wrong_value_type_msg);
-            success &= details::open_to_fail<int32_t, std::string>(path, error_msg::wrong_value_type_msg);
-            success &= details::open_to_fail<int32_t, std::wstring>(path, error_msg::wrong_value_type_msg);
-            success &= details::open_to_fail<int32_t, const char*>(path, error_msg::wrong_value_type_msg);
+            success  = details::open_to_fail<std::string, uint32_t>(path, error_msg::wrong_value_type_msg);
+            success &= details::open_to_fail<std::string, uint64_t>(path, error_msg::wrong_value_type_msg);
+            success &= details::open_to_fail<std::string, float>(path, error_msg::wrong_value_type_msg);
+            success &= details::open_to_fail<std::string, double>(path, error_msg::wrong_value_type_msg);
+            success &= details::open_to_fail<std::string, std::string>(path, error_msg::wrong_value_type_msg);
+            success &= details::open_to_fail<std::string, std::wstring>(path, error_msg::wrong_value_type_msg);
+            success &= details::open_to_fail<std::string, const char*>(path, error_msg::wrong_value_type_msg);
         }
-        bool elem_size_differs = details::open_to_fail<int32_t, int64_t>(path, error_msg::wrong_element_size_msg);
+        bool elem_size_differs = details::open_to_fail<std::string, int64_t>(path, error_msg::wrong_element_size_msg);
         return success && elem_size_differs;
     }
 

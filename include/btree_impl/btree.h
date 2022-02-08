@@ -12,7 +12,6 @@ namespace btree {
     template <typename K, typename V>
     struct BTree final {
         static constexpr bool is_valid_blob = std::is_pointer_v<V> && std::is_same_v<std::remove_pointer_t<V>, const char>;
-        static_assert(std::is_same_v<K, int32_t> || std::is_same_v<K, int64_t>);
         static_assert(std::is_arithmetic_v<V> || is_string_v<V> || is_valid_blob);
 
         using ValueType = conditional_t<std::is_arithmetic_v<V>, const V, const V&>;

@@ -13,7 +13,7 @@ namespace tests {
     class TestRunner {
         TestStat stat;
         Storage<K,V> storage;
-        ValueGenerator<V> g;
+        ValueGenerator<K, V> g;
 
         explicit TestRunner(int iterations) : stat(iterations) {}
     public:
@@ -45,7 +45,7 @@ namespace tests {
             auto btree = storage.open_volume(path, order);
 
             for (int i = 0; i < n; ++i) {
-                K key = i;
+                K key = std::to_string(i);
                 Data<V> data = g.next_value(key);
                 if constexpr(std::is_pointer_v<V>) {
                     btree.set(key, data.value, data.len);
@@ -54,12 +54,14 @@ namespace tests {
                 }
             }
 
-            for (int i = 0; i < n; ++i)
-                stat.total_exist += btree.exist(i);
+            for (int i = 0; i < n; ++i) {
+                K key = std::to_string(i);
+                stat.total_exist += btree.exist(key);
+            }
 
-            K max_key = n;
+            K max_key = std::to_string(n);
             for (int i = 0; i < n; ++i)
-                stat.total_not_exist += btree.exist(max_key + i);
+                stat.total_not_exist += btree.exist(max_key + std::to_string(i));
 
             return stat.all_exist() && stat.any_does_not_exist();
         }
@@ -69,9 +71,10 @@ namespace tests {
 
             bool success = true;
             for (int i = 0; i < n; ++i) {
-                auto actual_value = btree.get(i);
+                K key = std::to_string(i);
+                auto actual_value = btree.get(key);
                 if (actual_value.has_value()) {
-                    success &= g.check_value(i, actual_value);
+                    success &= g.check_value(key, actual_value);
                     stat.total_found++;
                 } else {
                     success &= (actual_value == std::nullopt);
@@ -87,30 +90,34 @@ namespace tests {
             const auto& [r1, r2, r3] = keys_to_remove;
 
             for (int i = 0; i < n; i += r1) {
-                stat.total_removed += btree.remove(i);
-                g.remove(i);
+                K key = std::to_string(i);
+                stat.total_removed += btree.remove(key);
+                g.remove(key);
             }
 
             for (int i = 0; i < n; i += r2) {
-                stat.total_removed += btree.remove(i);
-                g.remove(i);
+                K key = std::to_string(i);
+                stat.total_removed += btree.remove(key);
+                g.remove(key);
             }
 
             for (int i = 0; i < 50; ++i) {
-                g.remove(r1);
-                stat.total_removed += btree.remove(r1);
+                K key1 = std::to_string(r1);
+                g.remove(key1);
+                stat.total_removed += btree.remove(key1);
 
-                int v2 = 3 * r2;
+                K v2 = std::to_string(3 * r2);
                 g.remove(v2);
                 stat.total_removed += btree.remove(v2);
 
-                int v3 = 7 * r3;
+                K v3 = std::to_string(7 * r3);
                 g.remove(v3);
                 stat.total_removed += btree.remove(v3);
             }
 
             for (int i = 0; i < n; ++i) {
-                stat.total_after_remove += btree.exist(i);
+                K key = std::to_string(i);
+                stat.total_after_remove += btree.exist(key);
             }
             bool success = (stat.total_after_remove == g.map_size());
             return success && (stat.found_all_the_remaining());
@@ -120,9 +127,10 @@ namespace tests {
             auto btree = storage.open_volume(path, order);
             bool success = true;
             for (int i = 0; i < n; ++i) {
-                auto actual_value = btree.get(i);
+                K key = std::to_string(i);
+                auto actual_value = btree.get(key);
                 if (actual_value.has_value()) {
-                    success &= g.check_value(i, actual_value);
+                    success &= g.check_value(key, actual_value);
                     stat.total_after_reopen++;
                 } else {
                     success &= (actual_value == std::nullopt);
@@ -132,92 +140,92 @@ namespace tests {
         }
     };
 
-    template <typename K, typename V>
-    class TestRunnerMT {
-        StorageMT<K,V> storage;
-        ValueGenerator<V> g;
-
-        explicit TestRunnerMT() {}
-    public:
-        static bool run(ThreadPool& pool, const std::string& db_name, const int order, const int n) {
-            TestRunnerMT runner;
-            auto volume = runner.storage.open_volume(db_name, order);
-            bool success = true;
-
-            runner.fill_map_with_random_values(n);
-            success &= runner.test_set(pool, volume, n);
-            success &= runner.test_remove(pool, volume, n / 2);
-#ifdef DEBUG
-            cout << "\t Passed for " + db_name << endl;
-#endif
-            return success;
-        }
-
-    private:
-        void fill_map_with_random_values(int n) {
-            for (int i = 0; i < n; ++i)
-                g.next_value(i);
-        }
-
-        template <typename VolumeT>
-        bool test_set(ThreadPool& pool, VolumeT& volume, const int n) {
-            auto future = pool.submit([&]() -> TestStat { return test_set_keys(volume, g.map(), 0, n); });
-            future.get();
-
-            auto get_stat = test_get_keys(volume, 0, n);
-            return (get_stat.total_found == n);
-        }
-
-        template <typename VolumeT>
-        bool test_remove(ThreadPool& pool, VolumeT& volume, const int n) {
-            auto half = n / 2;
-
-            auto future = pool.submit([&]() -> TestStat { return test_remove_keys(volume, 0, half); });
-            auto remove_stat = future.get();
-            bool success = (remove_stat.total_removed == half);
-
-            auto get_stat = test_get_keys(volume, 0, n);
-            return success && (get_stat.total_found == half) && (get_stat.total_not_found == half);
-        }
-
-        template <typename VolumeT>
-        TestStat test_get_keys(const VolumeT& volume, const int from, const int to) {
-            TestStat stat(to - from);
-            for (int i = from; i < to; ++i) {
-                auto actual_value = volume.get(i);
-                if (actual_value.has_value()) {
-                    if (g.check_value(i, actual_value))
-                        stat.total_found++;
-                } else {
-                    stat.total_not_found++;
-                }
-            }
-            return stat;
-        }
-
-        template <typename VolumeT>
-        static TestStat test_set_keys(VolumeT& btree, const std::map<K,Data<V>>& verify_map, const int from, const int to) {
-            TestStat stat(to - from);
-            for (int i = from; i < to; ++i) {
-                K key = i;
-                Data<V> data = verify_map.find(i)->second;
-                if constexpr(std::is_pointer_v<V>) {
-                    btree.set(key, data.value, data.len);
-                } else {
-                    btree.set(key, data.value);
-                }
-            }
-            return stat;
-        }
-
-        template <typename VolumeT>
-        static TestStat test_remove_keys(VolumeT& btree, const int from, const int to) {
-            TestStat stat(to - from);
-            for (int i = from; i < to; ++i) {
-                stat.total_removed += btree.remove(i);
-            }
-            return stat;
-        }
-
-    };
+//    template <typename K, typename V>
+//    class TestRunnerMT {
+//        StorageMT<K,V> storage;
+//        ValueGenerator<K, V> g;
+//
+//        explicit TestRunnerMT() {}
+//    public:
+//        static bool run(ThreadPool& pool, const std::string& db_name, const int order, const int n) {
+//            TestRunnerMT runner;
+//            auto volume = runner.storage.open_volume(db_name, order);
+//            bool success = true;
+//
+//            runner.fill_map_with_random_values(n);
+//            success &= runner.test_set(pool, volume, n);
+//            success &= runner.test_remove(pool, volume, n / 2);
+//#ifdef DEBUG
+//            cout << "\t Passed for " + db_name << endl;
+//#endif
+//            return success;
+//        }
+//
+//    private:
+//        void fill_map_with_random_values(int n) {
+//            for (int i = 0; i < n; ++i)
+//                g.next_value(i);
+//        }
+//
+//        template <typename VolumeT>
+//        bool test_set(ThreadPool& pool, VolumeT& volume, const int n) {
+//            auto future = pool.submit([&]() -> TestStat { return test_set_keys(volume, g.map(), 0, n); });
+//            future.get();
+//
+//            auto get_stat = test_get_keys(volume, 0, n);
+//            return (get_stat.total_found == n);
+//        }
+//
+//        template <typename VolumeT>
+//        bool test_remove(ThreadPool& pool, VolumeT& volume, const int n) {
+//            auto half = n / 2;
+//
+//            auto future = pool.submit([&]() -> TestStat { return test_remove_keys(volume, 0, half); });
+//            auto remove_stat = future.get();
+//            bool success = (remove_stat.total_removed == half);
+//
+//            auto get_stat = test_get_keys(volume, 0, n);
+//            return success && (get_stat.total_found == half) && (get_stat.total_not_found == half);
+//        }
+//
+//        template <typename VolumeT>
+//        TestStat test_get_keys(const VolumeT& volume, const int from, const int to) {
+//            TestStat stat(to - from);
+//            for (int i = from; i < to; ++i) {
+//                auto actual_value = volume.get(i);
+//                if (actual_value.has_value()) {
+//                    if (g.check_value(i, actual_value))
+//                        stat.total_found++;
+//                } else {
+//                    stat.total_not_found++;
+//                }
+//            }
+//            return stat;
+//        }
+//
+//        template <typename VolumeT>
+//        static TestStat test_set_keys(VolumeT& btree, const std::map<K,Data<V>>& verify_map, const int from, const int to) {
+//            TestStat stat(to - from);
+//            for (int i = from; i < to; ++i) {
+//                K key = i;
+//                Data<V> data = verify_map.find(i)->second;
+//                if constexpr(std::is_pointer_v<V>) {
+//                    btree.set(key, data.value, data.len);
+//                } else {
+//                    btree.set(key, data.value);
+//                }
+//            }
+//            return stat;
+//        }
+//
+//        template <typename VolumeT>
+//        static TestStat test_remove_keys(VolumeT& btree, const int from, const int to) {
+//            TestStat stat(to - from);
+//            for (int i = from; i < to; ++i) {
+//                stat.total_removed += btree.remove(i);
+//            }
+//            return stat;
+//        }
+//
+//    };
 }

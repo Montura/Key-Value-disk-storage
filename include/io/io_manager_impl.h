@@ -12,7 +12,7 @@ namespace btree {
         file.set_pos(0);
 
         file.write_next_primitive(t);
-        file.template write_next_primitive<uint8_t>(sizeof(K));
+        file.template write_next_primitive<uint8_t>(sizeof(K)); // todo: replace with KEY type enum (because of variable key length)?
         file.template write_next_primitive<uint8_t>(get_value_type_code<V>());
         file.template write_next_primitive<uint8_t>(get_element_size<V>());
         file.write_next_primitive(INITIAL_ROOT_POS_IN_HEADER);
@@ -26,7 +26,7 @@ namespace btree {
         auto t_from_file = file.read_int16();
         validate(t == t_from_file, error_msg::wrong_order_msg, file.path);
 
-        auto key_size = file.read_byte();
+        auto key_size = file.read_byte(); // todo:  replace with KEY type enum (because of variable key length)?
         validate(key_size == sizeof(K), error_msg::wrong_key_size_msg, file.path);
 
         auto value_type_code = file.read_byte();
@@ -48,7 +48,7 @@ namespace btree {
     void IOManager<K, V>::write_entry(const EntryT& e, const int64_t pos) {
         file.set_pos(pos);
 
-        file.write_next_primitive(e.key);
+        file.write_next_data(e.key.data(), e.key.size() * sizeof(typename K::value_type));
         file.write_next_data(e.data, e.size_in_bytes);
     }
 
@@ -56,7 +56,8 @@ namespace btree {
     typename BTree<K,V>::EntryT IOManager<K, V>::read_entry(const int64_t pos) {
         file.set_pos(pos);
 
-        K key = file.template read_next_primitive<K>();
+        auto [data, len] = file.read_next_data<const uint8_t*>();
+        K key((const char*)data, len);
         auto [value, size] = file.template read_next_data<typename EntryT::ValueType>();
         return { key, value, size };
     }
@@ -65,7 +66,9 @@ namespace btree {
     K IOManager<K, V>::read_key(const int64_t pos) {
         file.set_pos(pos);
 
-        return file.template read_next_primitive<K>();
+        auto [data, len] = file.read_next_data<const uint8_t*>();
+        K key((const char*)data, len);
+        return key;
     }
 
     template <typename K, typename V>

@@ -16,25 +16,26 @@ namespace btree::entry {
     public:
         using ValueType = conditional_t<V_is_arithmetic, V, const uint8_t*>;
 
+        static const inline K INVALID_KEY = "";
         const K key;
         const ValueType data;
         const int32_t size_in_bytes;
 
         template <typename U = V, enable_if_t<std::is_arithmetic_v<U>> = true>
         explicit Entry() :
-                key(-1),
+                key(INVALID_KEY),
                 data(0),
                 size_in_bytes(0) {}
 
         template <typename U = V, enable_if_t<is_string_v<U>> = true>
         explicit Entry() :
-                key(-1),
+                key(INVALID_KEY),
                 data(nullptr),
                 size_in_bytes(0) {}
 
         template <typename U = V, enable_if_t<std::is_pointer_v<U>> = true>
         explicit Entry() :
-                key(-1),
+                key(INVALID_KEY),
                 data(),
                 size_in_bytes(0) {}
 
@@ -66,7 +67,7 @@ namespace btree::entry {
                 size_in_bytes(size) {}
 
         bool is_valid() const {
-            return (key != -1) && (size_in_bytes != 0);
+            return (key != "") && (size_in_bytes != 0);
         }
 
         std::optional<V> value() const {
