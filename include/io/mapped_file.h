@@ -27,20 +27,6 @@ namespace btree {
             m_pos = end_address;
             return address_begin;
         }
-    public:
-        explicit MappedRegion(int64_t file_pos,  const std::string& path);
-        uint8_t* address_by_offset(const int64_t offset) const;
-        void remap(bip::mode_t mode = bip::read_write, bip::offset_t file_offset = 0, size_t size = 0);
-
-        template <typename T>
-        T read_next_primitive();
-
-        template <typename ValueType>
-        std::pair<ValueType, int32_t> read_next_data();
-
-//        /** Warning: do not write vector size */
-//        template <typename T>
-//        void write_node_vector(const std::vector<T>& vec);
 
         int64_t calc_new_size(int64_t end_address) const {
             int64_t fileSize = fs::file_size(path);
@@ -55,6 +41,28 @@ namespace btree {
             } else {
                 throw std::runtime_error("Attempted to read from memory outside the mapped region");
             }
+        }
+
+    public:
+        explicit MappedRegion(int64_t file_pos,  const std::string& path);
+        uint8_t* address_by_offset(const int64_t offset) const;
+        void remap(bip::mode_t mode = bip::read_write, bip::offset_t file_offset = 0, size_t size = 0);
+
+        template <typename T>
+        T read_next_primitive();
+
+        template <typename ValueType>
+        std::pair<ValueType, int32_t> read_next_data();
+
+        template <typename T>
+        int64_t write_next_primitive(const T val);
+
+        int64_t offset() const {
+            return m_pos;
+        }
+
+        int64_t size() const {
+            return mapped_region.get_size();
         }
     };
 
@@ -76,7 +84,7 @@ namespace btree {
         std::pair<ValueType, int32_t> read_next_data(MappedRegion* region);
 
         template <typename T>
-        void write_next_primitive(const T val);
+        void write_next_primitive(std::unique_ptr<MappedRegion>& region, const T val);
 
         template <typename T>
         T read_next_primitive(MappedRegion* region);
@@ -93,7 +101,7 @@ namespace btree {
         void read_node_vector(std::vector<T>& vec);
 
         int64_t get_pos() const;
-        std::unique_ptr<MappedRegion> set_pos(int64_t pos);
+        std::unique_ptr<MappedRegion> get_mapped_region(int64_t pos);
         void set_file_pos_to_end();
 
         uint8_t read_byte(MappedRegion* region);

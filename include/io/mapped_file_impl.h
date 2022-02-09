@@ -102,10 +102,32 @@ namespace file {
     }
 
     template <typename T>
-    void MappedFile::write_next_primitive(const T val) {
+    void MappedFile::write_next_primitive(std::unique_ptr<MappedRegion>& region, const T val) {
         static_assert(std::is_arithmetic_v<T>);
-        m_pos = write_arithmetic(val);
+
+        int64_t total_size_in_bytes = sizeof(T);
+        int64_t m_pos = region->offset();
+        int64_t new_size = m_pos + total_size_in_bytes;
+        if (new_size > region->size()) {
+//            m_size = false ? new_size : std::max(scale_current_size(), new_size);
+            region = std::make_unique<MappedRegion>(m_pos, path);
+            fs::resize_file(path, m_size);
+            region->remap(bip::read_write, file_pos, new_size);
+        }
+
+        m_pos = region->template write_next_primitive(val);
         m_capacity = std::max(m_pos, m_capacity);
+    }
+
+    template <typename T>
+    int64_t MappedRegion::write_next_primitive(const T val) {
+        static_assert(std::is_arithmetic_v<T>);
+        int64_t total_size_in_bytes = sizeof(T);
+
+        auto* data = cast_to_const_uint8_t_data(&val);
+        std::copy(data, data + total_size_in_bytes, address_by_offset(m_pos));
+        m_pos += total_size_in_bytes;
+        return m_pos + total_size_in_bytes;
     }
 
     template <typename T>
@@ -178,7 +200,7 @@ namespace file {
         m_mapped_region->remap();
     }
 
-    std::unique_ptr<MappedRegion> MappedFile::set_pos(int64_t pos) {
+    std::unique_ptr<MappedRegion> MappedFile::get_mapped_region(int64_t pos) {
         m_pos = pos > 0 ? pos : 0;
         std::unique_ptr<MappedRegion> region(new MappedRegion(pos, path));
         region->remap(bip::read_write, m_pos);

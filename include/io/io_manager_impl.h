@@ -9,19 +9,19 @@ namespace btree {
 
     template <typename K, typename V>
     int64_t IOManager<K, V>::write_header() {
-        auto region = file.set_pos(0);
+        auto region = file.get_mapped_region(0);
 
-        file.write_next_primitive(t);
-        file.template write_next_primitive<uint8_t>(sizeof(K)); // todo: replace with KEY type enum (because of variable key length)?
-        file.template write_next_primitive<uint8_t>(get_value_type_code<V>());
-        file.template write_next_primitive<uint8_t>(get_element_size<V>());
-        file.write_next_primitive(INITIAL_ROOT_POS_IN_HEADER);
+        file.write_next_primitive(region, t);
+        file.template write_next_primitive<uint8_t>(region, sizeof(K)); // todo: replace with KEY type enum (because of variable key length)?
+        file.template write_next_primitive<uint8_t>(region, get_value_type_code<V>());
+        file.template write_next_primitive<uint8_t>(region, get_element_size<V>());
+        file.write_next_primitive(region, INITIAL_ROOT_POS_IN_HEADER);
         return file.get_pos();
     }
 
     template <typename K, typename V>
     int64_t IOManager<K, V>::read_header() {
-        auto pRegion = file.set_pos(0);
+        auto pRegion = file.get_mapped_region(0);
 
         auto t_from_file = file.read_int16(pRegion.get());
         validate(t == t_from_file, error_msg::wrong_order_msg, file.path);
@@ -48,7 +48,7 @@ namespace btree {
     void IOManager<K, V>::write_entry(const EntryT& e, const int64_t pos) {
         int32_t key_size = e.key.size() * sizeof(typename K::value_type);
         int32_t data_size = e.size_in_bytes;
-        file.set_pos(pos);
+        file.get_mapped_region(pos);
 
         file.write_next_data(e.key.data(), key_size);
         file.write_next_data(e.data, data_size);
@@ -56,7 +56,7 @@ namespace btree {
 
     template <typename K, typename V>
     typename BTree<K,V>::EntryT IOManager<K, V>::read_entry(const int64_t pos) {
-        const auto& ptr = file.set_pos(pos);
+        const auto& ptr = file.get_mapped_region(pos);
 
         auto [data, len] = file.read_next_data<const uint8_t*>(ptr.get());
         K key((const char*)data, len);
@@ -66,7 +66,7 @@ namespace btree {
 
     template <typename K, typename V>
     K IOManager<K, V>::read_key(const int64_t pos) {
-        const auto& ptr = file.set_pos(pos);
+        const auto& ptr = file.get_mapped_region(pos);
 
         auto [data, len] = file.read_next_data<const uint8_t*>(ptr.get());
         K key((const char*)data, len);
@@ -75,25 +75,25 @@ namespace btree {
 
     template <typename K, typename V>
     void IOManager<K, V>::write_new_pos_for_root_node(const int64_t posRoot) {
-        file.set_pos(ROOT_POS_IN_HEADER);
+        auto region = file.get_mapped_region(ROOT_POS_IN_HEADER);
 
-        file.write_next_primitive(posRoot);
+        file.write_next_primitive(region, posRoot);
     }
 
     template <typename K, typename V>
     void IOManager<K, V>::write_invalidated_root() {
-        file.set_pos(ROOT_POS_IN_HEADER);
+        auto region = file.get_mapped_region(ROOT_POS_IN_HEADER);
 
-        file.write_next_primitive(INVALID_POS);
+        file.write_next_primitive(region, INVALID_POS);
         file.shrink_to_fit();
     }
 
     template <typename K, typename V>
     int64_t IOManager<K, V>::write_node(const Node& node, const int64_t pos) {
-        const auto& ptr = file.set_pos(pos);
+        auto ptr = file.get_mapped_region(pos);
 
-        file.write_next_primitive(node.is_leaf);
-        file.write_next_primitive(node.used_keys);
+        file.write_next_primitive(ptr, node.is_leaf);
+        file.write_next_primitive(ptr, node.used_keys);
         file.write_node_vector(node.key_pos);
         file.write_node_vector(node.child_pos);
         return file.get_pos();
@@ -101,7 +101,7 @@ namespace btree {
 
     template <typename K, typename V>
     BTreeNode <K, V> IOManager<K, V>::read_node(const int64_t pos) {
-        const auto& ptr = file.set_pos(pos);
+        const auto& ptr = file.get_mapped_region(pos);
 
         Node node(t, false);
         node.m_pos = pos;

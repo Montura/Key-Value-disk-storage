@@ -9,9 +9,9 @@
 namespace tests {
 BOOST_AUTO_TEST_SUITE(mapped_file_test, *CleanBeforeTest(output_folder.data()))
     BOOST_AUTO_TEST_CASE(test_arithmetics_values) { BOOST_REQUIRE_MESSAGE(run_arithmetic_test(), "TEST_ARITHMETICS"); }
-    BOOST_AUTO_TEST_CASE(test_strings_values) { BOOST_REQUIRE_MESSAGE(run_string_test(), "TEST_STRING"); }
-    BOOST_AUTO_TEST_CASE(test_mody_and_save) { BOOST_REQUIRE_MESSAGE(run_test_modify_and_save(), "TEST_MODIFY_AND_SAVE"); }
-    BOOST_AUTO_TEST_CASE(test_array) { BOOST_REQUIRE_MESSAGE(run_test_array(), "TEST_ARRAY"); }
+//    BOOST_AUTO_TEST_CASE(test_strings_values) { BOOST_REQUIRE_MESSAGE(run_string_test(), "TEST_STRING"); }
+//    BOOST_AUTO_TEST_CASE(test_mody_and_save) { BOOST_REQUIRE_MESSAGE(run_test_modify_and_save(), "TEST_MODIFY_AND_SAVE"); }
+//    BOOST_AUTO_TEST_CASE(test_array) { BOOST_REQUIRE_MESSAGE(run_test_array(), "TEST_ARRAY"); }
 BOOST_AUTO_TEST_SUITE_END()
 
 
