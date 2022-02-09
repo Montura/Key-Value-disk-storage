@@ -12,16 +12,25 @@ namespace fs = std::filesystem;
 namespace btree {
     class MappedRegion {
         const std::string path;
-        const bip::offset_t file_pos;
+        bip::offset_t file_pos;
         bip::mapped_region mapped_region;
         uint8_t* mapped_region_begin;
         bip::offset_t m_pos;
+        
+        uint8_t* read_only_address_for_offset(int64_t offset) {
+            auto end_address = m_pos + offset;
+            if (end_address > static_cast<int64_t>(mapped_region.get_size())) {
+                remap(bip::read_only, file_pos, calc_new_size(end_address));
+                end_address = offset;
+            }
+            uint8_t* address_begin = address_by_offset(m_pos);
+            m_pos = end_address;
+            return address_begin;
+        }
     public:
         explicit MappedRegion(int64_t file_pos,  const std::string& path);
         uint8_t* address_by_offset(const int64_t offset) const;
-        void remap(const std::string& path, bip::mode_t mode = bip::read_write, bip::offset_t file_offset = 0, size_t size = 0);
-
-        size_t pos() const;
+        void remap(bip::mode_t mode = bip::read_write, bip::offset_t file_offset = 0, size_t size = 0);
 
         template <typename T>
         T read_next_primitive();
@@ -33,11 +42,11 @@ namespace btree {
 //        template <typename T>
 //        void write_node_vector(const std::vector<T>& vec);
 
-        size_t scale_current_size(int64_t last_address) const {
-            uintmax_t fileSize = fs::file_size(path);
-            if (last_address <= fileSize) {
-                int64_t delta = last_address - m_pos;
-                int64_t new_size = delta * 4;
+        int64_t calc_new_size(int64_t end_address) const {
+            int64_t fileSize = fs::file_size(path);
+            if (end_address <= fileSize) {
+//                int64_t delta = end_address - m_pos;
+                int64_t new_size = 128;
                 if (m_pos + new_size > fileSize) {
                     return fileSize - m_pos;
                 } else {

@@ -52,12 +52,8 @@ namespace details {
             // read
             const auto& ptr = file.set_pos(0);
             for (int i = 0; i < ITERATIONS; ++i) {
-                try {
-                    V tmp = file.template read_next_primitive<V>(ptr.get());
-                    success &= (tmp == static_cast<V>(i));
-                } catch (std::exception& e) {
-                    std::cout << e.what() << std::endl;
-                }
+                V tmp = file.template read_next_primitive<V>(ptr.get());
+                success &= (tmp == static_cast<V>(i));
             }
 
 
