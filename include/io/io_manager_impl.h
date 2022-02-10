@@ -48,10 +48,10 @@ namespace btree {
     void IOManager<K, V>::write_entry(const EntryT& e, const int64_t pos) {
         int32_t key_size = e.key.size() * sizeof(typename K::value_type);
         int32_t data_size = e.size_in_bytes;
-        file.get_mapped_region(pos);
+        auto ptr = file.get_mapped_region(pos);
 
-        file.write_next_data(e.key.data(), key_size);
-        file.write_next_data(e.data, data_size);
+        file.write_next_data(ptr, e.key.data(), key_size);
+        file.write_next_data(ptr, e.data, data_size);
     }
 
     template <typename K, typename V>

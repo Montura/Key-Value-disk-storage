@@ -4,71 +4,14 @@
 #include <fstream>
 #include <filesystem>
 
+#include "mapped_region.h"
 #include "utils/boost_include.h"
 #include "utils/utils.h"
 
 namespace fs = std::filesystem;
 
 namespace btree {
-    class MappedRegion {
-        const std::string path;
-        bip::offset_t file_pos;
-        bip::mapped_region mapped_region;
-        uint8_t* mapped_region_begin;
-        bip::offset_t m_pos;
-        
-        uint8_t* read_only_address_for_offset(int64_t offset) {
-            auto end_address = m_pos + offset;
-            if (end_address > static_cast<int64_t>(mapped_region.get_size())) {
-                remap(bip::read_only, file_pos, calc_new_size(end_address));
-                end_address = offset;
-            }
-            uint8_t* address_begin = address_by_offset(m_pos);
-            m_pos = end_address;
-            return address_begin;
-        }
-
-        int64_t calc_new_size(int64_t end_address) const {
-            int64_t fileSize = fs::file_size(path);
-            if (end_address <= fileSize) {
-//                int64_t delta = end_address - m_pos;
-                int64_t new_size = 128;
-                if (m_pos + new_size > fileSize) {
-                    return fileSize - m_pos;
-                } else {
-                    return new_size;
-                }
-            } else {
-                throw std::runtime_error("Attempted to read from memory outside the mapped region");
-            }
-        }
-
-    public:
-        explicit MappedRegion(int64_t file_pos,  const std::string& path);
-        uint8_t* address_by_offset(const int64_t offset) const;
-        void remap(bip::mode_t mode = bip::read_write, bip::offset_t file_offset = 0, size_t size = 0);
-
-        template <typename T>
-        T read_next_primitive();
-
-        template <typename ValueType>
-        std::pair<ValueType, int32_t> read_next_data();
-
-        template <typename T>
-        int64_t write_next_primitive(const T val);
-
-        int64_t offset() const {
-            return m_pos;
-        }
-
-        int64_t size() const {
-            return mapped_region.get_size();
-        }
-    };
-
     class MappedFile {
-//        using ValueType = utils::conditional_t<std::is_arithmetic_v<V>, const V, const uint8_t*>;
-
         int64_t m_pos;
         int64_t m_size;
         int64_t m_capacity;
@@ -84,13 +27,13 @@ namespace btree {
         std::pair<ValueType, int32_t> read_next_data(MappedRegion* region);
 
         template <typename T>
-        void write_next_primitive(std::unique_ptr<MappedRegion>& region, const T val);
+        int64_t write_next_primitive(std::unique_ptr<MappedRegion>& region, const T val);
 
         template <typename T>
         T read_next_primitive(MappedRegion* region);
 
         template <typename T>
-        void write_next_data(T val, const int32_t total_size_in_bytes);
+        void write_next_data(std::unique_ptr<MappedRegion>& region, T val, const int32_t total_size_in_bytes);
 
         /** Warning: do not write vector size */
         template <typename T>
@@ -113,10 +56,7 @@ namespace btree {
 
     private:
         template <typename T>
-        int64_t write_arithmetic(T val);
-
-        template <typename T>
-        int64_t write_blob(T source_data, const int32_t total_size_in_bytes);
+        int64_t write_blob(std::unique_ptr<MappedRegion>& region, T source_data, const int32_t total_size_in_bytes);
 
         void resize(int64_t new_size, bool shrink_to_fit = false);
 
