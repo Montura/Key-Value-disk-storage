@@ -18,20 +18,15 @@ namespace file {
 }
     using namespace utils;
 
-    MappedFile::MappedFile(const std::string& path, const int64_t bytes_num) :
-            m_pos(0), m_mapped_region(new MappedRegion(0, path)), path(path)
-    {
+    MappedFile::MappedFile(const std::string& path, const int64_t bytes_num) : m_pos(0), path(path) {
         bool file_exists = fs::exists(path);
         if (!file_exists) {
             file::create_file(path, bytes_num);
-            m_size = m_capacity = bytes_num;
+            m_capacity = bytes_num;
         } else {
-            m_size = m_capacity = static_cast<int64_t>(fs::file_size(path));
+            m_capacity = static_cast<int64_t>(fs::file_size(path));
         }
-        if (m_size > 0)
-            m_mapped_region->remap();
     }
-
  
     MappedFile::~MappedFile() {
 /**  _MSC_VER
@@ -48,7 +43,6 @@ namespace file {
  * 4. See impl of BOOST_MAPPED_REGION dtor:
     - https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L555
 */
-        m_mapped_region.reset(nullptr);
         std::error_code error_code;
         fs::resize_file(path, m_capacity, error_code);
         if (error_code)
@@ -72,16 +66,7 @@ namespace file {
     template <typename T>
     int64_t MappedFile::write_next_primitive(std::unique_ptr<MappedRegion>& region, const T val) {
         static_assert(std::is_arithmetic_v<T>);
-
-        int64_t total_size_in_bytes = sizeof(T);
-        int64_t region_pos = region->get_pos();
-        int64_t new_size = region_pos + total_size_in_bytes;
-        if (new_size > region->size()) {
-//            m_size = false ? new_size : std::max(scale_current_size(), new_size);
-            region = std::make_unique<MappedRegion>(region_pos, path);
-            fs::resize_file(path, new_size);
-            region->remap(bip::read_write, total_size_in_bytes);
-        }
+        int64_t new_size = resize(region, sizeof(T));
 
         m_capacity = std::max(new_size, m_capacity);
         m_pos = region->template write_next_primitive(val);
@@ -94,26 +79,23 @@ namespace file {
     }
 
     template <typename T>
-    void MappedFile::write_node_vector(const std::vector<T>& vec) {
+    void MappedFile::write_node_vector(std::unique_ptr<MappedRegion>& region, const std::vector<T>& vec) {
         int64_t total_size_in_bytes = sizeof(T) * vec.size();
-        if (m_pos + total_size_in_bytes > m_size)
-            resize(m_pos + total_size_in_bytes);
+        int64_t new_size = resize(region, total_size_in_bytes);
 
         auto* data = cast_to_const_uint8_t_data(vec.data());
-        std::copy(data, data + total_size_in_bytes, m_mapped_region->address_by_offset(m_pos));
-        m_pos += total_size_in_bytes;
         m_capacity = std::max(m_pos, m_capacity);
+        m_pos = region->template write_blob(data, total_size_in_bytes);
     }
 
     template <typename T>
-    void MappedFile::read_node_vector(std::vector<T>& vec) {
-        int64_t total_size = sizeof(T) * vec.size();
+    void MappedFile::read_node_vector(const std::unique_ptr<MappedRegion>& region, std::vector<T>& vec) {
+        int64_t total_size_in_bytes = sizeof(T) * vec.size();
 
         auto* data = cast_to_uint8_t_data(vec.data());
-        auto* start = m_mapped_region->address_by_offset(m_pos);
-        auto* end = start + total_size;
-        std::copy(start, end, data);
-        m_pos += total_size;
+        auto [raw_data, len] = region->template read_next_data<const uint8_t*>();
+        std::copy(raw_data, raw_data + len, data);
+        m_pos += total_size_in_bytes;
     }
 
     template <typename T>
@@ -123,23 +105,22 @@ namespace file {
         int64_t region_pos = write_next_primitive(region, len);
 
         // write values
-        int64_t new_size = region_pos + total_size_in_bytes;
-        if (new_size > region->size()) {
-            region = std::make_unique<MappedRegion>(region_pos, path);
-            fs::resize_file(path, new_size);
-            region->remap(bip::read_write, total_size_in_bytes);
-        }
+        int64_t new_size = resize(region, total_size_in_bytes);
 
         m_capacity = std::max(new_size, m_capacity);
         m_pos = region->template write_blob(source_data, total_size_in_bytes);
         return m_pos;
     }
 
-    void MappedFile::resize(int64_t new_size, bool shrink_to_fit) {
-        m_size = shrink_to_fit ? new_size : std::max(scale_current_size(), new_size);
-        m_mapped_region = std::make_unique<MappedRegion>(m_pos, path);
-        fs::resize_file(path, m_size);
-        m_mapped_region->remap();
+    int64_t MappedFile::resize(std::unique_ptr<MappedRegion>& region, int64_t total_size_in_bytes, bool shrink_to_fit) {
+        int64_t region_pos = region->get_pos();
+        int64_t new_size = region_pos + total_size_in_bytes;
+        if (new_size > region->size()) {
+            region = std::make_unique<MappedRegion>(region_pos, path);
+            fs::resize_file(path, new_size);
+            region->remap(bip::read_write, total_size_in_bytes);
+        }
+        return new_size;
     }
 
     std::unique_ptr<MappedRegion> MappedFile::get_mapped_region(int64_t pos) {
@@ -171,11 +152,11 @@ namespace file {
     }
 
     void MappedFile::shrink_to_fit() {
-        m_capacity = m_size = m_pos;
-        resize(m_size, true);
+        m_capacity = m_pos;
+        fs::resize_file(path, m_capacity);
     }
 
     bool MappedFile::is_empty() const {
-        return m_size == 0;
+        return m_capacity == 0;
     }
 }

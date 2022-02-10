@@ -13,9 +13,7 @@ namespace fs = std::filesystem;
 namespace btree {
     class MappedFile {
         int64_t m_pos;
-        int64_t m_size;
         int64_t m_capacity;
-        std::unique_ptr<MappedRegion> m_mapped_region;
     public:
         const std::string path;
 
@@ -37,11 +35,11 @@ namespace btree {
 
         /** Warning: do not write vector size */
         template <typename T>
-        void write_node_vector(const std::vector<T>& vec);
+        void write_node_vector(std::unique_ptr<MappedRegion>& region, const std::vector<T>& vec);
 
         /** Warning: do not read vector size */
         template <typename T>
-        void read_node_vector(std::vector<T>& vec);
+        void read_node_vector(const std::unique_ptr<MappedRegion>& region, std::vector<T>& vec);
 
         int64_t get_pos() const;
         std::unique_ptr<MappedRegion> get_mapped_region(int64_t pos);
@@ -58,11 +56,7 @@ namespace btree {
         template <typename T>
         int64_t write_blob(std::unique_ptr<MappedRegion>& region, T source_data, const int32_t total_size_in_bytes);
 
-        void resize(int64_t new_size, bool shrink_to_fit = false);
-
-        constexpr int64_t scale_current_size() const {
-            return static_cast<int64_t>(m_size * 1.1);
-        }
+        int64_t resize(std::unique_ptr<MappedRegion>& region, int64_t total_size_in_bytes, bool shrink_to_fit = false);
     };
 }
 

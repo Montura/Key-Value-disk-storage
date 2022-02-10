@@ -94,8 +94,8 @@ namespace btree {
 
         file.write_next_primitive(ptr, node.is_leaf);
         file.write_next_primitive(ptr, node.used_keys);
-        file.write_node_vector(node.key_pos);
-        file.write_node_vector(node.child_pos);
+        file.write_node_vector(ptr, node.key_pos);
+        file.write_node_vector(ptr, node.child_pos);
         return file.get_pos();
     }
 
@@ -107,8 +107,8 @@ namespace btree {
         node.m_pos = pos;
         node.is_leaf = file.read_byte(ptr.get());
         node.used_keys = file.read_int16(ptr.get());
-        file.read_node_vector(node.key_pos);
-        file.read_node_vector(node.child_pos);
+        file.read_node_vector(ptr, node.key_pos);
+        file.read_node_vector(ptr, node.child_pos);
         return node;
     }
 
