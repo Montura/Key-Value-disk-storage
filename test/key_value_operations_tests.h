@@ -49,7 +49,7 @@ namespace details {
             Storage<K, V> s;
             ValueGenerator<K, V> g;
 
-            const K key = "";
+            const K key = "0";
             Data<V> data = g.next_value(key);
             uint32_t file_size = SizeInfo<K, V>::file_size_in_bytes(order, key, data.value, data.len);
 

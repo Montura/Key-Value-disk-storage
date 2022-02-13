@@ -59,7 +59,7 @@ namespace file {
     }
 
     template <typename ValueType>
-    std::pair<ValueType, int32_t> MappedFile::read_next_data(MappedRegion* region) {
+    std::pair<ValueType, int32_t> MappedFile::read_next_data(const std::unique_ptr<MappedRegion>& region) {
         return region->template read_next_data<ValueType>();
     }
 
@@ -74,18 +74,14 @@ namespace file {
     }
 
     template <typename T>
-    T MappedFile::read_next_primitive(MappedRegion* region) {
+    T MappedFile::read_next_primitive(const std::unique_ptr<MappedRegion>& region) {
         return region->template read_next_primitive<T>();
     }
 
     template <typename T>
     void MappedFile::write_node_vector(std::unique_ptr<MappedRegion>& region, const std::vector<T>& vec) {
         int64_t total_size_in_bytes = sizeof(T) * vec.size();
-        int64_t new_size = resize(region, total_size_in_bytes);
-
-        auto* data = cast_to_const_uint8_t_data(vec.data());
-        m_capacity = std::max(m_pos, m_capacity);
-        m_pos = region->template write_blob(data, total_size_in_bytes);
+        write_blob(region, vec.data(), total_size_in_bytes);
     }
 
     template <typename T>
@@ -113,10 +109,10 @@ namespace file {
     }
 
     int64_t MappedFile::resize(std::unique_ptr<MappedRegion>& region, int64_t total_size_in_bytes, bool shrink_to_fit) {
-        int64_t region_pos = region->get_pos();
-        int64_t new_size = region_pos + total_size_in_bytes;
+        int64_t current_pos = region->current_pos();
+        int64_t new_size = current_pos + total_size_in_bytes;
         if (new_size > region->size()) {
-            region = std::make_unique<MappedRegion>(region_pos, path);
+            region = std::make_unique<MappedRegion>(current_pos, path);
             fs::resize_file(path, new_size);
             region->remap(bip::read_write, total_size_in_bytes);
         }
@@ -131,11 +127,11 @@ namespace file {
         return region;
     }
 
-    int16_t MappedFile::read_int16(MappedRegion* region) {
+    int16_t MappedFile::read_int16(const std::unique_ptr<MappedRegion>& region) {
         return region->read_next_primitive<int16_t>();
     }
 
-    int32_t MappedFile::read_int32(MappedRegion* region) {
+    int32_t MappedFile::read_int32(const std::unique_ptr<MappedRegion>& region) {
         return region->read_next_primitive<int32_t>();
     }
 
@@ -143,7 +139,7 @@ namespace file {
         return m_pos;
     }
 
-    uint8_t MappedFile::read_byte(MappedRegion* region) {
+    uint8_t MappedFile::read_byte(const std::unique_ptr<MappedRegion>& region) {
         return region->read_next_primitive<uint8_t>();
     }
 

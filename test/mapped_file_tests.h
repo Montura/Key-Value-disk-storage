@@ -53,7 +53,7 @@ namespace details {
             // read
             const auto& ptr = file.get_mapped_region(0);
             for (int i = 0; i < ITERATIONS; ++i) {
-                V tmp = file.template read_next_primitive<V>(ptr.get());
+                V tmp = file.template read_next_primitive<V>(ptr);
                 success &= (tmp == static_cast<V>(i));
             }
 
@@ -83,7 +83,7 @@ namespace details {
             const auto& ptr = file.get_mapped_region(0);
             for (int i = 0; i < ITERATIONS; ++i) {
                 V tmp = data.value + conv(i);
-                auto[value, size] = file.template read_next_data<const uint8_t*>(ptr.get());
+                auto[value, size] = file.template read_next_data<const uint8_t*>(ptr);
                 success &= compare(tmp, value, size);
             }
 //            total_read_size = file.get_pos();
@@ -117,7 +117,7 @@ namespace details {
             MappedFile file(path, 32);
             const auto& ptr = file.get_mapped_region(0);
             for (int32_t i = 0; i < details::ITERATIONS; ++i) {
-                auto actual = file.template read_next_primitive<K>(ptr.get());
+                auto actual = file.template read_next_primitive<K>(ptr);
                 auto expected = i * 2;
                 success &= (actual == expected);
             }
@@ -131,22 +131,20 @@ namespace details {
         std::string path = details::get_absolute_file_name("array");
         const int n = 1000000;
         std::vector<K> out(n, 1);
+        std::vector<K> in(n, 0);
         bool success = false;
         {
             MappedFile file(path, 32);
             auto wptr = file.get_mapped_region(0);
-            int size_in_bytes = n * sizeof(K);
-            file.template write_next_data(wptr, cast_to_const_uint8_t_data(out.data()), size_in_bytes);
+            file.write_node_vector(wptr, out);
         }
 
         {
             MappedFile file(path, 32);
             const auto& ptr = file.get_mapped_region(0);
-            auto[data_ptr, size_in_bytes] = file.template read_next_data<const uint8_t*>(ptr.get());
-            auto* int_data = reinterpret_cast<const K*>(data_ptr);
-            std::vector<K> in(int_data, int_data + size_in_bytes / sizeof(K));
-            success = (in == out);
+            file.read_node_vector(ptr, in);
         }
+        success = (in == out);
         return success;
     }
 

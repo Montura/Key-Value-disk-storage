@@ -17,12 +17,12 @@ BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(volume_test, *CleanBeforeTest(output_folder.data()))
     BOOST_AUTO_TEST_CASE(volume_open_close) { BOOST_REQUIRE_MESSAGE(test_volume_open_close(), "TEST_VOLUME_OPEN_CLOSE");}
-//    BOOST_AUTO_TEST_CASE(volume_order) { BOOST_REQUIRE_MESSAGE(test_volume_order(), "TEST_VOLUME_ORDER");}
-//    BOOST_AUTO_TEST_CASE(volume_key_size) { BOOST_REQUIRE_MESSAGE(test_volume_key_size(), "TEST_VOLUME_KEY_SIZE");}
-//    BOOST_AUTO_TEST_CASE(volume_value_type) { BOOST_REQUIRE_MESSAGE(test_volume_type(), "TEST_VOLUME_VALUE"); }
-//    BOOST_AUTO_TEST_CASE(volume_is_not_shared_between_storages) {
-//        BOOST_REQUIRE_MESSAGE(test_volume_is_not_shared(), "TEST_VOLUME_IS_NOT_SHARED_BETWEEN_STORAGES");
-//    }
+    BOOST_AUTO_TEST_CASE(volume_order) { BOOST_REQUIRE_MESSAGE(test_volume_order(), "TEST_VOLUME_ORDER");}
+    BOOST_AUTO_TEST_CASE(volume_key_size) { BOOST_REQUIRE_MESSAGE(test_volume_key_size(), "TEST_VOLUME_KEY_SIZE");}
+    BOOST_AUTO_TEST_CASE(volume_value_type) { BOOST_REQUIRE_MESSAGE(test_volume_type(), "TEST_VOLUME_VALUE"); }
+    BOOST_AUTO_TEST_CASE(volume_is_not_shared_between_storages) {
+        BOOST_REQUIRE_MESSAGE(test_volume_is_not_shared(), "TEST_VOLUME_IS_NOT_SHARED_BETWEEN_STORAGES");
+    }
 BOOST_AUTO_TEST_SUITE_END()
 
 

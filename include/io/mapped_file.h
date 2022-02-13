@@ -22,13 +22,13 @@ namespace btree {
         ~MappedFile();
 
         template <typename ValueType>
-        std::pair<ValueType, int32_t> read_next_data(MappedRegion* region);
+        std::pair<ValueType, int32_t> read_next_data(const std::unique_ptr<MappedRegion>& region);
 
         template <typename T>
         int64_t write_next_primitive(std::unique_ptr<MappedRegion>& region, const T val);
 
         template <typename T>
-        T read_next_primitive(MappedRegion* region);
+        T read_next_primitive(const std::unique_ptr<MappedRegion>& region);
 
         template <typename T>
         void write_next_data(std::unique_ptr<MappedRegion>& region, T val, const int32_t total_size_in_bytes);
@@ -45,9 +45,9 @@ namespace btree {
         std::unique_ptr<MappedRegion> get_mapped_region(int64_t pos);
         void set_file_pos_to_end();
 
-        uint8_t read_byte(MappedRegion* region);
-        int16_t read_int16(MappedRegion* region);
-        int32_t read_int32(MappedRegion* region);
+        uint8_t read_byte(const std::unique_ptr<MappedRegion>& region);
+        int16_t read_int16(const std::unique_ptr<MappedRegion>& region);
+        int32_t read_int32(const std::unique_ptr<MappedRegion>& region);
 
         void shrink_to_fit();
         bool is_empty() const;

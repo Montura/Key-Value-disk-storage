@@ -23,19 +23,19 @@ namespace btree {
     int64_t IOManager<K, V>::read_header() {
         auto pRegion = file.get_mapped_region(0);
 
-        auto t_from_file = file.read_int16(pRegion.get());
+        auto t_from_file = file.read_int16(pRegion);
         validate(t == t_from_file, error_msg::wrong_order_msg, file.path);
 
-        auto key_size = file.read_byte(pRegion.get()); // todo:  replace with KEY type enum (because of variable key length)?
+        auto key_size = file.read_byte(pRegion); // todo:  replace with KEY type enum (because of variable key length)?
         validate(key_size == sizeof(K), error_msg::wrong_key_size_msg, file.path);
 
-        auto value_type_code = file.read_byte(pRegion.get());
+        auto value_type_code = file.read_byte(pRegion);
         validate(value_type_code == get_value_type_code<V>(), error_msg::wrong_value_type_msg, file.path);
 
-        auto element_size = file.read_byte(pRegion.get());
+        auto element_size = file.read_byte(pRegion);
         validate(element_size == get_element_size<V>(), error_msg::wrong_element_size_msg, file.path);
 
-        auto posRoot = file.read_int32(pRegion.get());
+        auto posRoot = file.read_int32(pRegion);
         return posRoot;
     }
 
@@ -58,9 +58,9 @@ namespace btree {
     typename BTree<K,V>::EntryT IOManager<K, V>::read_entry(const int64_t pos) {
         const auto& ptr = file.get_mapped_region(pos);
 
-        auto [data, len] = file.read_next_data<const uint8_t*>(ptr.get());
+        auto [data, len] = file.read_next_data<const uint8_t*>(ptr);
         K key((const char*)data, len);
-        auto [value, size] = file.template read_next_data<typename EntryT::ValueType>(ptr.get());
+        auto [value, size] = file.template read_next_data<typename EntryT::ValueType>(ptr);
         return { key, value, size };
     }
 
@@ -68,7 +68,7 @@ namespace btree {
     K IOManager<K, V>::read_key(const int64_t pos) {
         const auto& ptr = file.get_mapped_region(pos);
 
-        auto [data, len] = file.read_next_data<const uint8_t*>(ptr.get());
+        auto [data, len] = file.read_next_data<const uint8_t*>(ptr);
         K key((const char*)data, len);
         return key;
     }
@@ -105,8 +105,8 @@ namespace btree {
 
         Node node(t, false);
         node.m_pos = pos;
-        node.is_leaf = file.read_byte(ptr.get());
-        node.used_keys = file.read_int16(ptr.get());
+        node.is_leaf = file.read_byte(ptr);
+        node.used_keys = file.read_int16(ptr);
         file.read_node_vector(ptr, node.key_pos);
         file.read_node_vector(ptr, node.child_pos);
         return node;
