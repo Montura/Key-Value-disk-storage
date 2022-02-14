@@ -69,7 +69,7 @@ namespace file {
         int64_t new_size = resize(region, sizeof(T));
 
         m_capacity = std::max(new_size, m_capacity);
-        m_pos = region->template write_next_primitive(val);
+        m_pos = region->write_next_primitive(val);
         return m_pos;
     }
 
@@ -104,7 +104,7 @@ namespace file {
         int64_t new_size = resize(region, total_size_in_bytes);
 
         m_capacity = std::max(new_size, m_capacity);
-        m_pos = region->template write_blob(source_data, total_size_in_bytes);
+        m_pos = region->write_blob(source_data, total_size_in_bytes);
         return m_pos;
     }
 

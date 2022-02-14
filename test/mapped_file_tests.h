@@ -75,7 +75,7 @@ namespace details {
             // write
             for (auto i = 0; i < ITERATIONS; ++i) {
                 Data<V> tmp_data(data.value + conv(i));
-                file.template write_next_data(wptr, cast_to_const_uint8_t_data(tmp_data.value.data()), tmp_data.len);
+                file.write_next_data(wptr, cast_to_const_uint8_t_data(tmp_data.value.data()), tmp_data.len);
             }
             total_write_size = file.get_pos();
 
