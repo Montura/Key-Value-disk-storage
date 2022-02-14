@@ -72,16 +72,77 @@ BOOST_AUTO_TEST_SUITE_END()
 
 #include "storage.h"
 #include "utils/thread_pool.h"
+#include <map>
+#include <algorithm>
+#include <atomic>
+
+
+struct Foo {
+    uint64_t addr = 0;
+    std::atomic<uint64_t> usage_count;
+
+    Foo() {};
+    bool operator<(const Foo& right) const {
+        return usage_count < (right.usage_count);
+    }
+};
+
+struct Test {
+    std::vector<std::shared_ptr<Foo>> heap;
+    std::map<uint64_t, std::shared_ptr<Foo>> hash_table;
+    using HashTIt = typename std::map<uint64_t, std::shared_ptr<Foo>>::iterator;
+    std::mutex mutex;
+
+    static uint64_t round_pos(uint64_t addr) {
+        return (addr / 4096) * 4096;
+    }
+
+    HashTIt on_new_pos(uint64_t pos) {
+        uint64_t begin = round_pos(pos);
+        const auto& it = hash_table.find(begin);
+        if (it == hash_table.end()) {
+            std::unique_lock lock(mutex);
+            const auto&[emplace_it, success] = hash_table.try_emplace(begin, new Foo());
+            if (success) {
+                if (!heap.empty()) {
+                    std::pop_heap(heap.begin(), heap.end());
+                    auto value_to_remove = heap.back();
+                    heap.pop_back();
+                    uint64_t k = round_pos(value_to_remove->addr);
+                    hash_table.erase(k);
+                }
+                heap.push_back(emplace_it->second);
+                std::make_heap(heap.begin(), heap.end());
+            }
+            emplace_it->second->usage_count++;
+            return emplace_it;
+        } else {
+            it->second->usage_count++;
+            return it;
+        }
+
+    }
+};
+
 
 using namespace tests;
 void usage() {
     {
-        btree::Storage<std::string, int> int_storage;
-        auto volume = int_storage.open_volume("../int_storage.txt", 2);
-        int val = -1;
-        volume.set("aaa", val);
-        std::optional<int> opt = volume.get("aaa");
-        assert(opt.value() == val);
+        Test t;
+        t.on_new_pos(0);
+        t.on_new_pos(4096);
+
+//        btree::Storage<std::string, int> int_storage;
+//        auto volume = int_storage.open_volume("../int_storage.txt", 2);
+//        int val = -1;
+//        volume.set("aaa", val);
+//        std::optional<int> opt = volume.get("aaa");
+//        assert(opt.value() == val);
+//        auto ptr = std::make_shared<Foo>();
+//        heap.push_back(ptr);
+//        std::make_heap(heap.begin(), heap.end());
+//        hash_table.emplace(ptr->addr, ptr);
+//        std::cout << ptr.use_count();
     }
 //    {
 //        btree::Storage<int, std::string> str_storage;
