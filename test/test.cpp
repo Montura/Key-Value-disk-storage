@@ -5,8 +5,15 @@
 #include "mapped_file_tests.h"
 #include "volume_tests.h"
 #include "stress_test.h"
+#include "block_manager_test.h"
 
 namespace tests {
+BOOST_AUTO_TEST_SUITE(block_manager_test)
+    BOOST_DATA_TEST_CASE(test_block_manager, boost::make_iterator_range(block_size_arr), block_size) {
+        BOOST_REQUIRE_MESSAGE(run_test(block_size), "TEST_BLOCK_MANAGER");
+    }
+BOOST_AUTO_TEST_SUITE_END()
+
 BOOST_AUTO_TEST_SUITE(mapped_file_test, *CleanBeforeTest(output_folder.data()))
     BOOST_AUTO_TEST_CASE(test_arithmetics_values) { BOOST_REQUIRE_MESSAGE(run_arithmetic_test(), "TEST_ARITHMETICS"); }
     BOOST_AUTO_TEST_CASE(test_strings_values) { BOOST_REQUIRE_MESSAGE(run_string_test(), "TEST_STRING"); }
@@ -71,122 +78,7 @@ BOOST_AUTO_TEST_SUITE_END()
 #endif
 
 #include "storage.h"
-#include "utils/thread_pool.h"
-#include <map>
-#include <algorithm>
-#include <atomic>
-
 using namespace tests;
-
-struct Block {
-    uint64_t addr = 0;
-    std::atomic<uint64_t> usage_count = 0;
-
-    explicit Block(uint64_t addr) : addr(addr) {};
-    bool operator<(const Block& right) const {
-        return usage_count < (right.usage_count);
-    }
-};
-
-class BlockManager {
-    using HashTIt = typename std::map<uint64_t, std::shared_ptr<Block>>::iterator;
-
-    std::vector<std::shared_ptr<Block>> heap;
-    std::map<uint64_t, std::shared_ptr<Block>> hash_table;
-    std::mutex mutex;
-
-    std::atomic<uint64_t> m_bucket_count = 0;
-    std::atomic<uint64_t> m_rebuild_count = 0;
-    std::atomic<uint64_t> m_total_lock_ops = 0;
-    std::atomic<uint64_t> m_total_lock_free_ops = 0;
-public:
-    const uint64_t total_heap_size;
-    const uint64_t block_size;
-
-    BlockManager(int64_t block_size, int64_t block_count) : block_size(block_size), total_heap_size(block_count / 2) {}
-
-    HashTIt on_new_pos(const uint64_t pos) {
-        uint64_t begin = round_pos(pos);
-        const auto& it = hash_table.find(begin);
-        if (it == hash_table.end()) {
-            std::unique_lock lock(mutex);
-            const auto&[emplace_it, success] = hash_table.try_emplace(begin, new Block(pos));
-            if (success) {
-                if (heap.size() > total_heap_size) {
-                    std::pop_heap(heap.begin(), heap.end());
-                    auto value_to_remove = heap.back();
-                    heap.pop_back();
-                    uint64_t k = round_pos(value_to_remove->addr);
-                    auto removed_count = hash_table.erase(k);
-                    assert(removed_count == 1);
-                    ++m_rebuild_count;
-                }
-                heap.push_back(emplace_it->second);
-                std::make_heap(heap.begin(), heap.end());
-                ++m_bucket_count;
-            }
-            emplace_it->second->usage_count++;
-            m_total_lock_ops++;
-            return emplace_it;
-        } else {
-            m_total_lock_free_ops++;
-            it->second->usage_count++;
-            return it;
-        }
-    }
-
-    const std::vector<std::shared_ptr<Block>>& blocks() const {
-        return heap;
-    }
-
-    uint64_t bucket_count() const {
-        return m_bucket_count.load();
-    }
-
-    uint64_t rebuild_count() const {
-        return m_rebuild_count.load();
-    }
-    
-    uint64_t total_lock_ops() const {
-        return m_total_lock_ops.load();
-    }
-    
-    uint64_t total_lock_free_ops() const {
-        return m_total_lock_free_ops.load();
-    }
-private:
-    uint64_t round_pos(uint64_t addr) const {
-        return (addr / block_size) * block_size;
-    }
-};
-
-void test() {
-    const int total_blocks = 1000;
-    const int kb = 4096;
-
-    BlockManager t {kb, total_blocks };
-    ThreadPool tp { 10 };
-    tp.post([&t, kb, total_blocks]() {
-        for (int i = 0; i < kb * total_blocks; ++i) {
-            t.on_new_pos(i);
-        }
-    });
-    tp.join();
-
-    for (const auto& block : t.blocks()) {
-        uint64_t i = block->usage_count.load();
-        assert(i == kb);
-    }
-    uint64_t bucket_count = t.bucket_count();
-    assert(bucket_count == total_blocks);
-    uint64_t rebuild_count = t.rebuild_count();
-    assert(bucket_count - (t.total_heap_size + 1) == rebuild_count);
-    const auto& lock_ops = t.total_lock_ops();
-    std::cout << "Total lock operations: " << lock_ops << std::endl;
-    const auto& lock_free_ops = t.total_lock_free_ops();
-    std::cout << "Total lock free operations: " << lock_free_ops << std::endl;
-    std::cout << "Lock percent: " << double(lock_ops) / lock_free_ops * 100 << std::endl;
-}
 
 void usage() {
     {

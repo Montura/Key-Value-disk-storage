@@ -1,3 +1,5 @@
+#pragma once
+
 #include <future>
 
 #include "utils/boost_include.h"
