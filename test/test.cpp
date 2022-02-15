@@ -76,74 +76,166 @@ BOOST_AUTO_TEST_SUITE_END()
 #include <algorithm>
 #include <atomic>
 
+using namespace tests;
 
-struct Foo {
+struct Block {
     uint64_t addr = 0;
-    std::atomic<uint64_t> usage_count;
+    std::atomic<uint64_t> usage_count = 0;
 
-    Foo() {};
-    bool operator<(const Foo& right) const {
+    explicit Block(uint64_t addr) : addr(addr) {};
+    bool operator<(const Block& right) const {
         return usage_count < (right.usage_count);
     }
 };
 
-struct Test {
-    std::vector<std::shared_ptr<Foo>> heap;
-    std::map<uint64_t, std::shared_ptr<Foo>> hash_table;
-    using HashTIt = typename std::map<uint64_t, std::shared_ptr<Foo>>::iterator;
+class BlockManager {
+    using HashTIt = typename std::map<uint64_t, std::shared_ptr<Block>>::iterator;
+
+    std::vector<std::shared_ptr<Block>> heap;
+    std::map<uint64_t, std::shared_ptr<Block>> hash_table;
     std::mutex mutex;
 
-    static uint64_t round_pos(uint64_t addr) {
-        return (addr / 4096) * 4096;
-    }
+    std::atomic<uint64_t> m_bucket_count = 0;
+    std::atomic<uint64_t> m_rebuild_count = 0;
+    std::atomic<uint64_t> m_total_lock_ops = 0;
+    std::atomic<uint64_t> m_total_lock_free_ops = 0;
+public:
+    const uint64_t total_heap_size;
+    const uint64_t block_size;
 
-    HashTIt on_new_pos(uint64_t pos) {
+    BlockManager(int64_t block_size, int64_t block_count) : block_size(block_size), total_heap_size(block_count / 2) {}
+
+    HashTIt on_new_pos(const uint64_t pos) {
         uint64_t begin = round_pos(pos);
         const auto& it = hash_table.find(begin);
         if (it == hash_table.end()) {
             std::unique_lock lock(mutex);
-            const auto&[emplace_it, success] = hash_table.try_emplace(begin, new Foo());
+            const auto&[emplace_it, success] = hash_table.try_emplace(begin, new Block(pos));
             if (success) {
-                if (!heap.empty()) {
+                if (heap.size() > total_heap_size) {
                     std::pop_heap(heap.begin(), heap.end());
                     auto value_to_remove = heap.back();
                     heap.pop_back();
                     uint64_t k = round_pos(value_to_remove->addr);
-                    hash_table.erase(k);
+                    auto removed_count = hash_table.erase(k);
+                    assert(removed_count == 1);
+                    ++m_rebuild_count;
                 }
                 heap.push_back(emplace_it->second);
                 std::make_heap(heap.begin(), heap.end());
+                ++m_bucket_count;
             }
             emplace_it->second->usage_count++;
+            m_total_lock_ops++;
             return emplace_it;
         } else {
+            m_total_lock_free_ops++;
             it->second->usage_count++;
             return it;
         }
+    }
 
+    const std::vector<std::shared_ptr<Block>>& blocks() const {
+        return heap;
+    }
+
+    uint64_t bucket_count() const {
+        return m_bucket_count.load();
+    }
+
+    uint64_t rebuild_count() const {
+        return m_rebuild_count.load();
+    }
+    
+    uint64_t total_lock_ops() const {
+        return m_total_lock_ops.load();
+    }
+    
+    uint64_t total_lock_free_ops() const {
+        return m_total_lock_free_ops.load();
+    }
+private:
+    uint64_t round_pos(uint64_t addr) const {
+        return (addr / block_size) * block_size;
     }
 };
 
+void test() {
+    const int total_blocks = 1000;
+    const int kb = 4096;
 
-using namespace tests;
+    BlockManager t {kb, total_blocks };
+    ThreadPool tp { 10 };
+    tp.post([&t, kb, total_blocks]() {
+        for (int i = 0; i < kb * total_blocks; ++i) {
+            t.on_new_pos(i);
+        }
+    });
+    tp.join();
+
+    for (const auto& block : t.blocks()) {
+        uint64_t i = block->usage_count.load();
+        assert(i == kb);
+    }
+    uint64_t bucket_count = t.bucket_count();
+    assert(bucket_count == total_blocks);
+    uint64_t rebuild_count = t.rebuild_count();
+    assert(bucket_count - (t.total_heap_size + 1) == rebuild_count);
+    const auto& lock_ops = t.total_lock_ops();
+    std::cout << "Total lock operations: " << lock_ops << std::endl;
+    const auto& lock_free_ops = t.total_lock_free_ops();
+    std::cout << "Total lock free operations: " << lock_free_ops << std::endl;
+    std::cout << "Lock percent: " << double(lock_ops) / lock_free_ops * 100 << std::endl;
+}
+
 void usage() {
     {
-        Test t;
-        t.on_new_pos(0);
-        t.on_new_pos(4096);
-
 //        btree::Storage<std::string, int> int_storage;
 //        auto volume = int_storage.open_volume("../int_storage.txt", 2);
 //        int val = -1;
 //        volume.set("aaa", val);
 //        std::optional<int> opt = volume.get("aaa");
 //        assert(opt.value() == val);
-//        auto ptr = std::make_shared<Foo>();
+//        auto ptr = std::make_shared<Block>();
 //        heap.push_back(ptr);
 //        std::make_heap(heap.begin(), heap.end());
 //        hash_table.emplace(ptr->addr, ptr);
 //        std::cout << ptr.use_count();
     }
+//    std::cout << heap[0].use_count() << "\n";
+
+//    const std::vector<int> data = { 0, 4096, 8192 };
+//    auto lower1 = std::lower_bound(data.begin(), data.end(), 0 );
+//    auto lower2 = std::lower_bound(data.begin(), data.end(), 4095);
+//    auto lower3 = std::lower_bound(data.begin(), data.end(), 4096);
+//    auto lower4 = std::lower_bound(data.begin(), data.end(), 4097);
+//    auto lower5 = std::lower_bound(data.begin(), data.end(), 8191);
+//    auto lower6 = std::lower_bound(data.begin(), data.end(), 8192);
+//    auto lower7 = std::lower_bound(data.begin(), data.end(), 8193);
+//    std::cout << "l1: " << *lower1 << "\n";
+//    std::cout << "l2: " << *lower2 << "\n";
+//    std::cout << "l3: " << *lower3 << "\n";
+//    std::cout << "l4: " << *lower4 << "\n";
+//    std::cout << "l5: " << *lower5 << "\n";
+//    std::cout << "l6: " << *lower6 << "\n";
+//    std::cout << "l7: " << *lower7 << "\n";
+//
+//    auto upper1 = std::upper_bound(data.begin(), data.end(), 0 );
+//    auto upper2 = std::upper_bound(data.begin(), data.end(), 4095);
+//    auto upper3 = std::upper_bound(data.begin(), data.end(), 4096);
+//    auto upper4 = std::upper_bound(data.begin(), data.end(), 4097);
+//    auto upper5 = std::upper_bound(data.begin(), data.end(), 8191);
+//    auto upper6 = std::upper_bound(data.begin(), data.end(), 8192);
+//    auto upper7 = std::upper_bound(data.begin(), data.end(), 8193);
+//    std::cout << "u1: " << *upper1 << "\n";
+//    std::cout << "u2: " << *upper2 << "\n";
+//    std::cout << "u3: " << *upper3 << "\n";
+//    std::cout << "u4: " << *upper4 << "\n";
+//    std::cout << "u5: " << *upper5 << "\n";
+//    std::cout << "u6: " << *upper6 << "\n";
+//    std::cout << "u7: " << *upper7 << "\n";
+
+
 //    {
 //        btree::Storage<int, std::string> str_storage;
 //        auto volume = str_storage.open_volume("../str_storage.txt", 2);
@@ -225,7 +317,8 @@ int main() {
     atexit(at_exit_handler);
 #endif
     {
-        usage();
+        test();
+//        usage();
 //        mt_usage();
     }
 }

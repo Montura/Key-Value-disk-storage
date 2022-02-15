@@ -7,7 +7,7 @@ namespace tests {
         basio::thread_pool pool;
     public:
 
-        ThreadPool(int n_threads) : pool(n_threads) {}
+        explicit ThreadPool(int n_threads) : pool(n_threads) {}
 
         template <typename Func>
         void post(Func && f) {
