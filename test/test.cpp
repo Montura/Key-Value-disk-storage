@@ -5,12 +5,13 @@
 #include "mapped_file_tests.h"
 #include "volume_tests.h"
 #include "stress_test.h"
-#include "block_manager_test.h"
+#include "lru_cache_test.h"
 
 namespace tests {
 BOOST_AUTO_TEST_SUITE(block_manager_test)
     BOOST_DATA_TEST_CASE(test_block_manager, boost::make_iterator_range(block_size_arr), block_size) {
         BOOST_REQUIRE_MESSAGE(run_test(block_size), "TEST_BLOCK_MANAGER");
+        BOOST_REQUIRE_MESSAGE(run_test_2(block_size), "TEST_BLOCK_MANAGER_2");
     }
 BOOST_AUTO_TEST_SUITE_END()
 
