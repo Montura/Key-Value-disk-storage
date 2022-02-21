@@ -38,7 +38,11 @@ namespace btree {
         const uint64_t m_cache_size;
     public:
 
-        LRUCache(int64_t block_size, int64_t block_count) : block_size(block_size), m_cache_size(block_count / 2) {
+        LRUCache(const int64_t block_size, const int64_t block_count) :
+            block_size(block_size),
+            m_cache_size(block_count > 1 ? block_count / 2 : 1)
+        {
+            assert(block_count > 0);
             min_heap.resize(m_cache_size);
         }
 

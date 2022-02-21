@@ -4,19 +4,19 @@
 
 #include "io/lru_cache.h"
 
-namespace tests::block_manager_test {
+namespace tests::LRU_test {
     constexpr int block_size_arr[] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
 
     namespace details {
         constexpr int blocks_count[] = { 500, 1000, 3000, 5000, 10000 };
 
-        std::vector<std::pair<int, int>> generate_ranges(uint32_t max_n, int pairs_count) {
-            std::vector<std::pair<int, int>> pairs;
+        std::vector<std::pair<int32_t, int32_t>> generate_ranges(int32_t max_n, int32_t pairs_count) {
+            std::vector<std::pair<int32_t, int32_t>> pairs;
 
-            int step = max_n / pairs_count;
+            auto step = max_n / pairs_count;
             pairs.emplace_back(0, step);
 
-            for (int i = 1; i < pairs_count; ++i) {
+            for (auto i = 1; i < pairs_count; ++i) {
                 auto end = pairs[i - 1].second;
                 pairs.emplace_back(end, end + step);
             }
@@ -28,14 +28,14 @@ namespace tests::block_manager_test {
             return pairs;
         }
 
-        bool verify_locks_count(const int total_blocks, const LRUCache <Block>& lru) {
-            const auto lock_ops =static_cast<int>(lru.total_lock_ops());
+        bool verify_locks_count(const LRUCache <Block>& lru) {
+            const auto unique_block_count = static_cast<int>(lru.total_unique_block_count());
+            const auto lock_ops = static_cast<int>(lru.total_lock_ops());
             const auto& lock_free_ops = lru.total_lock_free_ops();
-//            success &= (lock_free_ops == total_operations - lock_ops);
 //            std::cout << "total lock operations: " << lock_ops << std::endl;
 //            std::cout << "total lock free operations: " << lock_free_ops << std::endl;
-            std::cout << "lock percent: " << double(lock_ops) / lock_free_ops * 100 << std::endl;
-            return lock_ops == total_blocks;
+//            std::cout << "lock percent: " << double(lock_ops) / lock_free_ops * 100 << std::endl;
+            return lock_ops == unique_block_count;
         }
 
         bool verify_lru_state(const int block_size,
@@ -61,7 +61,38 @@ namespace tests::block_manager_test {
             tp.join();
         }
 
-        bool test_fixed_operation_count_per_block(const int block_size, const int unique_blocks_count) {
+        bool test_lru_cache_with_a_single_working_block(const int32_t block_size) {
+            const uint32_t total_ops = 100000000; // 10^8
+            const int total_blocks_count = 1;
+
+            auto verify = [block_size, total_blocks_count](const int total_ops, auto& lru) -> bool {
+                const auto& working_set = lru.working_set();
+                bool success = working_set.size() == total_blocks_count;
+
+                auto reminder = static_cast<int32_t>(total_ops % block_size);
+                const auto block_usage_count = static_cast<int32_t>(working_set[0]->usage_count.load());
+                success &= (block_usage_count == (reminder > 0 ? reminder : (total_ops > block_size) ? block_size : total_ops));
+                success &= verify_lru_state(block_size, 1, lru, total_ops);
+                success &= verify_locks_count(lru);
+                return success;
+            };
+
+            bool success = true;
+            for (uint32_t ops_count = 1; ops_count < total_ops; ops_count *= 100) {
+                btree::LRUCache<Block> lru { block_size, total_blocks_count };
+                run_in_pool_and_join(
+                        [&lru, ops_count]() {
+                            for (uint32_t i = 0; i < ops_count; ++i) {
+                                lru.on_new_pos(i);
+                            }
+                        });
+                success &= verify(ops_count, lru);
+            }
+
+            return success;
+        }
+
+        bool test_fixed_operation_count_per_block(const int32_t block_size, const int32_t unique_blocks_count) {
             const int total_operations = block_size * unique_blocks_count;
             btree::LRUCache<Block> lru { block_size, unique_blocks_count };
             run_in_pool_and_join(
@@ -73,26 +104,26 @@ namespace tests::block_manager_test {
 
             bool success = true;
             for (const auto& block: lru.working_set()) {
-                const auto i = static_cast<int>(block->usage_count.load());
+                const auto i = static_cast<int32_t>(block->usage_count.load());
                 success &= (i == block_size);
             }
             success &= verify_lru_state(block_size, unique_blocks_count / 2, lru, total_operations);
-            success &= verify_locks_count(unique_blocks_count, lru);
+            success &= verify_locks_count(lru);
 
             return success;
         }
 
-        bool test_lru_cache_for_range(const int block_size, const int unique_blocks_count,
-                const std::vector<std::pair<int, int>>& ranges)
+        bool test_lru_cache_for_range(const int32_t block_size, const int32_t unique_blocks_count,
+                const std::vector<std::pair<int32_t, int32_t>>& ranges)
         {
             bool success = true;
             btree::LRUCache<Block> lru { block_size, unique_blocks_count };
             for (const auto& range : ranges) {
-                int start = range.first;
-                int end = range.second;
+                int32_t start = range.first;
+                int32_t end = range.second;
                 run_in_pool_and_join(
                         [&lru, start, end]() {
-                            for (int i = start; i < end; ++i) {
+                            for (auto i = start; i < end; ++i) {
                                 lru.on_new_pos(i);
                             }
                         });
@@ -101,21 +132,21 @@ namespace tests::block_manager_test {
             return success;
         }
 
-        bool test_random_operation_count_per_block(const int block_size, const int total_blocks) {
-            const int total_operations = block_size * total_blocks;
+        bool test_random_operation_count_per_block(const int32_t block_size, const int32_t total_blocks) {
+            const int32_t total_operations = block_size * total_blocks;
             btree::LRUCache<Block> lru { block_size, total_blocks};
 
-            std::vector<std::vector<int>> op_map(total_blocks);
-            std::vector<int> usage_load_expected;
+            std::vector<std::vector<int32_t>> op_map(total_blocks);
+            std::vector<int32_t> usage_load_expected;
 
             // Generate random count operations over blocks
-            for (int i = 0; i < total_blocks; ++i) {
+            for (auto i = 0; i < total_blocks; ++i) {
                 op_map[i].resize(i + 1);
                 usage_load_expected.push_back(static_cast<int>(op_map[i].size()));
             }
-            for (int i = 0; i < total_blocks; ++i) {
+            for (auto i = 0; i < total_blocks; ++i) {
                 auto& v = op_map[i];
-                int initial_value = i * block_size;
+                auto initial_value = i * block_size;
                 std::iota(v.begin(), v.end(), initial_value);
                 if (v.begin() + block_size < v.end()) {
                     std::fill(v.begin() + block_size, v.end(), initial_value);
@@ -131,7 +162,7 @@ namespace tests::block_manager_test {
                         }
                     });
 
-            std::set<int> working_set_usage;
+            std::set<int32_t> working_set_usage;
             for (const auto& block: lru.working_set()) {
                 working_set_usage.insert(block->usage_count.load());
             }
@@ -141,16 +172,20 @@ namespace tests::block_manager_test {
 
 
             success &= verify_lru_state(block_size, total_blocks / 2, lru, total_operations);
-            success &= verify_locks_count(total_blocks, lru);
+            success &= verify_locks_count(lru);
             return success;
         }
     }
 
-    bool test_lru_state_for_ranges(const int block_size) {
+    bool test_lru_single_block(const int32_t block_size) {
+        return details::test_lru_cache_with_a_single_working_block(block_size);
+    }
+
+    bool test_lru_state_for_ranges(const int32_t block_size) {
         bool success = true;
         for (int range_count = 2; range_count < 10; ++range_count) { // at least 2 ranges [0, n/2], (n/2, n);
-            const uint32_t MB = 1000000; // 10^8
-            std::vector<std::pair<int, int>> ranges = details::generate_ranges(MB, range_count);
+            const int32_t MB = 1000000; // 10^6
+            std::vector<std::pair<int32_t, int32_t>> ranges = details::generate_ranges(MB, range_count);
             for (auto unique_blocks_count: details::blocks_count) {
                 success &= details::test_lru_cache_for_range(block_size, unique_blocks_count,ranges);
             }
@@ -158,7 +193,7 @@ namespace tests::block_manager_test {
         return success;
     }
 
-    bool test_fixed_operations_count(const int block_size) {
+    bool test_fixed_operations_count(const int32_t block_size) {
         bool success = true;
         for (auto unique_blocks_count : details::blocks_count) {
             success &= details::test_fixed_operation_count_per_block(block_size, unique_blocks_count);
@@ -166,7 +201,7 @@ namespace tests::block_manager_test {
         return success;
     }
 
-    bool test_random_operations_count(const int block_size) {
+    bool test_random_operations_count(const int32_t block_size) {
         bool success = true;
         for (auto unique_blocks_count : details::blocks_count) {
             success &= details::test_random_operation_count_per_block(block_size, unique_blocks_count);

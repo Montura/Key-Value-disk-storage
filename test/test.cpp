@@ -8,7 +8,10 @@
 #include "lru_cache_test.h"
 
 namespace tests {
-BOOST_AUTO_TEST_SUITE(block_manager_test)
+BOOST_AUTO_TEST_SUITE(LRU_test)
+    BOOST_DATA_TEST_CASE(test_lru_cache, boost::make_iterator_range(block_size_arr), block_size) {
+        BOOST_REQUIRE_MESSAGE(test_lru_single_block(block_size), "TEST_LRU_CACHE_SINGLE_BLOCK");
+    }
     BOOST_DATA_TEST_CASE(test_lru_cache_state_for_ranges, boost::make_iterator_range(block_size_arr), block_size) {
         BOOST_REQUIRE_MESSAGE(test_lru_state_for_ranges(block_size), "TEST_LRU_CACHE_STATE_FOR_RANGES");
     }
