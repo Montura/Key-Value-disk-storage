@@ -30,16 +30,16 @@ namespace btree {
         std::unordered_map<uint64_t, std::shared_ptr<T>> hash_table;
         std::mutex mutex;
 
-        std::atomic<uint64_t> m_bucket_count = 0;
-        std::atomic<uint64_t> m_rebuild_count = 0;
+        std::atomic<uint64_t> m_unique_block_count = 0;
+        std::atomic<uint64_t> m_cache_rebuild_count = 0;
         std::atomic<uint64_t> m_total_lock_ops = 0;
         std::atomic<uint64_t> m_total_lock_free_ops = 0;
-    public:
         const uint64_t block_size;
-        const uint64_t working_set_size;
+        const uint64_t m_cache_size;
+    public:
 
-        LRUCache(int64_t block_size, int64_t block_count) : block_size(block_size), working_set_size(block_count / 2) {
-            min_heap.resize(working_set_size);
+        LRUCache(int64_t block_size, int64_t block_count) : block_size(block_size), m_cache_size(block_count / 2) {
+            min_heap.resize(m_cache_size);
         }
 
         HashTIt on_new_pos(const uint64_t pos) {
@@ -62,12 +62,16 @@ namespace btree {
             return min_heap;
         }
 
-        uint64_t total_block_count() const {
-            return m_bucket_count.load();
+        uint64_t cache_size() const {
+            return min_heap.size();
         }
 
-        uint64_t total_working_set_rebuild_count() const {
-            return m_rebuild_count.load();
+        uint64_t total_unique_block_count() const {
+            return m_unique_block_count.load();
+        }
+
+        uint64_t total_cache_rebuild_count() const {
+            return m_cache_rebuild_count.load();
         }
 
         uint64_t total_lock_ops() const {
@@ -81,10 +85,10 @@ namespace btree {
         HashTIt add_new_block(const uint64_t pos, uint64_t bucket_idx) {
             const auto&[emplace_it, success] = hash_table.try_emplace(bucket_idx, new T(pos));
             if (success) {
-                if (heap_end_pos == working_set_size)
+                if (heap_end_pos == m_cache_size)
                     remove_the_least_used_block();
                 min_heap[heap_end_pos++] = emplace_it->second;
-                ++m_bucket_count;
+                ++m_unique_block_count;
             }
             return emplace_it;
         }
@@ -97,7 +101,7 @@ namespace btree {
             auto removed_count = hash_table.erase(k);
             assert(removed_count == 1);
             min_heap[--heap_end_pos].reset();
-            ++m_rebuild_count;
+            ++m_cache_rebuild_count;
         }
 
         uint64_t round_pos(uint64_t addr) const {

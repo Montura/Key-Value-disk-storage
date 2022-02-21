@@ -9,9 +9,14 @@
 
 namespace tests {
 BOOST_AUTO_TEST_SUITE(block_manager_test)
-    BOOST_DATA_TEST_CASE(test_block_manager, boost::make_iterator_range(block_size_arr), block_size) {
-        BOOST_REQUIRE_MESSAGE(run_test(block_size), "TEST_BLOCK_MANAGER");
-        BOOST_REQUIRE_MESSAGE(run_test_2(block_size), "TEST_BLOCK_MANAGER_2");
+    BOOST_DATA_TEST_CASE(test_lru_cache_state_for_ranges, boost::make_iterator_range(block_size_arr), block_size) {
+        BOOST_REQUIRE_MESSAGE(test_lru_state_for_ranges(block_size), "TEST_LRU_CACHE_STATE_FOR_RANGES");
+    }
+    BOOST_DATA_TEST_CASE(test_lru_cache_with_fixed_operations_count, boost::make_iterator_range(block_size_arr), block_size) {
+        BOOST_REQUIRE_MESSAGE(test_fixed_operations_count(block_size), "TEST_LRU_CACHE_FIXED_OPERATIONS_COUNT");
+    }
+    BOOST_DATA_TEST_CASE(test_lru_cache_with_random_operations_count, boost::make_iterator_range(block_size_arr), block_size) {
+        BOOST_REQUIRE_MESSAGE(test_random_operations_count(block_size), "TEST_LRU_CACHE_RANDOM_OPERATIONS_COUNT");
     }
 BOOST_AUTO_TEST_SUITE_END()
 
