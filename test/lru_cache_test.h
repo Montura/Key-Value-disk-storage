@@ -31,7 +31,7 @@ namespace tests::LRU_test {
         bool verify_locks_count(const LRUCache <Block>& lru) {
             const auto unique_block_count = static_cast<int>(lru.total_unique_block_count());
             const auto lock_ops = static_cast<int>(lru.total_lock_ops());
-            const auto& lock_free_ops = lru.total_lock_free_ops();
+//            const auto& lock_free_ops = lru.total_lock_free_ops();
 //            std::cout << "total lock operations: " << lock_ops << std::endl;
 //            std::cout << "total lock free operations: " << lock_free_ops << std::endl;
 //            std::cout << "lock percent: " << double(lock_ops) / lock_free_ops * 100 << std::endl;
@@ -62,12 +62,10 @@ namespace tests::LRU_test {
         }
 
         bool test_lru_cache_with_a_single_working_block(const int32_t block_size) {
-            const uint32_t total_ops = 100000000; // 10^8
-            const int total_blocks_count = 1;
-
-            auto verify = [block_size, total_blocks_count](const int total_ops, auto& lru) -> bool {
+            const int unique_blocks_count = 1;
+            auto verify = [block_size, unique_blocks_count](const int total_ops, auto& lru) -> bool {
                 const auto& working_set = lru.working_set();
-                bool success = working_set.size() == total_blocks_count;
+                bool success = working_set.size() == unique_blocks_count;
 
                 auto reminder = static_cast<int32_t>(total_ops % block_size);
                 const auto block_usage_count = static_cast<int32_t>(working_set[0]->usage_count.load());
@@ -77,9 +75,10 @@ namespace tests::LRU_test {
                 return success;
             };
 
+            const uint32_t total_ops = 100000000; // 10^8
             bool success = true;
             for (uint32_t ops_count = 1; ops_count < total_ops; ops_count *= 100) {
-                btree::LRUCache<Block> lru { block_size, total_blocks_count };
+                btree::LRUCache<Block> lru { block_size, unique_blocks_count };
                 run_in_pool_and_join(
                         [&lru, ops_count]() {
                             for (uint32_t i = 0; i < ops_count; ++i) {
@@ -93,22 +92,35 @@ namespace tests::LRU_test {
         }
 
         bool test_fixed_operation_count_per_block(const int32_t block_size, const int32_t unique_blocks_count) {
-            const int total_operations = block_size * unique_blocks_count;
-            btree::LRUCache<Block> lru { block_size, unique_blocks_count };
-            run_in_pool_and_join(
-                    [&lru, total_operations]() {
-                        for (int i = 0; i < total_operations; ++i) {
-                            lru.on_new_pos(i);
-                        }
-                    });
+            auto verify = [block_size, unique_blocks_count](const int total_ops, auto& lru) -> bool {
+                bool success = true;
+                auto reminder = static_cast<int32_t>(total_ops % block_size);
+                auto working_set = lru.working_set();
+                for (auto it = working_set.begin(); it < working_set.end(); ++it) {
+                    const auto block_usage_count = static_cast<int32_t>((*it)->usage_count.load());
+                    if (std::next(it) == working_set.end()) {
+                        success &= (block_usage_count == (reminder > 0 ? reminder : (total_ops > block_size) ? block_size : total_ops));
+                    } else {
+                        success &= (block_usage_count == block_size);
+                    }
+                }
+                success &= verify_lru_state(block_size, unique_blocks_count / 2, lru, total_ops);
+                success &= verify_locks_count(lru);
+                return success;
+            };
 
+            const uint32_t total_ops = 100000000; // 10^8
             bool success = true;
-            for (const auto& block: lru.working_set()) {
-                const auto i = static_cast<int32_t>(block->usage_count.load());
-                success &= (i == block_size);
+            for (uint32_t ops_count = 1; ops_count < total_ops; ops_count *= 100) {
+                btree::LRUCache<Block> lru{ block_size, unique_blocks_count };
+                run_in_pool_and_join(
+                        [&lru, ops_count]() {
+                            for (uint32_t i = 0; i < ops_count; ++i) {
+                                lru.on_new_pos(i);
+                            }
+                        });
+                success &= verify(ops_count, lru);
             }
-            success &= verify_lru_state(block_size, unique_blocks_count / 2, lru, total_operations);
-            success &= verify_locks_count(lru);
 
             return success;
         }

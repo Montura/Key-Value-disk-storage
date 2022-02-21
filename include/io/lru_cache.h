@@ -62,8 +62,8 @@ namespace btree {
             }
         }
 
-        const std::vector<std::shared_ptr<Block>>& working_set() const {
-            return min_heap;
+        std::vector<std::shared_ptr<Block>> working_set() const {
+            return std::vector<std::shared_ptr<Block>>(min_heap.begin(), min_heap.begin() + heap_end_pos);
         }
 
         uint64_t cache_size() const {
