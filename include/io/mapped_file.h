@@ -7,6 +7,7 @@
 #include "mapped_region.h"
 #include "utils/boost_include.h"
 #include "utils/utils.h"
+#include "lru_cache.h"
 
 namespace fs = std::filesystem;
 
@@ -14,8 +15,10 @@ namespace btree {
     class MappedFile {
         int64_t m_pos;
         int64_t m_capacity;
+        LRUCache<MappedRegionBlock> lru_cache;
     public:
         const std::string path;
+        std::mutex mutex;
 
         MappedFile(const std::string& fn, const int64_t bytes_num);
 
@@ -25,7 +28,13 @@ namespace btree {
         std::pair<ValueType, int32_t> read_next_data(const std::unique_ptr<MappedRegion>& region);
 
         template <typename T>
+        int64_t write_next_primitive(const int64_t pos, const T val);
+
+        template <typename T>
         int64_t write_next_primitive(std::unique_ptr<MappedRegion>& region, const T val);
+
+        template <typename T>
+        std::pair<T, int64_t> read_next_primitive(const int64_t pos);
 
         template <typename T>
         T read_next_primitive(const std::unique_ptr<MappedRegion>& region);

@@ -16,9 +16,11 @@ namespace btree {
         bip::offset_t m_pos;
         std::atomic<int64_t> m_usage_count = 0;
     public:
+        const int32_t m_size;
         const bip::offset_t mapped_offset;
-        MappedRegionBlock(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_only):
+        MappedRegionBlock(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_write):
             m_pos(0),
+            m_size(size),
             mapped_offset(file_offset)
         {
             auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
@@ -37,6 +39,50 @@ namespace btree {
 
         int64_t current_pos() {
             return m_pos;
+        }
+
+        uint8_t* address_by_offset(int64_t offset) const {
+            return mapped_region_begin + offset;
+        }
+
+        int64_t relative_offset(int64_t offset) const {
+            assert(offset >= mapped_offset);
+            return offset - mapped_offset;
+        }
+
+        template <typename T>
+        std::pair<int16_t, int16_t> write_next_primitive(const T val, const int16_t total_bytes_to_write) {
+            static_assert(std::is_arithmetic_v<T>);
+
+            const auto free_bytes = m_size - m_pos;
+            auto bytes_to_write = free_bytes >= total_bytes_to_write ? total_bytes_to_write : free_bytes;
+            if (bytes_to_write > 0) {
+                auto* data = cast_to_const_uint8_t_data(&val);
+                std::copy(data, data + bytes_to_write, address_by_offset(m_pos));
+                m_pos += bytes_to_write;
+                auto remaining_bytes = total_bytes_to_write - bytes_to_write;
+                assert(remaining_bytes >= 0);
+                return std::make_pair(bytes_to_write, remaining_bytes);
+            } else {
+                return std::make_pair(0, total_bytes_to_write);
+            }
+        }
+
+        template <typename T>
+        T read_next_primitive(const int64_t pos, const int16_t total_bytes_to_read) {
+            static_assert(std::is_arithmetic_v<T>);
+
+            const auto free_bytes = mapped_offset + m_size - pos;
+            auto bytes_to_read = free_bytes >= total_bytes_to_read ? total_bytes_to_read : free_bytes;
+            assert(bytes_to_read > 0);
+
+            T val;
+            auto* data = cast_to_uint8_t_data(&val);
+            uint8_t* address_begin = address_by_offset(pos - mapped_offset);
+            std::copy(address_begin, address_begin + bytes_to_read, data);
+            auto remaining_bytes = total_bytes_to_read - bytes_to_read;
+            assert(remaining_bytes == 0);
+            return val;
         }
     };
 
