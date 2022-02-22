@@ -12,13 +12,13 @@ namespace btree {
         uint8_t* mapped_region_begin;
         bip::offset_t m_pos;
     public:
-        const int64_t mapped_offset = 0;
+        const int64_t mapped_offset;
 
-        explicit Block(const std::string& path, int64_t file_offset, bip::mode_t mapping_mode = bip::read_write) :
-                mapped_offset(file_offset), m_pos(0)
+        explicit Block(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_write) :
+                m_pos(0), mapped_offset(file_offset)
         {
             auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
-            mapped_region = bip::mapped_region(file_mapping, mapping_mode, mapped_offset, mapping_mode);
+            mapped_region = bip::mapped_region(file_mapping, mapping_mode, mapped_offset, size);
             mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
         };
 
@@ -28,6 +28,10 @@ namespace btree {
 
         void add_ref() {
             ++m_usage_count;
+        }
+
+        int64_t current_pos() {
+            return m_pos;
         }
     };
 
@@ -42,7 +46,7 @@ namespace btree {
     class LRUCache {
         using HashTIt = typename std::unordered_map<int64_t, std::shared_ptr<T>>::iterator;
 
-        const std::string path = "../lru_block_mapped_test.txt";
+        const std::string path;
         std::vector<std::shared_ptr<T>> min_heap;
         size_t heap_end_pos = 0;
         const Comparator<T> min_heap_comparator;
@@ -57,23 +61,18 @@ namespace btree {
         const int64_t block_size;
         const int64_t m_cache_size;
 
-        const int32_t FILE_50MB = 16384 * 3000;
     public:
 
-        LRUCache(const int64_t block_size, const int64_t cache_size, const std::string& path = "") :
+        LRUCache(const int64_t block_size, const int64_t cache_size, const std::string& path) :
+            path(path),
             block_size(block_size),
             m_cache_size(cache_size)
         {
-            // todo: fix path
-            bool file_exists = fs::exists(this->path);
-            if (!file_exists) {
-                file::create_file(this->path, FILE_50MB);
-            }
             assert(cache_size > 0);
             min_heap.resize(m_cache_size);
         }
 
-        HashTIt on_new_pos(const int64_t pos) {
+        std::shared_ptr<T> on_new_pos(const int64_t pos) {
             int64_t bucket_idx = round_pos(pos);
             const auto find_it = hash_table.find(bucket_idx);
             if (find_it == hash_table.end()) {
@@ -81,11 +80,11 @@ namespace btree {
                 auto emplace_it = add_new_block(pos, bucket_idx);
                 m_total_lock_ops++;
                 emplace_it->second->add_ref();
-                return emplace_it;
+                return emplace_it->second;
             } else {
                 m_total_lock_free_ops++;
                 find_it->second->add_ref();
-                return find_it;
+                return find_it->second;
             }
         }
 

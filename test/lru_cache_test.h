@@ -13,6 +13,17 @@ namespace tests::LRU_test {
 
         constexpr int blocks_count[] = { 500, 1000, 3000 } ;// 5000, 10000 };
 
+        constexpr int32_t FILE_50MB = 16384 * 3000;
+        const char* path = "../lru_block_mapped_test.txt";
+
+        const char* init_file() {
+            bool file_exists = fs::exists(path);
+            if (!file_exists) {
+                btree::file::create_file(path, FILE_50MB);
+            }
+            return path;
+        }
+
         VectorT<std::pair<int32_t, int32_t>> generate_ranges(int32_t max_n, int32_t pairs_count) {
             VectorT<std::pair<int32_t, int32_t>> pairs;
 
@@ -136,7 +147,7 @@ namespace tests::LRU_test {
             const uint32_t total_ops = 100000000; // 10^8
             bool success = true;
             for (uint32_t ops_count = 1; ops_count < total_ops; ops_count *= 100) {
-                btree::LRUCache<Block> lru { block_size, cache_size };
+                btree::LRUCache<Block> lru { block_size, cache_size, init_file() };
                 run_in_pool_and_join(
                         [&lru, ops_count]() {
                             for (uint32_t i = 0; i < ops_count; ++i) {
@@ -167,7 +178,7 @@ namespace tests::LRU_test {
             const uint32_t total_ops = 100000000; // 10^8
             bool success = true;
             for (uint32_t ops_count = 1; ops_count < total_ops; ops_count *= 100) {
-                btree::LRUCache<Block> lru{ block_size, cache_size };
+                btree::LRUCache<Block> lru{ block_size, cache_size, init_file() };
                 run_in_pool_and_join(
                         [&lru, ops_count]() {
                             for (uint32_t i = 0; i < ops_count; ++i) {
@@ -185,7 +196,7 @@ namespace tests::LRU_test {
         {
             bool success = true;
             const int32_t cache_size = unique_blocks_count / 2;
-            btree::LRUCache<Block> lru { block_size, cache_size };
+            btree::LRUCache<Block> lru { block_size, cache_size, init_file() };
             for (const auto& range : ranges) {
                 int32_t start = range.first;
                 int32_t end = range.second;
@@ -210,7 +221,7 @@ namespace tests::LRU_test {
                 top_usages_in_working_set[i] = static_cast<int32_t>(address_vector_map[i + cache_size].size());
             }
 
-            btree::LRUCache<Block> lru { block_size, cache_size };
+            btree::LRUCache<Block> lru { block_size, cache_size, init_file() };
             run_in_pool_and_join(
                     [&lru, &address_vector_map]() {
                         for (const auto& address_vector: address_vector_map) {

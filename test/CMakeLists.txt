@@ -23,7 +23,7 @@ set(SOURCE_FILES
         volume_tests.h
         stress_test.h
         test.cpp
-)
+        lru_mapped_region_test.h)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
