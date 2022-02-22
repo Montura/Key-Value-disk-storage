@@ -11,21 +11,24 @@ namespace btree {
     using namespace utils;
 
     class MappedRegionBlock {
-        bip::mapped_region mapped_region;
-        uint8_t* mapped_region_begin;
-        bip::offset_t m_pos;
+        const bip::mapped_region mapped_region;
+        uint8_t* const mapped_region_begin;
+        std::atomic<bip::offset_t> m_pos;
         std::atomic<int64_t> m_usage_count = 0;
     public:
         const int32_t m_size;
         const bip::offset_t mapped_offset;
+
         MappedRegionBlock(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_write):
-            m_pos(0),
-            m_size(size),
-            mapped_offset(file_offset)
-        {
-            auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
-            mapped_region = bip::mapped_region(file_mapping, mapping_mode, mapped_offset, size);
-            mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
+                mapped_region(bip::file_mapping(path.data(), mapping_mode), mapping_mode, file_offset, size),
+                mapped_region_begin(cast_to_uint8_t_data(mapped_region.get_address())),
+                m_pos(0),
+                m_size(size),
+                mapped_offset(file_offset)
+        {}
+
+        uint8_t* address_by_offset(int64_t offset) const {
+            return mapped_region_begin + offset;
         }
 
     public:
@@ -37,24 +40,15 @@ namespace btree {
             return m_usage_count;
         }
 
-        int64_t current_pos() {
-            return m_pos;
-        }
-
-        uint8_t* address_by_offset(int64_t offset) const {
-            return mapped_region_begin + offset;
-        }
-
-        int64_t relative_offset(int64_t offset) const {
-            assert(offset >= mapped_offset);
-            return offset - mapped_offset;
+        int64_t current_absolute_pos() const {
+            return mapped_offset + m_pos;
         }
 
         template <typename T>
         std::pair<int16_t, int16_t> write_next_primitive(const T val, const int16_t total_bytes_to_write) {
             static_assert(std::is_arithmetic_v<T>);
 
-            const auto free_bytes = m_size - m_pos;
+            const auto free_bytes = m_size - m_pos.load();
             auto bytes_to_write = free_bytes >= total_bytes_to_write ? total_bytes_to_write : free_bytes;
             if (bytes_to_write > 0) {
                 auto* data = cast_to_const_uint8_t_data(&val);

@@ -73,9 +73,8 @@ namespace file {
         std::unique_lock lock(mutex);
 
         auto block4kb_ptr = lru_cache.on_new_pos(pos);
-        const auto current_pos = block4kb_ptr->current_pos();
         const auto total_bytes_to_write = sizeof(T);
-        const int64_t new_size = block4kb_ptr->mapped_offset + current_pos + total_bytes_to_write;
+        const int64_t new_size = block4kb_ptr->current_absolute_pos() + total_bytes_to_write;
         if (new_size > m_capacity) {
             fs::resize_file(path, new_size);
         }
