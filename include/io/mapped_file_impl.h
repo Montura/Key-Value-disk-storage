@@ -85,7 +85,7 @@ namespace file {
             auto [bytes_was_written, remaining_bytes] = block4kb_ptr->write_next_primitive(val, bytes_to_write);
             if (remaining_bytes) {
                 block4kb_ptr = lru_cache.on_new_pos(curr_pos + bytes_was_written);
-                curr_pos %= 4096;
+                curr_pos %= block4kb_ptr->m_size;
             }
             bytes_to_write -= bytes_was_written;
         }

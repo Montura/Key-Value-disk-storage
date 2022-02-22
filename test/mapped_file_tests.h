@@ -151,11 +151,11 @@ namespace details {
 
     bool run_arithmetic_test() {
         bool success = details::run_test_arithmetics<int32_t, int32_t>("_i32");
-//        success &= details::run_test_arithmetics<int32_t, uint32_t>("_ui32");
-//        success &= details::run_test_arithmetics<int32_t, int64_t>("_i64");
-//        success &= details::run_test_arithmetics<int32_t, uint64_t>("_ui64");
-//        success &= details::run_test_arithmetics<int32_t, float>("_f");
-//        success &= details::run_test_arithmetics<int32_t, double>("_d");
+        success &= details::run_test_arithmetics<int32_t, uint32_t>("_ui32");
+        success &= details::run_test_arithmetics<int32_t, int64_t>("_i64");
+        success &= details::run_test_arithmetics<int32_t, uint64_t>("_ui64");
+        success &= details::run_test_arithmetics<int32_t, float>("_f");
+        success &= details::run_test_arithmetics<int32_t, double>("_d");
         return success;
     }
 
