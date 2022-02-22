@@ -69,7 +69,7 @@ namespace btree {
         }
 
         template <typename T>
-        T read_next_primitive(const int64_t pos, const int16_t total_bytes_to_read) {
+        T read_next_primitive(const int64_t pos, const int16_t total_bytes_to_read) const {
             static_assert(std::is_arithmetic_v<T>);
 
             const auto free_bytes = mapped_offset + m_size - pos;

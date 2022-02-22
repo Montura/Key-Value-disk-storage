@@ -73,35 +73,38 @@ namespace file {
         std::unique_lock lock(mutex);
 
         auto block4kb_ptr = lru_cache.on_new_pos(pos);
-        int64_t current_pos = block4kb_ptr->current_pos();
-        int64_t total_bytes_to_write = sizeof(T);
-        int64_t new_size = block4kb_ptr->mapped_offset + current_pos + total_bytes_to_write;
+        const auto current_pos = block4kb_ptr->current_pos();
+        const auto total_bytes_to_write = sizeof(T);
+        const int64_t new_size = block4kb_ptr->mapped_offset + current_pos + total_bytes_to_write;
         if (new_size > m_capacity) {
             fs::resize_file(path, new_size);
         }
 
-        while (total_bytes_to_write > 0) {
-            auto [bytes_was_written, remaining_bytes] = block4kb_ptr->write_next_primitive(val, total_bytes_to_write);
+        auto bytes_to_write = total_bytes_to_write;
+        auto curr_pos = pos + total_bytes_to_write;
+        while (bytes_to_write > 0) {
+            auto [bytes_was_written, remaining_bytes] = block4kb_ptr->write_next_primitive(val, bytes_to_write);
             if (remaining_bytes) {
-                block4kb_ptr = lru_cache.on_new_pos(pos + bytes_was_written);
+                block4kb_ptr = lru_cache.on_new_pos(curr_pos + bytes_was_written);
+                curr_pos %= 4096;
             }
-            total_bytes_to_write -= bytes_was_written;
+            bytes_to_write -= bytes_was_written;
         }
 
-        m_capacity = std::max(new_size, m_capacity.load());
-        return m_pos;
+        m_capacity = std::max(new_size, m_capacity);
+        return curr_pos;
     }
 
     template <typename T>
     std::pair<T, int64_t> MappedFile::read_next_primitive(const int64_t pos) {
         static_assert(std::is_arithmetic_v<T>);
 
-        auto block4kb_ptr = lru_cache.on_new_pos(pos);
-        int64_t total_bytes_to_read = sizeof(T);
+        const auto block4kb_ptr = lru_cache.on_new_pos(pos);
+        const int64_t total_bytes_to_read = sizeof(T);
 
         T value = block4kb_ptr->read_next_primitive<T>(pos, total_bytes_to_read);
 
-        return std::make_pair(value, block4kb_ptr->relative_offset(pos + total_bytes_to_read));
+        return std::make_pair(value, pos + total_bytes_to_read);
     }
 
     template <typename T>

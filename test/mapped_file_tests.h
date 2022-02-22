@@ -34,7 +34,7 @@ namespace details {
         }
     }
 
-    constexpr int ITERATIONS = 1;
+    constexpr int ITERATIONS = 100000;
 
     template <typename K, typename V>
     bool run_test_arithmetics(const std::string& name_postfix) {
