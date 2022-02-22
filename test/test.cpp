@@ -6,6 +6,7 @@
 #include "volume_tests.h"
 #include "stress_test.h"
 #include "lru_cache_test.h"
+#include "lru_mapped_region_test.h"
 
 namespace tests {
 BOOST_AUTO_TEST_SUITE(LRU_test)
@@ -22,6 +23,11 @@ BOOST_AUTO_TEST_SUITE(LRU_test)
         BOOST_REQUIRE_MESSAGE(test_random_operations_count(block_size), "TEST_LRU_CACHE_RANDOM_OPERATIONS_COUNT");
     }
 BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(LRU_mapped_file_test)
+    BOOST_AUTO_TEST_CASE(test_lru_mapped_file_test) { BOOST_REQUIRE_MESSAGE(test_region(), "TEST_ARITHMETICS"); }
+BOOST_AUTO_TEST_SUITE_END()
+
 
 BOOST_AUTO_TEST_SUITE(mapped_file_test, *CleanBeforeTest(output_folder.data()))
     BOOST_AUTO_TEST_CASE(test_arithmetics_values) { BOOST_REQUIRE_MESSAGE(run_arithmetic_test(), "TEST_ARITHMETICS"); }

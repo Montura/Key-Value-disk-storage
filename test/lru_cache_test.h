@@ -106,7 +106,7 @@ namespace tests::LRU_test {
         bool verify_lru_block_usage(const int32_t total_ops, const int32_t block_size,
                 const std::shared_ptr<Block>& block, bool is_last_block)
         {
-            const auto block_usage_count = static_cast<int32_t>(block->usage_count.load());
+            const auto block_usage_count = static_cast<int32_t>(block->usage_count().load());
             auto reminder = static_cast<int32_t>(total_ops % block_size);
             return is_last_block
                 ? (block_usage_count == (reminder > 0 ? reminder : (total_ops > block_size) ? block_size : total_ops))
@@ -201,7 +201,7 @@ namespace tests::LRU_test {
 
             VectorT<int32_t> top_usages_in_working_set(unique_blocks_count / 2);
             const size_t shift = unique_blocks_count / 2;
-            for (auto i = 0; i < top_usages_in_working_set.size(); ++i) {
+            for (size_t i = 0; i < top_usages_in_working_set.size(); ++i) {
                 top_usages_in_working_set[i] = static_cast<int32_t>(address_vector_map[i + shift].size());
             }
 
@@ -217,7 +217,7 @@ namespace tests::LRU_test {
 
             std::set<int32_t> working_set_usage;
             for (const auto& block: lru.working_set()) {
-                working_set_usage.insert(block->usage_count.load());
+                working_set_usage.insert(block->usage_count().load());
             }
             bool success = (working_set_usage.size() == top_usages_in_working_set.size());
             success &= std::includes(working_set_usage.begin(), working_set_usage.end(),

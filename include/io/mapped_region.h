@@ -10,6 +10,32 @@ namespace fs = std::filesystem;
 namespace btree {
     using namespace utils;
 
+    class MappedRegionBlock {
+        bip::mapped_region mapped_region;
+        uint8_t* mapped_region_begin;
+        bip::offset_t m_pos;
+        std::atomic<int64_t> m_usage_count = 0;
+    public:
+        const bip::offset_t mapped_offset;
+        MappedRegionBlock(const std::string& path, int64_t file_offset, bip::mode_t mapping_mode = bip::read_only):
+            m_pos(0),
+            mapped_offset(file_offset)
+        {
+            auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
+            mapped_region = bip::mapped_region(file_mapping, mapping_mode, mapped_offset, mapping_mode);
+            mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
+        }
+
+    public:
+        void add_ref() {
+            ++m_usage_count;
+        }
+
+        const std::atomic<int64_t>& usage_count() {
+            return m_usage_count;
+        }
+    };
+
     class MappedRegion {
         const std::string path;
         bip::offset_t mapped_offset;
