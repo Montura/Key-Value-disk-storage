@@ -14,7 +14,7 @@ namespace btree {
     public:
         const int64_t mapped_offset = 0;
 
-        explicit Block(const std::string& path, int64_t file_offset, bip::mode_t mapping_mode = bip::read_only) :
+        explicit Block(const std::string& path, int64_t file_offset, bip::mode_t mapping_mode = bip::read_write) :
                 mapped_offset(file_offset)
         {
             auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
