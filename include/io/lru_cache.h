@@ -8,11 +8,19 @@
 namespace btree {
     class Block {
         std::atomic<int64_t> m_usage_count = 0;
+        bip::mapped_region mapped_region;
+        uint8_t* mapped_region_begin;
+        bip::offset_t m_pos;
     public:
         const int64_t mapped_offset = 0;
 
         explicit Block(const std::string& path, int64_t file_offset, bip::mode_t mapping_mode = bip::read_only) :
-                mapped_offset(file_offset) {};
+                mapped_offset(file_offset)
+        {
+            auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
+            mapped_region = bip::mapped_region(file_mapping, mapping_mode, mapped_offset, mapping_mode);
+            mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
+        };
 
         const std::atomic<int64_t>& usage_count() {
             return m_usage_count;
@@ -34,7 +42,7 @@ namespace btree {
     class LRUCache {
         using HashTIt = typename std::unordered_map<int64_t, std::shared_ptr<T>>::iterator;
 
-        const std::string path;
+        const std::string path = "../lru_block_mapped_test.txt";
         std::vector<std::shared_ptr<T>> min_heap;
         size_t heap_end_pos = 0;
         const Comparator<T> min_heap_comparator;
@@ -48,13 +56,19 @@ namespace btree {
         std::atomic<int64_t> m_total_lock_free_ops = 0;
         const int64_t block_size;
         const int64_t m_cache_size;
+
+        const int32_t FILE_50MB = 16384 * 3000;
     public:
 
         LRUCache(const int64_t block_size, const int64_t cache_size, const std::string& path = "") :
-            path(path),
             block_size(block_size),
-            m_cache_size(cache_size > 1 ? cache_size / 2 : 1)
+            m_cache_size(cache_size)
         {
+            // todo: fix path
+            bool file_exists = fs::exists(this->path);
+            if (!file_exists) {
+                file::create_file(this->path, FILE_50MB);
+            }
             assert(cache_size > 0);
             min_heap.resize(m_cache_size);
         }
@@ -100,7 +114,7 @@ namespace btree {
         }
     private:
         HashTIt add_new_block(const int64_t pos, int64_t bucket_idx) {
-            const auto&[emplace_it, success] = hash_table.try_emplace(bucket_idx, new T(path, pos));
+            const auto&[emplace_it, success] = hash_table.try_emplace(bucket_idx, new T(path, bucket_idx));
             if (success) {
                 if (heap_end_pos == m_cache_size)
                     remove_the_least_used_block();

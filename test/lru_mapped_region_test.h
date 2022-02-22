@@ -9,11 +9,20 @@
 namespace tests::LRU_mapped_file_test {
 
     namespace details {
-
+        const int32_t KB = 4096;
+        const int32_t CACHE_SIZE = 250;
+        const char* path = "../lru_mapped_test.txt";
     }
 
     bool test_region() {
-        LRUCache<MappedRegionBlock> lru(4096, 1);
+        const auto& path = details::path;
+
+        bool file_exists = fs::exists(path);
+        if (!file_exists) {
+            file::create_file(path, details::KB);
+        }
+        LRUCache<MappedRegionBlock> lru(details::KB, details::CACHE_SIZE, path);
+
 
         lru.on_new_pos(1);
         return true;

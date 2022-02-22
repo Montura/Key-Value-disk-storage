@@ -11,7 +11,7 @@ namespace tests::LRU_test {
         template <typename T>
         using VectorT = std::vector<T>;
 
-        constexpr int blocks_count[] = { 500, 1000, 3000, 5000, 10000 };
+        constexpr int blocks_count[] = { 500, 1000, 3000 } ;// 5000, 10000 };
 
         VectorT<std::pair<int32_t, int32_t>> generate_ranges(int32_t max_n, int32_t pairs_count) {
             VectorT<std::pair<int32_t, int32_t>> pairs;
@@ -122,11 +122,13 @@ namespace tests::LRU_test {
 
         bool test_lru_cache_with_a_single_working_block(const int32_t block_size) {
             const int unique_blocks_count = 1;
-            auto verify = [block_size, unique_blocks_count](const int total_ops, auto& lru) -> bool {
+            const int32_t cache_size = 1;
+
+            auto verify = [block_size, cache_size](const int total_ops, auto& lru) -> bool {
                 const auto& working_set = lru.working_set();
                 bool success = working_set.size() == unique_blocks_count;
                 success &= verify_lru_block_usage(total_ops, block_size, working_set[0], true);
-                success &= verify_lru_state(block_size, 1, lru, total_ops);
+                success &= verify_lru_state(block_size, cache_size, lru, total_ops);
                 success &= verify_locks_count(lru);
                 return success;
             };
@@ -134,7 +136,7 @@ namespace tests::LRU_test {
             const uint32_t total_ops = 100000000; // 10^8
             bool success = true;
             for (uint32_t ops_count = 1; ops_count < total_ops; ops_count *= 100) {
-                btree::LRUCache<Block> lru { block_size, unique_blocks_count };
+                btree::LRUCache<Block> lru { block_size, cache_size };
                 run_in_pool_and_join(
                         [&lru, ops_count]() {
                             for (uint32_t i = 0; i < ops_count; ++i) {
@@ -148,14 +150,16 @@ namespace tests::LRU_test {
         }
 
         bool test_fixed_operation_count_per_block(const int32_t block_size, const int32_t unique_blocks_count) {
-            auto verify = [block_size, unique_blocks_count](const int32_t total_ops, auto& lru) -> bool {
+            const int32_t cache_size = unique_blocks_count / 2;
+
+            auto verify = [block_size, cache_size](const int32_t total_ops, auto& lru) -> bool {
                 bool success = true;
                 auto working_set = lru.working_set();
                 for (auto it = working_set.begin(); it < working_set.end(); ++it) {
                     bool is_last_block = std::next(it) == working_set.end();
                     verify_lru_block_usage(total_ops, block_size, *it, is_last_block);
                 }
-                success &= verify_lru_state(block_size, unique_blocks_count / 2, lru, total_ops);
+                success &= verify_lru_state(block_size, cache_size, lru, total_ops);
                 success &= verify_locks_count(lru);
                 return success;
             };
@@ -163,7 +167,7 @@ namespace tests::LRU_test {
             const uint32_t total_ops = 100000000; // 10^8
             bool success = true;
             for (uint32_t ops_count = 1; ops_count < total_ops; ops_count *= 100) {
-                btree::LRUCache<Block> lru{ block_size, unique_blocks_count };
+                btree::LRUCache<Block> lru{ block_size, cache_size };
                 run_in_pool_and_join(
                         [&lru, ops_count]() {
                             for (uint32_t i = 0; i < ops_count; ++i) {
@@ -180,7 +184,8 @@ namespace tests::LRU_test {
                 const VectorT<std::pair<int32_t, int32_t>>& ranges)
         {
             bool success = true;
-            btree::LRUCache<Block> lru { block_size, unique_blocks_count };
+            const int32_t cache_size = unique_blocks_count / 2;
+            btree::LRUCache<Block> lru { block_size, cache_size };
             for (const auto& range : ranges) {
                 int32_t start = range.first;
                 int32_t end = range.second;
@@ -190,7 +195,7 @@ namespace tests::LRU_test {
                                 lru.on_new_pos(i);
                             }
                         });
-                success &= verify_lru_state(block_size, unique_blocks_count / 2, lru, end);
+                success &= verify_lru_state(block_size, cache_size, lru, end);
             }
             return success;
         }
@@ -198,14 +203,14 @@ namespace tests::LRU_test {
         bool test_random_operation_count_per_block(const int32_t block_size, const int32_t unique_blocks_count) {
             VectorT<VectorT<int32_t>> address_vector_map(unique_blocks_count);
             const auto total_operations = generate_test_block_operations(address_vector_map, block_size, unique_blocks_count);
+            const int32_t cache_size = unique_blocks_count / 2;
 
-            VectorT<int32_t> top_usages_in_working_set(unique_blocks_count / 2);
-            const size_t shift = unique_blocks_count / 2;
+            VectorT<int32_t> top_usages_in_working_set(cache_size);
             for (size_t i = 0; i < top_usages_in_working_set.size(); ++i) {
-                top_usages_in_working_set[i] = static_cast<int32_t>(address_vector_map[i + shift].size());
+                top_usages_in_working_set[i] = static_cast<int32_t>(address_vector_map[i + cache_size].size());
             }
 
-            btree::LRUCache<Block> lru { block_size, unique_blocks_count};
+            btree::LRUCache<Block> lru { block_size, cache_size };
             run_in_pool_and_join(
                     [&lru, &address_vector_map]() {
                         for (const auto& address_vector: address_vector_map) {
@@ -223,7 +228,7 @@ namespace tests::LRU_test {
             success &= std::includes(working_set_usage.begin(), working_set_usage.end(),
                     top_usages_in_working_set.begin(), top_usages_in_working_set.end());
 
-            success &= verify_lru_state(block_size, unique_blocks_count / 2, lru, total_operations);
+            success &= verify_lru_state(block_size, cache_size, lru, total_operations);
             success &= verify_locks_count(lru);
             return success;
         }
