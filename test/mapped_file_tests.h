@@ -57,12 +57,17 @@ namespace details {
                 pos = curr_pos;
                 success &= (tmp == static_cast<V>(i));
             }
-
-
         }
         success &= (fs::file_size(path) == sizeof(V) * ITERATIONS);
         return success;
     }
+
+    // PATH_MAX
+    // WinAPI  -> 32,767 characters -> 64 kb (2 bytes per character)  -> UTF16 ?
+    // MacOS X -> 1024 characters   -> 4 kb (2 bytes per character)   -> UTF16 ? (#include <sys/syslimits.h>)
+    // Linux   -> 1024 characters   -> 4 kb (2 bytes per character)   -> UTF16 ? (#include <limits.h>)
+
+    // todo: set limit to 256 symbols -> max 1Kb per key ?
 
     template <typename K, typename V, typename ValueType = typename V::value_type>
     bool run_test_basic_strings(const Data <V>& data, to_string_ptr<ValueType> conv, const std::string& postfix) {
