@@ -14,7 +14,7 @@ namespace btree {
     public:
         const int64_t mapped_offset;
 
-        explicit Block(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_write) :
+        Block(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_write) :
                 m_pos(0), mapped_offset(file_offset)
         {
             auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
@@ -73,11 +73,11 @@ namespace btree {
         }
 
         std::shared_ptr<T> on_new_pos(const int64_t pos) {
-            int64_t bucket_idx = round_pos(pos);
+            int64_t bucket_idx = bucket_index(pos);
             const auto find_it = hash_table.find(bucket_idx);
             if (find_it == hash_table.end()) {
                 std::unique_lock lock(mutex);
-                auto emplace_it = add_new_block(pos, bucket_idx);
+                auto emplace_it = add_new_block(round_pos(pos), bucket_idx);
                 m_total_lock_ops++;
                 emplace_it->second->add_ref();
                 return emplace_it->second;
@@ -88,8 +88,8 @@ namespace btree {
             }
         }
 
-        std::vector<std::shared_ptr<Block>> working_set() const {
-            return std::vector<std::shared_ptr<Block>>(min_heap.begin(), min_heap.begin() + heap_end_pos);
+        std::vector<std::shared_ptr<T>> working_set() const {
+            return std::vector<std::shared_ptr<T>>(min_heap.begin(), min_heap.begin() + heap_end_pos);
         }
 
         int64_t cache_size() const {
@@ -111,9 +111,18 @@ namespace btree {
         int64_t total_lock_free_ops() const {
             return m_total_lock_free_ops.load();
         }
+
+        int64_t round_pos(int64_t addr) const {
+            return (addr / block_size) * block_size;
+        }
+
+        void clear() {
+            min_heap.clear();
+            hash_table.clear();
+        }
     private:
-        HashTIt add_new_block(const int64_t pos, int64_t bucket_idx) {
-            const auto&[emplace_it, success] = hash_table.try_emplace(bucket_idx, new T(path, bucket_idx));
+        HashTIt add_new_block(const int64_t file_offset, int64_t bucket_idx) {
+            const auto&[emplace_it, success] = hash_table.try_emplace(bucket_idx, new T(path, file_offset));
             if (success) {
                 if (heap_end_pos == m_cache_size)
                     remove_the_least_used_block();
@@ -127,15 +136,15 @@ namespace btree {
             std::make_heap(min_heap.begin(), min_heap.end(), min_heap_comparator);
             std::pop_heap(min_heap.begin(), min_heap.end(), min_heap_comparator);
             auto value_to_remove = min_heap.back();
-            int64_t k = round_pos(value_to_remove->mapped_offset);
+            int64_t k = bucket_index(value_to_remove->mapped_offset);
             auto removed_count = hash_table.erase(k);
             assert(removed_count == 1);
             min_heap[--heap_end_pos].reset();
             ++m_cache_rebuild_count;
         }
 
-        int64_t round_pos(int64_t addr) const {
-            return (addr / block_size) * block_size;
+        int64_t bucket_index(int64_t addr) const {
+            return (addr / block_size);
         }
     };
 }

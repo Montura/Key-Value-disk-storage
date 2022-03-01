@@ -19,7 +19,7 @@ namespace file {
     using namespace utils;
 
     MappedFile::MappedFile(const std::string& path, const int64_t bytes_num) :
-        m_pos(0),
+        m_pos(0), m_capacity(0), m_size(0),
         lru_cache(4096, 1000, path),
         path(path)
     {
@@ -47,8 +47,9 @@ namespace file {
  * 4. See impl of BOOST_MAPPED_REGION dtor:
     - https://github.com/steinwurf/boost/blob/master/boost/interprocess/mapped_region.hpp#L555
 */
+        lru_cache.clear();
         std::error_code error_code;
-        fs::resize_file(path, m_capacity, error_code);
+        fs::resize_file(path, m_size, error_code);
         if (error_code)
             std::cerr << "Can't resize file: " << path << std::endl;
     }
@@ -72,38 +73,32 @@ namespace file {
         static_assert(std::is_arithmetic_v<T>);
         std::unique_lock lock(mutex);
 
-        auto block4kb_ptr = lru_cache.on_new_pos(pos);
         const auto total_bytes_to_write = sizeof(T);
-        const int64_t new_size = block4kb_ptr->current_absolute_pos() + total_bytes_to_write;
-        if (new_size > m_capacity) {
-            fs::resize_file(path, new_size);
+        const int64_t write_end_pos = pos + total_bytes_to_write;
+        if (write_end_pos >= m_capacity) {
+            int64_t addr = write_end_pos + 4096;
+            m_capacity = lru_cache.round_pos(addr);
+            fs::resize_file(path, m_capacity);
         }
+        auto block4kb_ptr = lru_cache.on_new_pos(pos);
+        m_size = write_end_pos;
 
-        auto bytes_to_write = total_bytes_to_write;
-        auto curr_pos = pos + total_bytes_to_write;
-        while (bytes_to_write > 0) {
-            auto [bytes_was_written, remaining_bytes] = block4kb_ptr->write_next_primitive(val, bytes_to_write);
-            if (remaining_bytes) {
-                block4kb_ptr = lru_cache.on_new_pos(curr_pos + bytes_was_written);
-                curr_pos %= block4kb_ptr->m_size;
-            }
-            bytes_to_write -= bytes_was_written;
-        }
+        block4kb_ptr->write_next_primitive(val, total_bytes_to_write);
 
-        m_capacity = std::max(new_size, m_capacity);
-        return curr_pos;
+        return write_end_pos;
     }
 
     template <typename T>
     std::pair<T, int64_t> MappedFile::read_next_primitive(const int64_t pos) {
         static_assert(std::is_arithmetic_v<T>);
 
-        const auto block4kb_ptr = lru_cache.on_new_pos(pos);
-        const int64_t total_bytes_to_read = sizeof(T);
+        const auto total_bytes_to_read = sizeof(T);
+        const auto read_end_pos = pos + total_bytes_to_read;
+        auto block4kb_ptr = lru_cache.on_new_pos(read_end_pos);
 
-        T value = block4kb_ptr->read_next_primitive<T>(pos, total_bytes_to_read);
-
-        return std::make_pair(value, pos + total_bytes_to_read);
+        const auto curr_pos = pos + total_bytes_to_read;
+        const auto value = block4kb_ptr->read_next_primitive<T>(pos, total_bytes_to_read);
+        return std::make_pair(value, curr_pos);
     }
 
     template <typename T>

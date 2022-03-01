@@ -15,6 +15,7 @@ namespace btree {
     class MappedFile {
         int64_t m_pos;
         int64_t m_capacity;
+        int64_t m_size;
         LRUCache<MappedRegionBlock> lru_cache;
     public:
         const std::string path;

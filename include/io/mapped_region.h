@@ -45,37 +45,22 @@ namespace btree {
         }
 
         template <typename T>
-        std::pair<int16_t, int16_t> write_next_primitive(const T val, const int16_t total_bytes_to_write) {
+        void write_next_primitive(const T val, const int16_t total_bytes_to_write) {
             static_assert(std::is_arithmetic_v<T>);
 
-            const auto free_bytes = m_size - m_pos.load();
-            auto bytes_to_write = free_bytes >= total_bytes_to_write ? total_bytes_to_write : free_bytes;
-            if (bytes_to_write > 0) {
-                auto* data = cast_to_const_uint8_t_data(&val);
-                std::copy(data, data + bytes_to_write, address_by_offset(m_pos));
-                m_pos += bytes_to_write;
-                auto remaining_bytes = total_bytes_to_write - bytes_to_write;
-                assert(remaining_bytes >= 0);
-                return std::make_pair(bytes_to_write, remaining_bytes);
-            } else {
-                return std::make_pair(0, total_bytes_to_write);
-            }
+            auto* data = cast_to_const_uint8_t_data(&val);
+            std::copy(data, data + total_bytes_to_write, address_by_offset(m_pos));
+            m_pos += total_bytes_to_write;
         }
 
         template <typename T>
         T read_next_primitive(const int64_t pos, const int16_t total_bytes_to_read) const {
             static_assert(std::is_arithmetic_v<T>);
 
-            const auto free_bytes = mapped_offset + m_size - pos;
-            auto bytes_to_read = free_bytes >= total_bytes_to_read ? total_bytes_to_read : free_bytes;
-            assert(bytes_to_read > 0);
-
             T val;
             auto* data = cast_to_uint8_t_data(&val);
             uint8_t* address_begin = address_by_offset(pos - mapped_offset);
-            std::copy(address_begin, address_begin + bytes_to_read, data);
-            auto remaining_bytes = total_bytes_to_read - bytes_to_read;
-            assert(remaining_bytes == 0);
+            std::copy(address_begin, address_begin + total_bytes_to_read, data);
             return val;
         }
     };
@@ -88,7 +73,7 @@ namespace btree {
         bip::offset_t curr_pos;
 
         uint8_t* read_only_address_for_offset(int64_t offset) {
-            auto end_address = curr_pos + offset;
+            auto end_address = current_pos() + offset;
             if (end_address > static_cast<int64_t>(mapped_region.get_size())) {
                 remap(bip::read_only, calc_new_size(end_address));
                 end_address = offset;
@@ -101,10 +86,10 @@ namespace btree {
         int64_t calc_new_size(int64_t end_address) const {
             int64_t fileSize = static_cast<int64_t>(fs::file_size(path));
             if (end_address <= fileSize) {
-//                int64_t delta = end_address - m_pos;
+                int64_t pos = current_pos();
                 int64_t new_size = 128;
-                if (curr_pos + new_size > fileSize) {
-                    return fileSize - curr_pos;
+                if (pos + new_size > fileSize) {
+                    return fileSize - pos;
                 } else {
                     return std::max(new_size, end_address);
                 }

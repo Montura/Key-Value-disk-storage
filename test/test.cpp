@@ -11,16 +11,16 @@
 namespace tests {
 BOOST_AUTO_TEST_SUITE(LRU_test)
     BOOST_DATA_TEST_CASE(test_lru_cache, boost::make_iterator_range(block_size_arr), block_size) {
-        BOOST_REQUIRE_MESSAGE(test_lru_single_block(block_size), "TEST_LRU_CACHE_SINGLE_BLOCK");
+        BOOST_REQUIRE_MESSAGE(run_test_lru_single_block(block_size), "TEST_LRU_CACHE_SINGLE_BLOCK");
     }
     BOOST_DATA_TEST_CASE(test_lru_cache_state_for_ranges, boost::make_iterator_range(block_size_arr), block_size) {
-        BOOST_REQUIRE_MESSAGE(test_lru_state_for_ranges(block_size), "TEST_LRU_CACHE_STATE_FOR_RANGES");
+        BOOST_REQUIRE_MESSAGE(run_test_lru_state_for_ranges(block_size), "TEST_LRU_CACHE_STATE_FOR_RANGES");
     }
     BOOST_DATA_TEST_CASE(test_lru_cache_with_fixed_operations_count, boost::make_iterator_range(block_size_arr), block_size) {
-        BOOST_REQUIRE_MESSAGE(test_fixed_operations_count(block_size), "TEST_LRU_CACHE_FIXED_OPERATIONS_COUNT");
+        BOOST_REQUIRE_MESSAGE(run_test_fixed_operations_count(block_size), "TEST_LRU_CACHE_FIXED_OPERATIONS_COUNT");
     }
     BOOST_DATA_TEST_CASE(test_lru_cache_with_random_operations_count, boost::make_iterator_range(block_size_arr), block_size) {
-        BOOST_REQUIRE_MESSAGE(test_random_operations_count(block_size), "TEST_LRU_CACHE_RANDOM_OPERATIONS_COUNT");
+        BOOST_REQUIRE_MESSAGE(run_test_random_operations_count(block_size), "TEST_LRU_CACHE_RANDOM_OPERATIONS_COUNT");
     }
 BOOST_AUTO_TEST_SUITE_END()
 
