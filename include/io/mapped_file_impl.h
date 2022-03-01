@@ -96,9 +96,8 @@ namespace file {
         const auto read_end_pos = pos + total_bytes_to_read;
         auto block4kb_ptr = lru_cache.on_new_pos(read_end_pos);
 
-        const auto curr_pos = pos + total_bytes_to_read;
         const auto value = block4kb_ptr->read_next_primitive<T>(pos, total_bytes_to_read);
-        return std::make_pair(value, curr_pos);
+        return std::make_pair(value, read_end_pos);
     }
 
     template <typename T>
@@ -118,7 +117,7 @@ namespace file {
 
     template <typename T>
     void MappedFile::write_node_vector(std::unique_ptr<MappedRegion>& region, const std::vector<T>& vec) {
-        int64_t total_size_in_bytes = sizeof(T) * vec.size();
+        auto total_size_in_bytes = static_cast<int32_t>(sizeof(T) * vec.size());
         write_blob(region, vec.data(), total_size_in_bytes);
     }
 
@@ -130,6 +129,48 @@ namespace file {
         auto [raw_data, len] = region->template read_next_data<const uint8_t*>();
         std::copy(raw_data, raw_data + len, data);
         m_pos += total_size_in_bytes;
+    }
+
+    template <typename StringT>
+    int64_t MappedFile::write_basic_string(const int64_t pos, StringT str) {
+        const auto total_len_size_in_bytes = static_cast<int32_t>(sizeof (int32_t));
+        const auto total_blob_size_in_bytes = static_cast<int32_t>(str.size() * sizeof(StringT::value_type));
+
+        // write values
+        std::unique_lock lock(mutex);
+
+        // todo: string len and string.data() are not fit in 4KB BLOCK
+        //  1) Can they be in the different blocks ? How to read?
+        //  2) Or they have to be in the same block ? How to mark in block the end of data?
+        const int64_t write_end_pos = pos + total_len_size_in_bytes + total_blob_size_in_bytes;
+        if (write_end_pos >= m_capacity) {
+            int64_t addr = write_end_pos + 4096;
+            m_capacity = lru_cache.round_pos(addr);
+            fs::resize_file(path, m_capacity);
+        }
+
+        // write size
+        auto block4kb_ptr = lru_cache.on_new_pos(write_end_pos);
+        m_size = write_end_pos;
+
+        block4kb_ptr->write_next_primitive(total_blob_size_in_bytes, total_len_size_in_bytes);
+        block4kb_ptr->write_string(str.data(), total_blob_size_in_bytes);
+        
+        return write_end_pos;
+    }
+
+    template <typename StringT>
+    std::pair<StringT, int64_t> MappedFile::read_basic_string(const int64_t pos) {
+        const auto block4kb_ptr = lru_cache.on_new_pos(pos);
+
+        const auto bytes_to_read_blob_len = sizeof(int32_t);
+        const auto total_bytes_to_read_blob =
+                block4kb_ptr->read_next_primitive<int32_t>(pos, bytes_to_read_blob_len);
+        const auto read_end_pos = pos + bytes_to_read_blob_len + total_bytes_to_read_blob;
+
+        const auto blob_pos = pos + bytes_to_read_blob_len;
+        const auto value = block4kb_ptr->template read_string<StringT>(blob_pos, total_bytes_to_read_blob);
+        return std::make_pair(value, read_end_pos);
     }
 
     template <typename T>

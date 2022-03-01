@@ -62,6 +62,12 @@ namespace btree {
         void shrink_to_fit();
         bool is_empty() const;
 
+        template <typename StringT>
+        int64_t write_basic_string(const int64_t pos, StringT source_data);
+
+        template <typename StringT>
+        std::pair<StringT, int64_t> read_basic_string(const int64_t pos);
+
     private:
         template <typename T>
         int64_t write_blob(std::unique_ptr<MappedRegion>& region, T source_data, const int32_t total_size_in_bytes);

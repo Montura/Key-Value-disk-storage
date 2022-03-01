@@ -70,33 +70,34 @@ namespace details {
     // todo: set limit to 256 symbols -> max 1Kb per key ?
 
     template <typename K, typename V, typename ValueType = typename V::value_type>
-    bool run_test_basic_strings(const Data <V>& data, to_string_ptr<ValueType> conv, const std::string& postfix) {
+    bool run_test_basic_strings(const Data<V>& data, to_string_ptr<ValueType> conv, const std::string& postfix) {
         std::string path = get_absolute_file_name(postfix + "_" + std::to_string(data.len));
         int64_t total_write_size = 0;
         int64_t total_read_size = 0;
         bool success = true;
         {
             MappedFile file(path, 0);
-            auto wptr = file.get_mapped_region(0);
             // write
+            int64_t pos = 0;
             for (auto i = 0; i < ITERATIONS; ++i) {
                 Data<V> tmp_data(data.value + conv(i));
-                file.write_next_data(wptr, cast_to_const_uint8_t_data(tmp_data.value.data()), tmp_data.len);
+                pos = file.write_basic_string(pos, tmp_data.value);
             }
             total_write_size = file.get_pos();
-
+//
             // read
-            const auto& ptr = file.get_mapped_region(0);
+            pos = 0;
             for (int i = 0; i < ITERATIONS; ++i) {
                 V tmp = data.value + conv(i);
-                auto[value, size] = file.template read_next_data<const uint8_t*>(ptr);
-                success &= compare(tmp, value, size);
+                auto [value, curr_pos] = file.template read_basic_string<V>(pos);
+                pos = curr_pos;
+                success &= (tmp == value);
             }
 //            total_read_size = file.get_pos();
         }
 
 //        success &= (total_write_size == total_read_size);
-        success &= (fs::file_size(path) == static_cast<uint64_t>(total_write_size));
+//        success &= (fs::file_size(path) == static_cast<uint64_t>(total_write_size));
         return success;
     }
 }
