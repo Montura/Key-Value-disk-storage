@@ -20,7 +20,7 @@ namespace file {
 
     MappedFile::MappedFile(const std::string& path, const int64_t bytes_num) :
         m_pos(0), m_capacity(0), m_size(0),
-        lru_cache(4096, 1000, path),
+        lru_cache(1000, path),
         path(path)
     {
         bool file_exists = fs::exists(path);
@@ -77,7 +77,7 @@ namespace file {
         const int64_t write_end_pos = pos + total_bytes_to_write;
         if (write_end_pos >= m_capacity) {
             int64_t addr = write_end_pos + 4096;
-            m_capacity = lru_cache.round_pos(addr);
+            m_capacity = lru_cache.align_pos(addr, 4096);
             fs::resize_file(path, m_capacity);
         }
         auto block4kb_ptr = lru_cache.on_new_pos(pos);
@@ -145,7 +145,7 @@ namespace file {
         const int64_t write_end_pos = pos + total_len_size_in_bytes + total_blob_size_in_bytes;
         if (write_end_pos >= m_capacity) {
             int64_t addr = write_end_pos + 4096;
-            m_capacity = lru_cache.round_pos(addr);
+            m_capacity = lru_cache.align_pos(addr, 4096);
             fs::resize_file(path, m_capacity);
         }
 

@@ -21,7 +21,7 @@ namespace tests::LRU_mapped_file_test {
         if (!file_exists) {
             file::create_file(path, details::KB);
         }
-        LRUCache<MappedRegionBlock> lru(details::KB, details::CACHE_SIZE, path);
+        LRUCache<MappedRegionBlock> lru(details::CACHE_SIZE, path);
 
 
         lru.on_new_pos(1);

@@ -8,6 +8,37 @@ namespace tests::LRU_test {
     constexpr int block_size_arr[] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
 
     namespace details {
+        class Block {
+            std::atomic<int64_t> m_usage_count = 0;
+            bip::mapped_region mapped_region;
+            uint8_t* mapped_region_begin;
+            bip::offset_t m_pos;
+        public:
+            const int32_t m_size;
+            const int64_t mapped_offset;
+
+            Block(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_write) :
+                    m_pos(0), m_size(size), mapped_offset(file_offset)
+            {
+                auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
+                mapped_region = bip::mapped_region(file_mapping, mapping_mode, mapped_offset, size);
+                mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
+            };
+
+            const std::atomic<int64_t>& usage_count() {
+                return m_usage_count;
+            }
+
+            void add_ref() {
+                ++m_usage_count;
+            }
+
+            int64_t current_pos() {
+                return m_pos;
+            }
+        };
+
+
         template <typename T>
         using VectorT = std::vector<T>;
 
@@ -136,7 +167,7 @@ namespace tests::LRU_test {
         bool test_lru_cache_with_a_single_working_block(const int32_t block_size) {
             const int32_t cache_size = 1;
 
-            auto verify = [block_size, cache_size](const int total_ops, auto& lru) -> bool {
+            auto verify = [block_size, cache_size](const int32_t total_ops, auto& lru) -> bool {
                 const int unique_blocks_count = 1;
                 const auto& working_set = lru.working_set();
                 bool success = working_set.size() == unique_blocks_count;
@@ -149,11 +180,11 @@ namespace tests::LRU_test {
             const uint32_t total_ops = 100000000; // 10^8
             bool success = true;
             for (uint32_t ops_count = 1; ops_count < total_ops; ops_count *= 100) {
-                btree::LRUCache<Block> lru { block_size, cache_size, init_file() };
+                btree::LRUCache<Block> lru{ cache_size, init_file() };
                 run_in_pool_and_join(
-                        [&lru, ops_count]() {
+                        [&lru, ops_count, block_size]() {
                             for (uint32_t i = 0; i < ops_count; ++i) {
-                                lru.on_new_pos(i);
+                                lru.on_new_pos(i, block_size);
                             }
                         });
                 success &= verify(ops_count, lru);
@@ -181,11 +212,11 @@ namespace tests::LRU_test {
             const uint32_t total_ops = 100000000; // 10^8
             bool success = true;
             for (uint32_t ops_count = 1; ops_count < total_ops; ops_count *= 100) {
-                btree::LRUCache<Block> lru{ block_size, cache_size, init_file() };
+                btree::LRUCache<Block> lru{ cache_size, init_file() };
                 run_in_pool_and_join(
-                        [&lru, ops_count]() {
+                        [&lru, ops_count, block_size]() {
                             for (uint32_t i = 0; i < ops_count; ++i) {
-                                lru.on_new_pos(i);
+                                lru.on_new_pos(i, block_size);
                             }
                         });
                 success &= verify(ops_count, lru);
@@ -200,14 +231,14 @@ namespace tests::LRU_test {
         {
             bool success = true;
             const int32_t cache_size = unique_blocks_count / 2;
-            btree::LRUCache<Block> lru { block_size, cache_size, init_file() };
+            btree::LRUCache<Block> lru{ cache_size, init_file() };
             for (const auto& range : ranges) {
                 int32_t start = range.first;
                 int32_t end = range.second;
                 run_in_pool_and_join(
-                        [&lru, start, end]() {
+                        [&lru, start, end, block_size]() {
                             for (auto i = start; i < end; ++i) {
-                                lru.on_new_pos(i);
+                                lru.on_new_pos(i, block_size);
                             }
                         });
                 success &= verify_lru_state(block_size, cache_size, lru, end);
@@ -226,12 +257,12 @@ namespace tests::LRU_test {
                 top_usages_in_working_set[i] = static_cast<int32_t>(address_vector_map[i + cache_size].size());
             }
 
-            btree::LRUCache<Block> lru { block_size, cache_size, init_file() };
+            btree::LRUCache<Block> lru{ cache_size, init_file() };
             run_in_pool_and_join(
-                    [&lru, &address_vector_map]() {
+                    [&lru, &address_vector_map, block_size]() {
                         for (const auto& address_vector: address_vector_map) {
                             for (const auto& address: address_vector) {
-                                lru.on_new_pos(address);
+                                lru.on_new_pos(address, block_size);
                             }
                         }
                     });
@@ -287,22 +318,22 @@ namespace tests::LRU_test {
     }
 
     bool run_test_lru_single_block(const int32_t block_size) {
-        return  details::test_lru_single_block<Block>(block_size) &&
+        return  details::test_lru_single_block<details::Block>(block_size) &&
                 details::test_lru_single_block<MappedRegionBlock>(block_size);
     }
 
     bool run_test_lru_state_for_ranges(const int32_t block_size) {
-        return  details::test_lru_state_for_ranges<Block>(block_size) &&
+        return  details::test_lru_state_for_ranges<details::Block>(block_size) &&
                 details::test_lru_state_for_ranges<MappedRegionBlock>(block_size);
     }
 
     bool run_test_fixed_operations_count(const int32_t block_size) {
-        return  details::test_fixed_operations_count<Block>(block_size) &&
+        return  details::test_fixed_operations_count<details::Block>(block_size) &&
                 details::test_fixed_operations_count<MappedRegionBlock>(block_size);
     }
 
     bool run_test_random_operations_count(const int32_t block_size) {
-        return  details::test_random_operations_count<Block>(block_size) &&
+        return  details::test_random_operations_count<details::Block>(block_size) &&
                 details::test_random_operations_count<MappedRegionBlock>(block_size);
     }
 }

@@ -6,35 +6,6 @@
 #include <atomic>
 
 namespace btree {
-    class Block {
-        std::atomic<int64_t> m_usage_count = 0;
-        bip::mapped_region mapped_region;
-        uint8_t* mapped_region_begin;
-        bip::offset_t m_pos;
-    public:
-        const int64_t mapped_offset;
-
-        Block(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_write) :
-                m_pos(0), mapped_offset(file_offset)
-        {
-            auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
-            mapped_region = bip::mapped_region(file_mapping, mapping_mode, mapped_offset, size);
-            mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
-        };
-
-        const std::atomic<int64_t>& usage_count() {
-            return m_usage_count;
-        }
-
-        void add_ref() {
-            ++m_usage_count;
-        }
-
-        int64_t current_pos() {
-            return m_pos;
-        }
-    };
-
     template <typename BlockT>
     struct Comparator {
         bool operator()(const std::shared_ptr<BlockT>& lhs, const std::shared_ptr<BlockT>& rhs) {
@@ -58,26 +29,30 @@ namespace btree {
         std::atomic<int64_t> m_cache_rebuild_count = 0;
         std::atomic<int64_t> m_total_lock_ops = 0;
         std::atomic<int64_t> m_total_lock_free_ops = 0;
-        const int64_t block_size;
         const int64_t m_cache_size;
 
     public:
 
-        LRUCache(const int64_t block_size, const int64_t cache_size, const std::string& path) :
+        LRUCache(const int64_t cache_size, const std::string& path) :
             path(path),
-            block_size(block_size),
             m_cache_size(cache_size)
         {
             assert(cache_size > 0);
             min_heap.resize(m_cache_size);
         }
 
-        std::shared_ptr<T> on_new_pos(const int64_t pos) {
-            int64_t bucket_idx = bucket_index(pos);
-            const auto find_it = hash_table.find(bucket_idx);
+        std::shared_ptr<T> on_new_pos(const int64_t pos, const int64_t block_size = 4096) {
+            const auto find_it =
+                    std::find_if(hash_table.begin(), hash_table.end(),
+                            [=](const auto& elem) {
+                                const auto& block = elem.second;
+                                const auto offset = block->mapped_offset;
+                                return (offset <= pos) && (pos < offset + block->m_size);
+                            }
+                    );
             if (find_it == hash_table.end()) {
                 std::unique_lock lock(mutex);
-                auto emplace_it = add_new_block(round_pos(pos), bucket_idx);
+                auto emplace_it = add_new_block(pos, block_size);
                 m_total_lock_ops++;
                 emplace_it->second->add_ref();
                 return emplace_it->second;
@@ -112,7 +87,7 @@ namespace btree {
             return m_total_lock_free_ops.load();
         }
 
-        int64_t round_pos(int64_t addr) const {
+        int64_t align_pos(int64_t addr, const int block_size) const {
             return (addr / block_size) * block_size;
         }
 
@@ -121,8 +96,8 @@ namespace btree {
             hash_table.clear();
         }
     private:
-        HashTIt add_new_block(const int64_t file_offset, int64_t bucket_idx) {
-            const auto&[emplace_it, success] = hash_table.try_emplace(bucket_idx, new T(path, file_offset));
+        HashTIt add_new_block(const int64_t pos, const int32_t block_size) {
+            const auto&[emplace_it, success] = hash_table.try_emplace(pos, new T(path, align_pos(pos, block_size), block_size));
             if (success) {
                 if (heap_end_pos == m_cache_size)
                     remove_the_least_used_block();
@@ -135,16 +110,11 @@ namespace btree {
         void remove_the_least_used_block() {
             std::make_heap(min_heap.begin(), min_heap.end(), min_heap_comparator);
             std::pop_heap(min_heap.begin(), min_heap.end(), min_heap_comparator);
-            auto value_to_remove = min_heap.back();
-            int64_t k = bucket_index(value_to_remove->mapped_offset);
+            int64_t k = min_heap.back()->mapped_offset;
             auto removed_count = hash_table.erase(k);
             assert(removed_count == 1);
             min_heap[--heap_end_pos].reset();
             ++m_cache_rebuild_count;
-        }
-
-        int64_t bucket_index(int64_t addr) const {
-            return (addr / block_size);
         }
     };
 }
