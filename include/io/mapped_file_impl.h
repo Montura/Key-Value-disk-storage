@@ -94,7 +94,7 @@ namespace file {
 
         const auto total_bytes_to_read = sizeof(T);
         const auto read_end_pos = pos + total_bytes_to_read;
-        auto block4kb_ptr = lru_cache.on_new_pos(read_end_pos);
+        auto block4kb_ptr = lru_cache.on_new_pos(pos);
 
         const auto value = block4kb_ptr->read_next_primitive<T>(pos, total_bytes_to_read);
         return std::make_pair(value, read_end_pos);
@@ -134,7 +134,7 @@ namespace file {
     template <typename StringT>
     int64_t MappedFile::write_basic_string(const int64_t pos, StringT str) {
         const auto total_len_size_in_bytes = static_cast<int32_t>(sizeof (int32_t));
-        const auto total_blob_size_in_bytes = static_cast<int32_t>(str.size() * sizeof(StringT::value_type));
+        const auto total_blob_size_in_bytes = static_cast<int32_t>(str.size() * sizeof(typename StringT::value_type));
 
         // write values
         std::unique_lock lock(mutex);

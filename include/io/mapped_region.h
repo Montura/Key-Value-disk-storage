@@ -73,7 +73,7 @@ namespace btree {
 
         template <typename StringT>
         StringT read_string(const int64_t pos, int64_t total_bytes_to_read) {
-            const auto len = total_bytes_to_read / sizeof(StringT::value_type);
+            const auto len = total_bytes_to_read / sizeof(typename StringT::value_type);
             StringT val(len, ' ');
             auto* data = cast_to_uint8_t_data(val.data());
             uint8_t* address_begin = address_by_offset(pos - mapped_offset);
