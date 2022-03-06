@@ -5,24 +5,22 @@
 #include "io/lru_cache.h"
 
 namespace tests::LRU_test {
-    constexpr int block_size_arr[] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
+    constexpr int32_t block_size_arr_len = 8;
+    constexpr int32_t block_size_arr[block_size_arr_len] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
 
     namespace details {
-        class Block {
+        class TestBlock {
             std::atomic<int64_t> m_usage_count = 0;
             bip::mapped_region mapped_region;
-            uint8_t* mapped_region_begin;
-            bip::offset_t m_pos;
         public:
             const int32_t m_size;
             const int64_t mapped_offset;
 
-            Block(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_write) :
-                    m_pos(0), m_size(size), mapped_offset(file_offset)
+            TestBlock(const std::string& path, int64_t file_offset, const int32_t size = 4096, bip::mode_t mapping_mode = bip::read_write) :
+                    m_size(size), mapped_offset(file_offset)
             {
                 auto file_mapping = bip::file_mapping(path.data(), mapping_mode);
                 mapped_region = bip::mapped_region(file_mapping, mapping_mode, mapped_offset, size);
-                mapped_region_begin = cast_to_uint8_t_data(mapped_region.get_address());
             };
 
             const std::atomic<int64_t>& usage_count() {
@@ -31,10 +29,6 @@ namespace tests::LRU_test {
 
             void add_ref() {
                 ++m_usage_count;
-            }
-
-            int64_t current_pos() {
-                return m_pos;
             }
         };
 
@@ -257,7 +251,7 @@ namespace tests::LRU_test {
                 top_usages_in_working_set[i] = static_cast<int32_t>(address_vector_map[i + cache_size].size());
             }
 
-            btree::LRUCache<Block> lru{ cache_size, init_file() };
+            btree::LRUCache<Block> lru { cache_size, init_file() };
             run_in_pool_and_join(
                     [&lru, &address_vector_map, block_size]() {
                         for (const auto& address_vector: address_vector_map) {
@@ -277,6 +271,39 @@ namespace tests::LRU_test {
 
             success &= verify_lru_state(block_size, cache_size, lru, total_operations);
             success &= verify_locks_count(lru);
+            return success;
+        }
+
+        template <typename Block>
+        bool test_lru_random_block_size(const int32_t unique_blocks_count) {
+            const int32_t cache_size = unique_blocks_count / 2;
+            btree::LRUCache<Block> lru { cache_size, init_file() };
+
+            auto verify = [](const uint32_t total_ops, auto& lru,
+                    const int32_t block_idx, const int32_t block_size) -> bool
+                {
+                    const auto& working_set = lru.working_set();
+                    bool success = static_cast<int32_t>(working_set.size()) == (block_idx + 1);
+                    success &= verify_lru_block_usage(total_ops, block_size, working_set[block_idx], false);
+                    success &= (lru.total_cache_rebuild_count() == 0);
+                    success &= verify_locks_count(lru);
+                    return success;
+                };
+
+            bool success = true;
+            int32_t shift = 0;
+            for (int32_t block_idx = 0; block_idx < block_size_arr_len; ++block_idx) {
+                const auto block_size = block_size_arr[block_idx];
+                const auto total_ops = block_size;
+                run_in_pool_and_join(
+                        [&lru, total_ops, shift, block_size]() {
+                            for (int32_t i = 0; i < total_ops; ++i) {
+                                lru.on_new_pos(shift + i, block_size);
+                            }
+                        });
+                shift += block_size;
+                success &= verify(total_ops, lru, block_idx, block_size);
+            }
             return success;
         }
 
@@ -311,30 +338,44 @@ namespace tests::LRU_test {
         bool test_random_operations_count(const int32_t block_size) {
             bool success = true;
             for (auto unique_blocks_count : details::blocks_count) {
-                success &= details::test_random_operation_count_per_block<Block>(block_size, unique_blocks_count);
+                success &= test_random_operation_count_per_block<Block>(block_size, unique_blocks_count);
+            }
+            return success;
+        }
+
+        template <typename Block>
+        bool test_lru_random_block_size() {
+            bool success = true;
+            for (auto unique_blocks_count : details::blocks_count) {
+                success &= test_lru_random_block_size<Block>(unique_blocks_count);
             }
             return success;
         }
     }
 
     bool run_test_lru_single_block(const int32_t block_size) {
-        return  details::test_lru_single_block<details::Block>(block_size) &&
+        return  details::test_lru_single_block<details::TestBlock>(block_size) &&
                 details::test_lru_single_block<MappedRegionBlock>(block_size);
     }
 
     bool run_test_lru_state_for_ranges(const int32_t block_size) {
-        return  details::test_lru_state_for_ranges<details::Block>(block_size) &&
+        return  details::test_lru_state_for_ranges<details::TestBlock>(block_size) &&
                 details::test_lru_state_for_ranges<MappedRegionBlock>(block_size);
     }
 
     bool run_test_fixed_operations_count(const int32_t block_size) {
-        return  details::test_fixed_operations_count<details::Block>(block_size) &&
+        return  details::test_fixed_operations_count<details::TestBlock>(block_size) &&
                 details::test_fixed_operations_count<MappedRegionBlock>(block_size);
     }
 
     bool run_test_random_operations_count(const int32_t block_size) {
-        return  details::test_random_operations_count<details::Block>(block_size) &&
+        return  details::test_random_operations_count<details::TestBlock>(block_size) &&
                 details::test_random_operations_count<MappedRegionBlock>(block_size);
+    }
+
+    bool run_test_lru_random_block_size() {
+        return  details::test_lru_random_block_size<details::TestBlock>() &&
+                details::test_lru_random_block_size<MappedRegionBlock>();
     }
 }
 #endif

@@ -22,6 +22,9 @@ BOOST_AUTO_TEST_SUITE(LRU_test)
     BOOST_DATA_TEST_CASE(test_lru_cache_with_random_operations_count, boost::make_iterator_range(block_size_arr), block_size) {
         BOOST_REQUIRE_MESSAGE(run_test_random_operations_count(block_size), "TEST_LRU_CACHE_RANDOM_OPERATIONS_COUNT");
     }
+    BOOST_AUTO_TEST_CASE(test_lru_cache_random_block_size) {
+        BOOST_REQUIRE_MESSAGE(run_test_lru_random_block_size(), "TEST_LRU_CACHE_RANDOM_BLOCK_SIZE");
+    }
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(LRU_mapped_file_test)

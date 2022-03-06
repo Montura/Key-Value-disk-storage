@@ -97,7 +97,7 @@ namespace btree {
         }
     private:
         HashTIt add_new_block(const int64_t pos, const int32_t block_size) {
-            const auto&[emplace_it, success] = hash_table.try_emplace(pos, new T(path, align_pos(pos, block_size), block_size));
+            const auto&[emplace_it, success] = hash_table.try_emplace(pos, new T(path, pos, block_size));
             if (success) {
                 if (heap_end_pos == m_cache_size)
                     remove_the_least_used_block();
