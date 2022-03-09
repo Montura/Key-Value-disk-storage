@@ -24,7 +24,7 @@ namespace tests::LRU_mapped_file_test {
         LRUCache<MappedRegionBlock> lru(details::CACHE_SIZE, path);
 
 
-        lru.on_new_pos(1);
+//        lru.on_new_pos(1);
         return true;
     }
 

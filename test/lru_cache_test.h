@@ -178,7 +178,7 @@ namespace tests::LRU_test {
                 run_in_pool_and_join(
                         [&lru, ops_count, block_size]() {
                             for (uint32_t i = 0; i < ops_count; ++i) {
-                                lru.on_new_pos(i, block_size);
+                                lru.on_new_pos(i, sizeof(i), block_size);
                             }
                         });
                 success &= verify(ops_count, lru);
@@ -210,7 +210,7 @@ namespace tests::LRU_test {
                 run_in_pool_and_join(
                         [&lru, ops_count, block_size]() {
                             for (uint32_t i = 0; i < ops_count; ++i) {
-                                lru.on_new_pos(i, block_size);
+                                lru.on_new_pos(i, sizeof(i), block_size);
                             }
                         });
                 success &= verify(ops_count, lru);
@@ -232,7 +232,7 @@ namespace tests::LRU_test {
                 run_in_pool_and_join(
                         [&lru, start, end, block_size]() {
                             for (auto i = start; i < end; ++i) {
-                                lru.on_new_pos(i, block_size);
+                                lru.on_new_pos(i, sizeof(i), block_size);
                             }
                         });
                 success &= verify_lru_state(block_size, cache_size, lru, end);
@@ -256,7 +256,7 @@ namespace tests::LRU_test {
                     [&lru, &address_vector_map, block_size]() {
                         for (const auto& address_vector: address_vector_map) {
                             for (const auto& address: address_vector) {
-                                lru.on_new_pos(address, block_size);
+                                lru.on_new_pos(address, sizeof(address), block_size);
                             }
                         }
                     });
@@ -298,7 +298,7 @@ namespace tests::LRU_test {
                 run_in_pool_and_join(
                         [&lru, total_ops, shift, block_size]() {
                             for (int32_t i = 0; i < total_ops; ++i) {
-                                lru.on_new_pos(shift + i, block_size);
+                                lru.on_new_pos(shift + i, sizeof(i), block_size);
                             }
                         });
                 shift += block_size;

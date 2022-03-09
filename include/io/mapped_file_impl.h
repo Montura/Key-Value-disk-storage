@@ -80,7 +80,7 @@ namespace file {
             m_capacity = lru_cache.align_pos(addr, 4096);
             fs::resize_file(path, m_capacity);
         }
-        auto block4kb_ptr = lru_cache.on_new_pos(pos);
+        auto block4kb_ptr = lru_cache.on_new_pos(pos, total_bytes_to_write);
         m_size = write_end_pos;
 
         block4kb_ptr->write_next_primitive(val, total_bytes_to_write);
@@ -94,7 +94,7 @@ namespace file {
 
         const auto total_bytes_to_read = sizeof(T);
         const auto read_end_pos = pos + total_bytes_to_read;
-        auto block4kb_ptr = lru_cache.on_new_pos(pos);
+        auto block4kb_ptr = lru_cache.on_new_pos(pos, total_bytes_to_read);
 
         const auto value = block4kb_ptr->read_next_primitive<T>(pos, total_bytes_to_read);
         return std::make_pair(value, read_end_pos);
@@ -146,11 +146,11 @@ namespace file {
         if (write_end_pos >= m_capacity) {
             int64_t addr = write_end_pos + 4096;
             m_capacity = lru_cache.align_pos(addr, 4096);
-            fs::resize_file(path, m_capacity);
+            fs::resize_file(path, addr);
         }
 
         // write size
-        auto block4kb_ptr = lru_cache.on_new_pos(write_end_pos);
+        auto block4kb_ptr = lru_cache.on_new_pos(pos, total_len_size_in_bytes + total_blob_size_in_bytes);
         m_size = write_end_pos;
 
         block4kb_ptr->write_next_primitive(total_blob_size_in_bytes, total_len_size_in_bytes);
@@ -161,15 +161,17 @@ namespace file {
 
     template <typename StringT>
     std::pair<StringT, int64_t> MappedFile::read_basic_string(const int64_t pos) {
-        const auto block4kb_ptr = lru_cache.on_new_pos(pos);
-
         const auto bytes_to_read_blob_len = sizeof(int32_t);
+        auto block4kb_ptr = lru_cache.on_new_pos(pos, bytes_to_read_blob_len);
+
         const auto total_bytes_to_read_blob =
                 block4kb_ptr->read_next_primitive<int32_t>(pos, bytes_to_read_blob_len);
-        const auto read_end_pos = pos + bytes_to_read_blob_len + total_bytes_to_read_blob;
 
         const auto blob_pos = pos + bytes_to_read_blob_len;
-        const auto value = block4kb_ptr->template read_string<StringT>(blob_pos, total_bytes_to_read_blob);
+        block4kb_ptr = lru_cache.on_new_pos(blob_pos, total_bytes_to_read_blob);
+        const auto value = block4kb_ptr->read_string<StringT>(blob_pos, total_bytes_to_read_blob);
+
+        const auto read_end_pos = pos + bytes_to_read_blob_len + total_bytes_to_read_blob;
         return std::make_pair(value, read_end_pos);
     }
 
