@@ -39,22 +39,24 @@ namespace details {
     template <typename K, typename V>
     bool run_test_arithmetics(const std::string& name_postfix) {
         std::string path = get_absolute_file_name(name_postfix);
+        std::unordered_map<int64_t, int64_t> pos_to_string;
         bool success = true;
         {
             MappedFile file(path, 0);
 
             // write
-            int64_t pos = 0;
+            int64_t begin_pos = 0;
+            int64_t end_pos = 0;
             for (int i = 0; i < ITERATIONS; ++i) {
                 V tmp = static_cast<V>(i);
-                pos = file.write_next_primitive(pos, tmp);
+                std::tie(begin_pos, end_pos) = file.write_next_primitive(end_pos, tmp);
+                pos_to_string.template emplace(tmp, begin_pos);
             }
 
             // read
-            pos = 0;
             for (int i = 0; i < ITERATIONS; ++i) {
-                auto [tmp, curr_pos] = file.template read_next_primitive<V>(pos);
-                pos = curr_pos;
+                const auto pos = pos_to_string[i];
+                auto [tmp, _] = file.template read_next_primitive<V>(pos);
                 success &= (tmp == static_cast<V>(i));
             }
         }
@@ -74,23 +76,26 @@ namespace details {
         std::string path = get_absolute_file_name(postfix + "_" + std::to_string(data.len));
         int64_t total_write_size = 0;
         int64_t total_read_size = 0;
+        std::unordered_map<V, int64_t> pos_to_string;
         bool success = true;
         {
             MappedFile file(path, 0);
             // write
-            int64_t pos = 0;
+            int64_t begin_pos = 0;
+            int64_t end_pos = 0;
             for (auto i = 0; i < ITERATIONS; ++i) {
                 Data<V> tmp_data(data.value + conv(i));
-                pos = file.write_basic_string(pos, tmp_data.value);
+                std::tie(begin_pos, end_pos) = file.write_basic_string(begin_pos, tmp_data.value);
+                pos_to_string.template emplace(tmp_data.value, begin_pos);
+                begin_pos = end_pos;
             }
             total_write_size = file.get_pos();
 //
             // read
-            pos = 0;
             for (int i = 0; i < ITERATIONS; ++i) {
                 V tmp = data.value + conv(i);
-                auto [value, curr_pos] = file.template read_basic_string<V>(pos);
-                pos = curr_pos;
+                const auto pos = pos_to_string[tmp];
+                auto value = file.template read_basic_string<V>(pos);
                 success &= (tmp == value);
             }
 //            total_read_size = file.get_pos();

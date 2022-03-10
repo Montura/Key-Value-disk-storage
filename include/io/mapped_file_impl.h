@@ -54,6 +54,14 @@ namespace file {
             std::cerr << "Can't resize file: " << path << std::endl;
     }
 
+    void MappedFile::resize_if_exceed_capacity(const int64_t write_end_pos) {
+        if (write_end_pos >= m_capacity) {
+            int64_t addr = write_end_pos + 4096;
+            m_capacity = lru_cache.align_pos(addr, 4096);
+            fs::resize_file(path, m_capacity);
+        }
+    }
+
     template <typename T>
     void MappedFile::write_next_data(std::unique_ptr<MappedRegion>& region, T val, const int32_t total_size_in_bytes) {
         if constexpr(std::is_pointer_v<T>)
@@ -69,23 +77,19 @@ namespace file {
     }
 
     template <typename T>
-    int64_t MappedFile::write_next_primitive(const int64_t pos, const T val) {
+    std::pair<int64_t, int64_t> MappedFile::write_next_primitive(const int64_t pos, const T val) {
         static_assert(std::is_arithmetic_v<T>);
         std::unique_lock lock(mutex);
 
         const auto total_bytes_to_write = sizeof(T);
-        const int64_t write_end_pos = pos + total_bytes_to_write;
-        if (write_end_pos >= m_capacity) {
-            int64_t addr = write_end_pos + 4096;
-            m_capacity = lru_cache.align_pos(addr, 4096);
-            fs::resize_file(path, m_capacity);
-        }
-        auto block4kb_ptr = lru_cache.on_new_pos(pos, total_bytes_to_write);
-        m_size = write_end_pos;
+        resize_if_exceed_capacity(pos + total_bytes_to_write);
+
+        auto [write_pos, block4kb_ptr] = lru_cache.on_new_pos(pos, total_bytes_to_write);
 
         block4kb_ptr->write_next_primitive(val, total_bytes_to_write);
+        m_size = block4kb_ptr->current_absolute_pos();
 
-        return write_end_pos;
+        return std::make_pair(write_pos, m_size);
     }
 
     template <typename T>
@@ -93,11 +97,10 @@ namespace file {
         static_assert(std::is_arithmetic_v<T>);
 
         const auto total_bytes_to_read = sizeof(T);
-        const auto read_end_pos = pos + total_bytes_to_read;
-        auto block4kb_ptr = lru_cache.on_new_pos(pos, total_bytes_to_read);
+        auto [_, block4kb_ptr] = lru_cache.on_new_pos(pos, total_bytes_to_read);
 
         const auto value = block4kb_ptr->read_next_primitive<T>(pos, total_bytes_to_read);
-        return std::make_pair(value, read_end_pos);
+        return std::make_pair(value, pos + total_bytes_to_read);
     }
 
     template <typename T>
@@ -132,47 +135,34 @@ namespace file {
     }
 
     template <typename StringT>
-    int64_t MappedFile::write_basic_string(const int64_t pos, StringT str) {
+    std::pair<int64_t, int64_t> MappedFile::write_basic_string(const int64_t pos, StringT& str) {
         const auto total_len_size_in_bytes = static_cast<int32_t>(sizeof (int32_t));
         const auto total_blob_size_in_bytes = static_cast<int32_t>(str.size() * sizeof(typename StringT::value_type));
 
         // write values
         std::unique_lock lock(mutex);
 
-        // todo: string len and string.data() are not fit in 4KB BLOCK
-        //  1) Can they be in the different blocks ? How to read?
-        //  2) Or they have to be in the same block ? How to mark in block the end of data?
-        const int64_t write_end_pos = pos + total_len_size_in_bytes + total_blob_size_in_bytes;
-        if (write_end_pos >= m_capacity) {
-            int64_t addr = write_end_pos + 4096;
-            m_capacity = lru_cache.align_pos(addr, 4096);
-            fs::resize_file(path, addr);
-        }
+        // todo: has done: string len and string.data() are in the same block!!!
+        const auto total_bytes_to_write = total_len_size_in_bytes + total_blob_size_in_bytes;
+        resize_if_exceed_capacity(pos + total_bytes_to_write);
 
         // write size
-        auto block4kb_ptr = lru_cache.on_new_pos(pos, total_len_size_in_bytes + total_blob_size_in_bytes);
-        m_size = write_end_pos;
-
+        auto [write_pos, block4kb_ptr] = lru_cache.on_new_pos(pos, total_bytes_to_write);
         block4kb_ptr->write_next_primitive(total_blob_size_in_bytes, total_len_size_in_bytes);
         block4kb_ptr->write_string(str.data(), total_blob_size_in_bytes);
-        
-        return write_end_pos;
+        m_size = block4kb_ptr->current_absolute_pos();
+
+        return std::make_pair(write_pos, m_size);
     }
 
     template <typename StringT>
-    std::pair<StringT, int64_t> MappedFile::read_basic_string(const int64_t pos) {
+    StringT MappedFile::read_basic_string(const int64_t pos) {
         const auto bytes_to_read_blob_len = sizeof(int32_t);
-        auto block4kb_ptr = lru_cache.on_new_pos(pos, bytes_to_read_blob_len);
+        auto [_, block4kb_ptr] = lru_cache.on_new_pos(pos, bytes_to_read_blob_len);
 
-        const auto total_bytes_to_read_blob =
-                block4kb_ptr->read_next_primitive<int32_t>(pos, bytes_to_read_blob_len);
-
+        const auto total_bytes_to_read_blob = block4kb_ptr->read_next_primitive<int32_t>(pos, bytes_to_read_blob_len);
         const auto blob_pos = pos + bytes_to_read_blob_len;
-        block4kb_ptr = lru_cache.on_new_pos(blob_pos, total_bytes_to_read_blob);
-        const auto value = block4kb_ptr->read_string<StringT>(blob_pos, total_bytes_to_read_blob);
-
-        const auto read_end_pos = pos + bytes_to_read_blob_len + total_bytes_to_read_blob;
-        return std::make_pair(value, read_end_pos);
+        return block4kb_ptr->read_string<StringT>(blob_pos, total_bytes_to_read_blob);
     }
 
     template <typename T>

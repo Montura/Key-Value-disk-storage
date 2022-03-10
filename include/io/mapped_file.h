@@ -29,7 +29,7 @@ namespace btree {
         std::pair<ValueType, int32_t> read_next_data(const std::unique_ptr<MappedRegion>& region);
 
         template <typename T>
-        int64_t write_next_primitive(const int64_t pos, const T val);
+        std::pair<int64_t, int64_t> write_next_primitive(const int64_t pos, const T val);
 
         template <typename T>
         int64_t write_next_primitive(std::unique_ptr<MappedRegion>& region, const T val);
@@ -63,16 +63,18 @@ namespace btree {
         bool is_empty() const;
 
         template <typename StringT>
-        int64_t write_basic_string(const int64_t pos, StringT source_data);
+        std::pair<int64_t, int64_t> write_basic_string(const int64_t pos, StringT& source_data);
 
         template <typename StringT>
-        std::pair<StringT, int64_t> read_basic_string(const int64_t pos);
+        StringT read_basic_string(const int64_t pos);
 
     private:
         template <typename T>
         int64_t write_blob(std::unique_ptr<MappedRegion>& region, T source_data, const int32_t total_size_in_bytes);
 
         int64_t resize(std::unique_ptr<MappedRegion>& region, int64_t total_size_in_bytes, bool shrink_to_fit = false);
+
+        void resize_if_exceed_capacity(const int64_t write_end_pos);
     };
 }
 

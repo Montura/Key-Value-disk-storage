@@ -40,6 +40,10 @@ namespace btree {
             return m_usage_count;
         }
 
+        bool contains(const int64_t pos) const {
+            return (mapped_offset <= pos) && (pos <= mapped_offset + m_size);
+        }
+
         int64_t current_absolute_pos() const {
             return mapped_offset + m_pos;
         }

@@ -48,26 +48,32 @@ namespace btree {
             min_heap.resize(m_cache_size);
         }
 
-        std::shared_ptr<T> on_new_pos(const int64_t pos, const int64_t blob_size, const int64_t lru_block_size = 4096) {
-            const auto find_it = lru_contains(pos, blob_size);
-            if (find_it == hash_table.end()) {
+        std::pair<int64_t, std::shared_ptr<T>> on_new_pos(const int64_t pos, const int64_t blob_size, const int64_t lru_block_size = 4096) {
+            const auto max_block_size = (blob_size > lru_block_size) ? blob_size : lru_block_size;
+            const auto begin_it = lru_contains(pos);
+            if (begin_it == hash_table.end()) {
                 std::unique_lock lock(mutex);
-                auto emplace_it = add_new_block(pos, blob_size, lru_block_size);
-                m_total_lock_ops++;
-                emplace_it->second->add_ref();
-                return emplace_it->second;
+                return add_block(pos, max_block_size);
             } else {
-                m_total_lock_free_ops++;
-                find_it->second->add_ref();
-                return find_it->second;
+                if (begin_it->second->contains(pos + blob_size)) {
+                    m_total_lock_free_ops++;
+                    begin_it->second->add_ref();
+                    return std::make_pair(pos, begin_it->second);
+                } else {
+                    std::unique_lock lock(mutex);
+                    const auto aligned_pos = align_pos(pos + blob_size, max_block_size);
+                    return add_block(aligned_pos, max_block_size);
+                }
             }
         }
 
-        std::shared_ptr<T> on_new_pos_a(const int64_t pos, const int64_t block_size = 4096) {
+        std::shared_ptr<T> on_new_pos_a(const int64_t pos, const int64_t lru_block_size = 4096) {
+            const int32_t block_size = sizeof(pos);
+            const auto max_block_size = (block_size > lru_block_size) ? block_size : lru_block_size;
             const auto find_it = lru_contains(pos);
             if (find_it == hash_table.end()) {
                 std::unique_lock lock(mutex);
-                auto emplace_it = add_new_block(pos, sizeof(pos), block_size);
+                auto emplace_it = add_new_block(pos, max_block_size);
                 m_total_lock_ops++;
                 emplace_it->second->add_ref();
                 return emplace_it->second;
@@ -111,24 +117,23 @@ namespace btree {
             hash_table.clear();
         }
     private:
-        HashTIt lru_contains(const int64_t pos, const int64_t size) {
-            const auto end_pos = pos + size;
+        std::pair<int64_t, std::shared_ptr<T>> add_block(const int64_t pos, const int64_t max_block_size) {
+            auto emplace_it = add_new_block(pos, max_block_size);
+            m_total_lock_ops++;
+            emplace_it->second->add_ref();
+            return std::make_pair(pos, emplace_it->second);
+        }
+
+        HashTIt lru_contains(const int64_t pos) {
             return std::find_if(hash_table.begin(), hash_table.end(),
-                    [=](const auto& elem) {
-                        const auto& block = elem.second;
-                        const auto offset = block->mapped_offset;
-                        return (offset <= end_pos) && (end_pos < offset + block->m_size);
+                    [pos](const auto& elem) {
+                        return elem.second->contains(pos);
                     }
             );
         }
         
-        HashTIt add_new_block(const int64_t pos, const int64_t blob_size, const int32_t lru_block_size) {
-            const auto max_block_size = (blob_size > lru_block_size) ? blob_size : lru_block_size;
-            const HashTIt& iterator = lru_contains(pos + blob_size, blob_size);
-            if (iterator != hash_table.end()) {
-                throw std::runtime_error("Out of NEW block range");
-            }
-            const auto&[emplace_it, success] = hash_table.try_emplace(pos, new T(path, pos, max_block_size));
+        HashTIt add_new_block(const int64_t pos, const int32_t block_size) {
+            const auto&[emplace_it, success] = hash_table.try_emplace(pos, new T(path, pos, block_size));
             if (success) {
                 if (heap_end_pos == m_cache_size)
                     remove_the_least_used_block();
