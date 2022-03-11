@@ -32,7 +32,7 @@ namespace tests::LRU_test {
             }
 
             bool contains(const int64_t pos) const {
-                return (mapped_offset <= pos) && (pos <= mapped_offset + m_size);
+                return (mapped_offset <= pos) && (pos < mapped_offset + m_size);
             }
         };
 
