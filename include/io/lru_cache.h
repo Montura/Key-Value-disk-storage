@@ -55,7 +55,8 @@ namespace btree {
                 std::unique_lock lock(mutex);
                 return add_block(pos, max_block_size);
             } else {
-                if (begin_it->second->contains(pos + blob_size)) {
+                const auto end_pos = (blob_size ? (pos + blob_size - 1) : pos);
+                if (begin_it->second->contains(end_pos)) {
                     m_total_lock_free_ops++;
                     begin_it->second->add_ref();
                     return std::make_pair(pos, begin_it->second);
